@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MindHaven
 
-## Getting Started
+MindHaven — это минималистичное приложение для личного развития и саморефлексии, вдохновленное дизайном Notion. Приложение помогает отслеживать привычки, ставить цели и вести журнал рефлексии.
 
-First, run the development server:
+## 🚀 Функциональность
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Dashboard** — обзор прогресса и ключевых метрик
+- **Журнал рефлексии** — ежедневные записи и самоанализ
+- **Цели** — постановка и отслеживание целей
+- **Привычки** — формирование и мониторинг привычек
+- **Таблицы** — структурированные данные и аналитика
+
+## 🎨 Дизайн
+
+- Минималистичный интерфейс в стиле Notion
+- Темная и светлая темы
+- Компоненты Radix UI для доступности
+- Плавные анимации и интерактивность
+
+## 🏗 Структура проекта (Feature-Sliced Design)
+```
+mind-haven/
+├── app/                    # App Router (pages и layouts)
+├── entities/               # Бизнес-сущности (User, Goal, Habit, etc.)
+├── features/               # Бизнес-фичи (auth, dashboard, journal, etc.)
+├── widgets/                # Независимые виджеты и композиции
+├── shared/                 # Переиспользуемые ресурсы
+│   ├── ui/                 # UI компоненты (shadcn/ui)
+│   └── lib/                # Утилиты, конфиги, API
+├── public/                 # Статические файлы
+└── Конфигурационные файлы
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠 Технологии
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Frontend**: Next.js 14, React 18, TypeScript
+- **Стили**: Tailwind CSS
+- **UI компоненты**: Radix UI, shadcn/ui
+- **Формы**: React Hook Form
+- **Графики**: Recharts
+- **Уведомления**: Sonner
+- **Иконки**: Lucide React
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📦 Установка и запуск
 
-## Learn More
+### Предварительные требования
 
-To learn more about Next.js, take a look at the following resources:
+- Node.js 18+ 
+- npm, yarn, pnpm или bun
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Установка
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# Клонирование репозитория
+git clone <repository-url>
+cd MindHaven
 
-## Deploy on Vercel
+# Установка зависимостей
+npm install
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Запуск в режиме разработки
+npm run dev
