@@ -136,15 +136,15 @@ export function DashboardWidget() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="p-3 border-l-4 border-primary bg-blue-50 rounded">
+            <div className="p-3 border-l-4 border-primary bg-primary/10 rounded">
               <p className="font-medium">Дедлайн: Завершить проект</p>
               <p className="text-sm text-muted-foreground mt-1">Через 3 дня</p>
             </div>
-            <div className="p-3 border-l-4 border-secondary bg-green-50 rounded">
+            <div className="p-3 border-l-4 border-chart-2 bg-chart-2/10 rounded">
               <p className="font-medium">Цель: 7 дней медитации подряд</p>
               <p className="text-sm text-muted-foreground mt-1">Осталось 2 дня</p>
             </div>
-            <div className="p-3 border-l-4 border-[#f39c12] bg-yellow-50 rounded">
+            <div className="p-3 border-l-4 border-[#f39c12] bg-chart-4/10 rounded">
               <p className="font-medium">Обзор недели</p>
               <p className="text-sm text-muted-foreground mt-1">Воскресенье</p>
             </div>
@@ -153,7 +153,7 @@ export function DashboardWidget() {
       </div>
 
       {/* Modules */}
-      <div>
+      <div className="">
         <h2 className="mb-6">Модули</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {modules.map((module) => {

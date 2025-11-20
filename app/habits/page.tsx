@@ -53,7 +53,7 @@ export default function HabitsPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-blue-100">
+              <div className="p-3 rounded-lg bg-primary/10">
                 <CheckSquare size={24} className="text-primary" />
               </div>
               <div>
@@ -67,7 +67,7 @@ export default function HabitsPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-orange-100">
+              <div className="p-3 rounded-lg bg-chart-4/10">
                 <Flame size={24} className="text-orange-500" />
               </div>
               <div>
@@ -83,7 +83,7 @@ export default function HabitsPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-green-100">
+              <div className="p-3 rounded-lg bg-chart-2/10">
                 <TrendingUp size={24} className="text-secondary" />
               </div>
               <div>

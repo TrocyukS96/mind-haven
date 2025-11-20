@@ -93,7 +93,7 @@ export default function GoalsPage() {
                       {goal.description}
                     </p>
                   </div>
-                  <div className="p-2 rounded-lg bg-blue-100 flex-shrink-0">
+                  <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
                     <Target size={20} className="text-primary" />
                   </div>
                 </div>
