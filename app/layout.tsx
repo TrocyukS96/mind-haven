@@ -1,4 +1,5 @@
 import { ModalProvider } from "@/shared/providers/ModalProvider";
+import ToastProvider from "@/shared/providers/ToastProvider";
 import { Sidebar } from "@/widgets/sidebar/ui/sidebar";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
@@ -41,6 +42,7 @@ export default function RootLayout({
             </main>
           </div>
           <ModalProvider />
+          <ToastProvider />
       </body>
     </html>
   );

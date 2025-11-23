@@ -15,6 +15,7 @@ import {
   Moon,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
+import { useAppStore } from '@/shared/store/slices/app-slice';
 
 const menuItems = [
   { id: 'dashboard', label: 'Главная', icon: Home, href: '/' },
@@ -26,22 +27,16 @@ const menuItems = [
 
 export function Sidebar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [themeReady, setThemeReady] = useState(false);
+  const { theme, setTheme } = useAppStore();
   const pathname = usePathname();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const storedTheme = localStorage.getItem('theme');
-    if (storedTheme === 'light' || storedTheme === 'dark') {
-      setTheme(storedTheme);
-      document.documentElement.classList.toggle('dark', storedTheme === 'dark');
-    } else {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setTheme(prefersDark ? 'dark' : 'light');
-      document.documentElement.classList.toggle('dark', prefersDark);
-    }
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setTheme(prefersDark ? 'dark' : 'light');
+    document.documentElement.classList.toggle('dark', prefersDark);
 
     setThemeReady(true);
   }, []);
@@ -49,11 +44,10 @@ export function Sidebar() {
   useEffect(() => {
     if (!themeReady || typeof window === 'undefined') return;
     document.documentElement.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem('theme', theme);
   }, [theme, themeReady]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+    setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
   return (
