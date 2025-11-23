@@ -1,7 +1,8 @@
 'use client';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog';
-import { CreateGoalForm } from './CreateGoalForm';
+import { GoalForm } from './GoalForm';
+import { useStore } from '@/shared/store/store-config';
 
 interface Props {
   open: boolean;
@@ -9,9 +10,7 @@ interface Props {
 }
 
 const CreateGoalModal = ({ open, onOpenChange }: Props) => {
-  const handleSuccess = () => {
-    onOpenChange(false);
-  };
+  const { selectedGoal, isGoalFormOpen, openGoalForm, closeGoalForm } = useStore();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -20,9 +19,10 @@ const CreateGoalModal = ({ open, onOpenChange }: Props) => {
           <DialogTitle>Новая цель (SMART)</DialogTitle>
         </DialogHeader>
 
-        <CreateGoalForm
-          onCancel={() => onOpenChange(false)}
-          onSuccess={handleSuccess}
+        <GoalForm
+          goal={selectedGoal}
+          open={isGoalFormOpen}
+          onOpenChange={(open) => !open && closeGoalForm()}
         />
       </DialogContent>
     </Dialog>

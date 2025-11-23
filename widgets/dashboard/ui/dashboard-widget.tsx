@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 export function DashboardWidget() {
   const { journalEntries, goals, habits, tables } = useStore();
-  const setIsCreateGoalModalOpen = useStore((state) => state.setIsCreateGoalModalOpen);
+  const openGoalForm = useStore((state) => state.openGoalForm);
   const stats = [
     { label: 'Записей в журнале', value: journalEntries.length, icon: BookOpen, color: 'hsl(var(--primary))' },
     { label: 'Активных целей', value: goals.length, icon: Target, color: 'hsl(var(--secondary))' },
@@ -61,7 +61,7 @@ export function DashboardWidget() {
             Добро пожаловать! Начни свой путь к лучшей версии себя.
           </p>
         </div>
-        <Button size="lg" onClick={() => setIsCreateGoalModalOpen(true)}>
+        <Button size="lg" onClick={() => openGoalForm()}>
             <Plus size={20} />
             Создать цель
         </Button>

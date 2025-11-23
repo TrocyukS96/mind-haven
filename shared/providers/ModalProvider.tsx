@@ -5,12 +5,12 @@ import { CreateGoalModal } from '@/features/goal/create-goal';
 import { useStore } from '@/shared/store/store-config';
 
 export function ModalProvider() {
-  const { isCreateGoalModalOpen, setIsCreateGoalModalOpen } = useStore();
+  const { isGoalFormOpen, closeGoalForm } = useStore();
 
   return (
     <CreateGoalModal
-      open={isCreateGoalModalOpen}
-      onOpenChange={setIsCreateGoalModalOpen}
+      open={isGoalFormOpen}
+      onOpenChange={(open) => !open && closeGoalForm()}
     />
   );
 }

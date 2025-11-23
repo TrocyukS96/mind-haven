@@ -3,14 +3,22 @@ import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
 import { Plus, Target } from "lucide-react";
 import GoalCard from "./GoalCard";
+import { useStore } from "@/shared/store/store-config";
 
-const GoalsList = ({ filteredGoals, setIsCreating }: { filteredGoals: Goal[]; setIsCreating: (isCreating: boolean) => void }) => {
+const GoalsList = ({ filteredGoals }: { filteredGoals: Goal[] }) => {
+    const openGoalForm = useStore((state) => state.openGoalForm);
+    const deleteGoal = useStore((state) => state.deleteGoal);
 
     return (
         <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filteredGoals.map((goal) => (
-                    <GoalCard key={goal.id} goal={goal} />
+                    <GoalCard
+                        goal={goal}
+                        key={goal.id}
+                        onEdit={() => openGoalForm(goal)}
+                        onDelete={() => deleteGoal(goal.id)}
+                    />
                 ))}
             </div>
             {filteredGoals.length === 0 && (
@@ -22,7 +30,7 @@ const GoalsList = ({ filteredGoals, setIsCreating }: { filteredGoals: Goal[]; se
                             <p className="text-muted-foreground mb-4">
                                 Создай свою первую цель, чтобы начать путь к успеху
                             </p>
-                            <Button onClick={() => setIsCreating(true)}>
+                            <Button onClick={() => openGoalForm()}>
                                 <Plus size={20} />
                                 Создать цель
                             </Button>
