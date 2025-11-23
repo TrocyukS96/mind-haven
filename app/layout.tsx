@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import { ModalProvider } from "@/shared/providers/ModalProvider";
 import { Sidebar } from "@/widgets/sidebar/ui/sidebar";
-import { StoreProvider } from "@/shared/providers/store-provider";
+import type { Metadata } from "next";
+import { Geist } from "next/font/google";
+import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,7 +32,6 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body className={geistSans.className}>
-        <StoreProvider>
           <div className="min-h-screen flex">
             <Sidebar />
             <main className="flex-1 p-6 lg:p-8 overflow-auto">
@@ -41,7 +40,7 @@ export default function RootLayout({
               </div>
             </main>
           </div>
-        </StoreProvider>
+          <ModalProvider />
       </body>
     </html>
   );

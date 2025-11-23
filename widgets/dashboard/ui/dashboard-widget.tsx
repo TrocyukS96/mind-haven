@@ -1,6 +1,6 @@
 'use client';
 
-import { useStore } from '@/shared/providers/store-provider';
+import { useStore } from '@/shared/store/store-config';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Button } from '@/shared/ui/button';
 import { BookOpen, Calendar, CheckSquare, Plus, Table, Target, TrendingUp } from 'lucide-react';
@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 export function DashboardWidget() {
   const { journalEntries, goals, habits, tables } = useStore();
-
+  const setIsCreateGoalModalOpen = useStore((state) => state.setIsCreateGoalModalOpen);
   const stats = [
     { label: 'Записей в журнале', value: journalEntries.length, icon: BookOpen, color: 'hsl(var(--primary))' },
     { label: 'Активных целей', value: goals.length, icon: Target, color: 'hsl(var(--secondary))' },
@@ -61,11 +61,9 @@ export function DashboardWidget() {
             Добро пожаловать! Начни свой путь к лучшей версии себя.
           </p>
         </div>
-        <Button size="lg" asChild>
-          <Link href="/goals">
+        <Button size="lg" onClick={() => setIsCreateGoalModalOpen(true)}>
             <Plus size={20} />
             Создать цель
-          </Link>
         </Button>
       </div>
 

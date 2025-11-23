@@ -1,7 +1,6 @@
 'use client';
 
-import { CreateGoalForm } from '@/features/goal/create-goal/ui/create-goal-form';
-import { useStore } from '@/shared/providers/store-provider';
+import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
@@ -9,10 +8,9 @@ import GoalsFilter from './GoalsFilter';
 import GoalsList from './GoalsList';
 
 const GoalsPage = () => {
-      const { goals } = useStore();
+    const { goals } = useStore();
     const [filter, setFilter] = useState<'all' | 'week' | 'month' | 'year'>('all');
-    const [isCreating, setIsCreating] = useState(false);
-
+    const setIsCreateGoalModalOpen = useStore((state) => state.setIsCreateGoalModalOpen);
     const filteredGoals = filter === 'all' ? goals : goals.filter(g => g.category === filter);
 
     return (
@@ -24,22 +22,14 @@ const GoalsPage = () => {
                         Ставь SMART-цели и отслеживай свой прогресс
                     </p>
                 </div>
-                <Button onClick={() => setIsCreating(!isCreating)}>
+                <Button onClick={() => setIsCreateGoalModalOpen(true)}>
                     <Plus size={20} />
                     Создать цель
                 </Button>
             </div>
 
             <GoalsFilter setFilter={setFilter} />
-
-            {isCreating && (
-                <CreateGoalForm
-                    onCancel={() => setIsCreating(false)}
-                    onSuccess={() => setIsCreating(false)}
-                />
-            )}
-
-            <GoalsList filteredGoals={filteredGoals} setIsCreating={setIsCreating} />
+            <GoalsList filteredGoals={filteredGoals} setIsCreating={setIsCreateGoalModalOpen} />
         </div>
     );
 };

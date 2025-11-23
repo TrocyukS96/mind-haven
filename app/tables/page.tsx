@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Plus, Table, Trash2 } from 'lucide-react';
-import { useStore } from '@/shared/providers/store-provider';
+import { useStore } from '@/shared/store/store-config';
 import { CreateTableForm } from '@/features/table/create-table/ui/create-table-form';
 
 export default function TablesPage() {

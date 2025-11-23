@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Select } from '@/shared/ui/select';
-import { useStore } from '@/shared/providers/store-provider';
+import { useStore } from '@/shared/store/store-config';
 
 interface CreateHabitFormProps {
   onCancel: () => void;

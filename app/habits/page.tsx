@@ -1,7 +1,7 @@
 'use client';
 
 import { CreateHabitForm } from '@/features/habit/create-habit/ui/create-habit-form';
-import { useStore } from '@/shared/providers/store-provider';
+import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { CheckSquare, Flame, Plus, TrendingUp } from 'lucide-react';

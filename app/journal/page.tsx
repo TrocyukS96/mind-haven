@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/shared/ui/card';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Plus, Sparkles, Clock, Search } from 'lucide-react';
-import { useStore } from '@/shared/providers/store-provider';
+import { useStore } from '@/shared/store/store-config';
 import { CreateEntryForm } from '@/features/journal/create-entry/ui/create-entry-form';
 
 export default function JournalPage() {
