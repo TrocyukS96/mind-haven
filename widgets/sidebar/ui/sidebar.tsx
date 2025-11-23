@@ -18,8 +18,8 @@ import { cn } from '@/shared/lib/utils';
 
 const menuItems = [
   { id: 'dashboard', label: 'Главная', icon: Home, href: '/' },
-  { id: 'journal', label: 'Журнал', icon: BookOpen, href: '/journal' },
   { id: 'goals', label: 'Цели', icon: Target, href: '/goals' },
+  { id: 'journal', label: 'Журнал', icon: BookOpen, href: '/journal' },
   { id: 'habits', label: 'Привычки', icon: CheckSquare, href: '/habits' },
   { id: 'tables', label: 'Таблицы', icon: Table, href: '/tables' },
 ];

@@ -62,9 +62,9 @@ export function DashboardWidget() {
           </p>
         </div>
         <Button size="lg" asChild>
-          <Link href="/journal">
+          <Link href="/goals">
             <Plus size={20} />
-            Создать запись
+            Создать цель
           </Link>
         </Button>
       </div>
