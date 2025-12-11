@@ -7,8 +7,8 @@ import { createHabitsSlice, HabitsSlice } from './slices/habits-slice';
 import { createJournalSlice, JournalSlice } from './slices/journal-slice';
 import { createTablesSlice, TablesSlice } from './slices/table-slice';
 import { createAppSlice, AppSlice } from './slices/app-slice';
-
-type AppStore = HabitsSlice & GoalsSlice & JournalSlice & TablesSlice & AppSlice;
+import { createTasksSlice, TasksSlice } from './slices/tasks-slice';
+export type AppStore = HabitsSlice & GoalsSlice & JournalSlice & TablesSlice & AppSlice & TasksSlice;
 
 export const useStore = create<AppStore>()(
   devtools(
@@ -19,6 +19,7 @@ export const useStore = create<AppStore>()(
         ...createHabitsSlice(...args),
         ...createTablesSlice(...args),
         ...createAppSlice(...args),
+        ...createTasksSlice(...args),
       }),
       {
         name: 'mindhaven-storage', // всё сохраняется между сессиями

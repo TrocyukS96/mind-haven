@@ -9,6 +9,7 @@ const initialGoals: Goal[] = [
     progress: 40,
     deadline: '2025-12-31',
     category: 'year',
+    tasks: [],
   },
   {
     id: '2',
@@ -17,6 +18,7 @@ const initialGoals: Goal[] = [
     progress: 65,
     deadline: '2025-12-15',
     category: 'month',
+    tasks: [],
   },
 ];
 

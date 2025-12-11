@@ -1,16 +1,23 @@
 // components/modal-provider.tsx  ← отдельный клиентский компонент
 'use client';
 
-import { CreateGoalModal } from '@/features/goal/create-goal';
+import { GoalFormModal } from '@/features/goal';
 import { useStore } from '@/shared/store/store-config';
-
+import { TaskFormModal } from '@/features/task';
 export function ModalProvider() {
-  const { isGoalFormOpen, closeGoalForm } = useStore();
+  const { isGoalFormOpen, closeGoalForm, isTaskFormOpen, closeTaskForm } = useStore();
 
   return (
-    <CreateGoalModal
-      open={isGoalFormOpen}
-      onOpenChange={(open) => !open && closeGoalForm()}
-    />
+    <>
+      <GoalFormModal
+        open={isGoalFormOpen}
+        onOpenChange={(open) => !open && closeGoalForm()}
+      />
+
+      <TaskFormModal
+        open={isTaskFormOpen}
+        onOpenChange={(open) => !open && closeTaskForm()}
+      />
+    </>
   );
 }

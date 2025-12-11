@@ -9,7 +9,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
-const CreateGoalModal = ({ open, onOpenChange }: Props) => {
+const GoalFormModal = ({ open, onOpenChange }: Props) => {
   const { selectedGoal, isGoalFormOpen, openGoalForm, closeGoalForm } = useStore();
 
   return (
@@ -29,4 +29,4 @@ const CreateGoalModal = ({ open, onOpenChange }: Props) => {
   );
 }
 
-export default CreateGoalModal;
+export default GoalFormModal;

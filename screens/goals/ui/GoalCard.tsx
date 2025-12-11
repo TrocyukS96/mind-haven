@@ -4,7 +4,7 @@ import { Goal } from "@/entities/goal/model/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/shared/ui/alert-dialog";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
-import { Brain, Calendar, Edit, MoreVertical, Target, Trash2 } from "lucide-react";
+import { Brain, Calendar, Edit, MoreVertical, Plus, Target, Trash2 } from "lucide-react";
 import { getProgressColor } from "../libs/get-progress-color";
 
 import {
@@ -14,8 +14,12 @@ import {
     DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from 'react-toastify';
+import { useStore } from "@/shared/store/store-config";
+import { cn } from "@/shared/lib/utils";
+import { Badge } from "@/shared/ui/badge";
+import { Checkbox } from "@/shared/ui/checkbox";
 
 interface Props {
     goal: Goal;
@@ -25,7 +29,9 @@ interface Props {
 
 const GoalCard = ({ goal, onEdit, onDelete }: Props) => {
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const {  toggleTask, deleteTask, openTaskForm } = useStore();
 
+    console.log(goal);
 
     return (
         <>
@@ -99,6 +105,56 @@ const GoalCard = ({ goal, onEdit, onDelete }: Props) => {
                             <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
                                 <Target size={20} className="text-primary" />
                             </div>
+                        </div>
+                    </div>
+                    <div className="mt-6 space-y-2">
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-semibold">Шаги к цели</h4>
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => openTaskForm()}
+                            >
+                                <Plus className="h-4 w-4" />
+                            </Button>
+                        </div>
+
+                        <div className="space-y-2">
+                            {goal.tasks.map((task) => (
+                                <div
+                                    key={task.id}
+                                    className="flex items-center gap-3 group"
+                                >
+                                    <Checkbox
+                                        checked={task.completed}
+                                        onCheckedChange={() => toggleTask(task.id)}
+                                    />
+                                    <span
+                                        className={cn(
+                                            'text-sm flex-1',
+                                            task.completed && 'line-through text-muted-foreground'
+                                        )}
+                                    >
+                                        {task.title}
+                                    </span>
+                                    <Badge variant={task.priority === 'urgent' ? 'destructive' : 'secondary'}>
+                                        {task.priority}
+                                    </Badge>
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                                        onClick={() => deleteTask(task.id)}
+                                    >
+                                        <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            ))}
+                            {goal.tasks.length === 0 && (
+                                <p className="text-sm text-muted-foreground italic">
+                                    Нет шагов. Добавь первый!
+                                </p>
+                            )}
                         </div>
                     </div>
                 </CardContent>

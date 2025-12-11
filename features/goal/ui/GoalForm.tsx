@@ -15,13 +15,13 @@ import { Slider } from '@/shared/ui/slider';
 import { useStore } from '@/shared/store/store-config';
 import { Goal, GoalCategory } from '@/entities/goal/model/types';
 
-interface GoalFormProps {
+interface Props {
   goal?: Goal | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function GoalForm({ goal, open, onOpenChange }: GoalFormProps) {
+export function GoalForm({ goal, open, onOpenChange }: Props) {
   const { addGoal, updateGoal } = useStore();
 
   const [title, setTitle] = useState('');
@@ -30,7 +30,6 @@ export function GoalForm({ goal, open, onOpenChange }: GoalFormProps) {
   const [category, setCategory] = useState<Exclude<GoalCategory, 'all'> >('month');
   const [progress, setProgress] = useState(0);
 
-  // Синхронизация при открытии
   useEffect(() => {
     if (goal && open) {
       setTitle(goal.title);
@@ -56,7 +55,7 @@ export function GoalForm({ goal, open, onOpenChange }: GoalFormProps) {
     if (goal) {
       updateGoal(goal.id, goalData);
     } else {
-      addGoal({ ...goalData });
+      addGoal({ ...goalData, tasks: [] });
     }
 
     onOpenChange(false);
