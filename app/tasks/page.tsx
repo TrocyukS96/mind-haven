@@ -6,6 +6,7 @@ import { Checkbox } from '@/shared/ui/checkbox';
 import { Badge } from '@/shared/ui/badge';
 import { Plus, Calendar, Target, Edit, Trash2 } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
+import { TaskCard } from '@/entities/task';
 
 export default function TasksPage() {
   const {
@@ -19,12 +20,12 @@ export default function TasksPage() {
   const goalsMap = Object.fromEntries(goals.map(g => [g.id, g.title]));
 
   // Сортировка: сначала невыполненные, потом выполненные
-//   const sortedTasks = [...tasks].sort((a, b) => {
-//     if (a.completed !== b.completed) {
-//       return a.completed ? 1 : -1;
-//     }
-//     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-//   });
+  //   const sortedTasks = [...tasks].sort((a, b) => {
+  //     if (a.completed !== b.completed) {
+  //       return a.completed ? 1 : -1;
+  //     }
+  //     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  //   });
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 py-8">
@@ -59,84 +60,7 @@ export default function TasksPage() {
       ) : (
         <div className="space-y-3">
           {tasks.map((task) => (
-            <div
-              key={task.id}
-              className={cn(
-                "flex items-center gap-4 p-5 rounded-xl border bg-card hover:shadow-md transition-all",
-                task.completed && "opacity-70"
-              )}
-            >
-              {/* Чекбокс */}
-              <Checkbox
-                checked={task.completed}
-                onCheckedChange={() => toggleTask(task.id)}
-                className="h-5 w-5"
-              />
-
-              {/* Контент */}
-              <div className="flex-1 min-w-0">
-                <p
-                  className={cn(
-                    "font-medium text-base",
-                    task.completed && "line-through text-muted-foreground"
-                  )}
-                >
-                  {task.title}
-                </p>
-
-                <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground">
-                  {task.goalId && (
-                    <div className="flex items-center gap-1.5">
-                      <Target className="h-3.5 w-3.5" />
-                      <span className="truncate max-w-xs">
-                        {goalsMap[task.goalId] || 'Цель удалена'}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {new Date(task.createdAt).toLocaleDateString('ru-RU')}
-                  </div>
-                </div>
-              </div>
-
-              {/* Приоритет */}
-              <Badge
-                variant={
-                  task.priority === 'urgent'
-                    ? 'destructive'
-                    : task.priority === 'high'
-                    ? 'default'
-                    : 'secondary'
-                }
-                className="shrink-0"
-              >
-                {task.priority === 'low' && 'Низкий'}
-                {task.priority === 'medium' && 'Средний'}
-                {task.priority === 'high' && 'Высокий'}
-                {task.priority === 'urgent' && 'Срочно'}
-              </Badge>
-
-              {/* Действия */}
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => openTaskForm(task)}
-                  className="h-8 w-8"
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => deleteTask(task.id)}
-                  className="h-8 w-8 text-destructive/80"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <TaskCard key={task.id} task={task} showGoalTitle />
           ))}
         </div>
       )}

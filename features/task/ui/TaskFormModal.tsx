@@ -7,7 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog';
-import { TaskForm } from './TaskForm';
+import TaskForm from './TaskForm';
+import { useStore } from '@/shared/store/store-config';
 
 interface Props {
   task?: Task | null;
@@ -15,19 +16,21 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
-const TaskFormModal = ({ task, open, onOpenChange }: Props) => {
-  const isEdit = !!task;
+const TaskFormModal = ({ open, onOpenChange }: Props) => {
+  const { selectedTask, isTaskFormOpen, openTaskForm, closeTaskForm } = useStore();
+
+  console.log(selectedTask,'selectedTask');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? 'Редактировать задачу' : 'Новая задача'}
+            {selectedTask ? 'Редактировать задачу' : 'Новая задача'}
           </DialogTitle>
         </DialogHeader>
 
-        <TaskForm task={task} open={open} onOpenChange={onOpenChange} />
+        <TaskForm  task={selectedTask} open={isTaskFormOpen} onOpenChange={(open) => !open && closeTaskForm()} />
       </DialogContent>
     </Dialog>
   );

@@ -6,12 +6,13 @@ export interface TasksSlice {
     tasks: Task[];
     selectedTask: Task | null;
     isTaskFormOpen: boolean;
+    defaultGoalId?: string;
 
     addTask: (title: string, goalId?: string, priority?: TaskPriority) => void;
     toggleTask: (id: string) => void;
     updateTask: (id: string, updates: Partial<Task>) => void;
-    deleteTask: (id: string) => void;
-    openTaskForm: (task?: Task) => void;
+    deleteTask: (task: Task) => void;
+    openTaskForm: (task?: Task, goalId?: string) => void;
     closeTaskForm: () => void;
 }
 
@@ -26,7 +27,7 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
     tasks: [],
     selectedTask: null,
     isTaskFormOpen: false,
-
+    defaultGoalId: undefined,
     addTask: (title, goalId, priority = 'medium') => {
         const newTask: Task = {
             id: Date.now().toString(),
@@ -89,26 +90,47 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
         }
     },
 
-    deleteTask: (id) =>
+    deleteTask: (task: Task) => {
         set((state) => ({
-            tasks: state.tasks.filter((t) => t.id !== id),
-        })),
+            tasks: state.tasks.filter((t) => t.id !== task.id),
+        }))
+
+        if (task.goalId) {
+            set((state) => {
+                const goal = state.goals.find((g) => g.id === task.goalId!);
+                if (!goal) return state;
+
+                const tasks = goal.tasks.filter((t) => t.id !== task.id);
+                const progress = calculateProgress(tasks);
+
+                return {
+                    goals: state.goals.map((g) =>
+                        g.id === task.goalId ? { ...g, tasks, progress } : g
+                    ),
+                };
+            });
+        }
+
+    },
 
     updateTask: (id, updates) =>
         set((state) => ({
             tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
         })),
 
-    openTaskForm: (task) =>
+    openTaskForm: (task, goalId) =>{
+        console.log(goalId,'goalId');
         set({
             selectedTask: task || null,
             isTaskFormOpen: true,
-        }),
-
+            defaultGoalId: goalId,
+        });
+    },
     closeTaskForm: () =>
         set({
             selectedTask: null,
             isTaskFormOpen: false,
+            defaultGoalId: undefined,
         }),
 
 });

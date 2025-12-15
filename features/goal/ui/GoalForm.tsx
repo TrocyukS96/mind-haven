@@ -14,6 +14,7 @@ import { Label } from '@/shared/ui/label';
 import { Slider } from '@/shared/ui/slider';
 import { useStore } from '@/shared/store/store-config';
 import { Goal, GoalCategory } from '@/entities/goal/model/types';
+import { Calendar } from 'lucide-react';
 
 interface Props {
   goal?: Goal | null;
@@ -98,7 +99,7 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
           </div>
 
           {/* Прогресс — только в режиме редактирования */}
-          {isEditMode && (
+          {isEditMode && goal?.tasks.length === 0 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label>Прогресс</Label>
@@ -123,9 +124,9 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
                 id="deadline"
                 type="date"
                 value={deadline}
+                className="text-primary mt-2"
                 onChange={(e) => setDeadline(e.target.value)}
                 required
-                className="mt-2"
               />
             </div>
 

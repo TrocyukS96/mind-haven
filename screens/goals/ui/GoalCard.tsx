@@ -14,24 +14,18 @@ import {
     DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
 
-import { useMemo, useState } from "react";
-import { toast } from 'react-toastify';
+import { TaskCard } from "@/entities/task";
 import { useStore } from "@/shared/store/store-config";
-import { cn } from "@/shared/lib/utils";
-import { Badge } from "@/shared/ui/badge";
-import { Checkbox } from "@/shared/ui/checkbox";
+import { useState } from "react";
+import { toast } from 'react-toastify';
 
 interface Props {
     goal: Goal;
-    onEdit?: (goal: Goal) => void;
-    onDelete?: (id: string) => void;
 }
 
-const GoalCard = ({ goal, onEdit, onDelete }: Props) => {
+const GoalCard = ({ goal }: Props) => {
+    const { openTaskForm, deleteGoal, openGoalForm } = useStore();
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-    const {  toggleTask, deleteTask, openTaskForm } = useStore();
-
-    console.log(goal);
 
     return (
         <>
@@ -53,7 +47,7 @@ const GoalCard = ({ goal, onEdit, onDelete }: Props) => {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-48">
-                                        <DropdownMenuItem onClick={() => onEdit?.(goal)}>
+                                        <DropdownMenuItem onClick={() => openGoalForm(goal)}>
                                             <Edit className="mr-2 h-4 w-4" />
                                             Редактировать
                                         </DropdownMenuItem>
@@ -78,7 +72,6 @@ const GoalCard = ({ goal, onEdit, onDelete }: Props) => {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
-
                         </div>
 
                         <div>
@@ -99,7 +92,7 @@ const GoalCard = ({ goal, onEdit, onDelete }: Props) => {
 
                         <div className="flex items-center justify-between pt-2 border-t border-border">
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Calendar size={16} />
+                                <Calendar size={16} className="text-primary" />
                                 <span>{new Date(goal.deadline).toLocaleDateString('ru-RU')}</span>
                             </div>
                             <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
@@ -113,7 +106,7 @@ const GoalCard = ({ goal, onEdit, onDelete }: Props) => {
                             <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => openTaskForm()}
+                                onClick={() => openTaskForm(undefined, goal.id)}
                             >
                                 <Plus className="h-4 w-4" />
                             </Button>
@@ -121,34 +114,7 @@ const GoalCard = ({ goal, onEdit, onDelete }: Props) => {
 
                         <div className="space-y-2">
                             {goal.tasks.map((task) => (
-                                <div
-                                    key={task.id}
-                                    className="flex items-center gap-3 group"
-                                >
-                                    <Checkbox
-                                        checked={task.completed}
-                                        onCheckedChange={() => toggleTask(task.id)}
-                                    />
-                                    <span
-                                        className={cn(
-                                            'text-sm flex-1',
-                                            task.completed && 'line-through text-muted-foreground'
-                                        )}
-                                    >
-                                        {task.title}
-                                    </span>
-                                    <Badge variant={task.priority === 'urgent' ? 'destructive' : 'secondary'}>
-                                        {task.priority}
-                                    </Badge>
-                                    <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                                        onClick={() => deleteTask(task.id)}
-                                    >
-                                        <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                </div>
+                                <TaskCard key={task.id} task={task}  />
                             ))}
                             {goal.tasks.length === 0 && (
                                 <p className="text-sm text-muted-foreground italic">
@@ -160,6 +126,7 @@ const GoalCard = ({ goal, onEdit, onDelete }: Props) => {
                 </CardContent>
             </Card>
 
+            {/* Подтверждение удаления цели */}
             <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -170,7 +137,10 @@ const GoalCard = ({ goal, onEdit, onDelete }: Props) => {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Отмена</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => onDelete?.(goal.id)} className="bg-destructive text-destructive-foreground">
+                        <AlertDialogAction onClick={() => {
+                            deleteGoal(goal.id);
+                            toast.success('Цель удалена');
+                        }} className="bg-destructive text-destructive-foreground">
                             Удалить
                         </AlertDialogAction>
                     </AlertDialogFooter>

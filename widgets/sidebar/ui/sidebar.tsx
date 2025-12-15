@@ -20,10 +20,10 @@ import { useAppStore } from '@/shared/store/slices/app-slice';
 const menuItems = [
   { id: 'dashboard', label: 'Главная', icon: Home, href: '/' },
   { id: 'goals', label: 'Цели', icon: Target, href: '/goals' },
+  { id: 'tasks', label: 'Задачи', icon: CheckSquare, href: '/tasks' },
   { id: 'journal', label: 'Журнал', icon: BookOpen, href: '/journal' },
   { id: 'habits', label: 'Привычки', icon: CheckSquare, href: '/habits' },
   { id: 'tables', label: 'Таблицы', icon: Table, href: '/tables' },
-  { id: 'tasks', label: 'Задачи', icon: CheckSquare, href: '/tasks' },
 ];
 
 export function Sidebar() {
