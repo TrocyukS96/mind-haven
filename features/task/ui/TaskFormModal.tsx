@@ -19,19 +19,21 @@ interface Props {
 const TaskFormModal = ({ open, onOpenChange }: Props) => {
   const { selectedTask, isTaskFormOpen, openTaskForm, closeTaskForm } = useStore();
 
-  console.log(selectedTask,'selectedTask');
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>
-            {selectedTask ? 'Редактировать задачу' : 'Новая задача'}
-          </DialogTitle>
-        </DialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange} >
+      {
+        open && (
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedTask ? 'Редактировать задачу' : 'Новая задача'}
+              </DialogTitle>
+            </DialogHeader>
 
-        <TaskForm  task={selectedTask} open={isTaskFormOpen} onOpenChange={(open) => !open && closeTaskForm()} />
-      </DialogContent>
+            <TaskForm task={selectedTask} open={isTaskFormOpen} onOpenChange={(open) => !open && closeTaskForm()} />
+          </DialogContent>
+        )
+      }
     </Dialog>
   );
 }
