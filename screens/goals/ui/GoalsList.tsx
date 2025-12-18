@@ -7,7 +7,6 @@ import { useStore } from "@/shared/store/store-config";
 
 const GoalsList = ({ filteredGoals }: { filteredGoals: Goal[] }) => {
     const openGoalForm = useStore((state) => state.openGoalForm);
-    const deleteGoal = useStore((state) => state.deleteGoal);
 
     return (
         <>
@@ -16,8 +15,6 @@ const GoalsList = ({ filteredGoals }: { filteredGoals: Goal[] }) => {
                     <GoalCard
                         goal={goal}
                         key={goal.id}
-                        onEdit={() => openGoalForm(goal)}
-                        onDelete={() => deleteGoal(goal.id)}
                     />
                 ))}
             </div>
