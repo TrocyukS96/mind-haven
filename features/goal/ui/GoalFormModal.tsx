@@ -14,19 +14,19 @@ const GoalFormModal = ({ open, onOpenChange }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {open && (
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Новая цель (SMART)</DialogTitle>
-          </DialogHeader>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>
+            {selectedGoal ? 'Редактировать цель' : 'Новая цель (SMART)'}
+          </DialogTitle>
+        </DialogHeader>
 
-          <GoalForm
-            goal={selectedGoal}
-            open={isGoalFormOpen}
-            onOpenChange={(open) => !open && closeGoalForm()}
-          />
-        </DialogContent>
-      )}
+        <GoalForm
+          goal={selectedGoal}
+          open={isGoalFormOpen}
+          onOpenChange={(open) => !open && closeGoalForm()}
+        />
+      </DialogContent>
     </Dialog>
   );
 }

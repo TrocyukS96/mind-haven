@@ -1,26 +1,7 @@
 import { Goal } from '@/entities/goal/model/types';
 import { StateCreator } from 'zustand';
 
-const initialGoals: Goal[] = [
-  {
-    id: '1',
-    title: 'Прочитать 12 книг',
-    description: 'Читать минимум 1 книгу в месяц для расширения кругозора',
-    progress: 40,
-    deadline: '2025-12-31',
-    category: 'year',
-    tasks: [],
-  },
-  {
-    id: '2',
-    title: 'Запустить свой проект',
-    description: 'Разработать и запустить веб-приложение для саморазвития',
-    progress: 65,
-    deadline: '2025-12-15',
-    category: 'month',
-    tasks: [],
-  },
-];
+const initialGoals: Goal[] = [];
 
 export interface GoalsSlice {
   goals: Goal[];

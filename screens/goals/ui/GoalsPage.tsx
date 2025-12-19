@@ -62,28 +62,6 @@ const GoalsPage = () => {
             </div>
 
             <GoalsList filteredGoals={filteredGoals} />
-
-            {filteredGoals.length === 0 && (
-                <div className="text-center py-20">
-                    <div className="mx-auto w-24 h-24 bg-muted/50 rounded-full flex items-center justify-center mb-6">
-                        {searchQuery || filter !== 'all' ? (
-                            <div className="text-muted-foreground text-4xl">MagnifyingGlass</div>
-                        ) : (
-                            <div className="text-muted-foreground text-4xl">Target</div>
-                        )}
-                    </div>
-                    <h3 className="text-xl font-medium text-foreground/80">
-                        {searchQuery || filter !== 'all'
-                            ? 'Цели не найдены'
-                            : 'У тебя пока нет целей'}
-                    </h3>
-                    <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-                        {searchQuery || filter !== 'all'
-                            ? 'Попробуй изменить поисковый запрос или сбросить фильтр'
-                            : 'Создай первую цель — и начни двигаться к своим мечтам'}
-                    </p>
-                </div>
-            )}
         </div>
     );
 };

@@ -44,7 +44,7 @@ export function Sidebar() {
       <aside
         className={cn(
           "fixed lg:static inset-y-0 left-0 z-40",
-          "w-64 bg-[#f3f4f6] dark:bg-[var(--sidebar)] border-r border-border text-foreground",
+          "w-64 bg-muted dark:bg-[var(--sidebar)] border-r border-border text-foreground",
           "transform transition-transform duration-200 ease-in-out",
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}

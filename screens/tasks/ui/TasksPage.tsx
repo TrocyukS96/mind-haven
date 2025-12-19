@@ -1,11 +1,11 @@
 'use client';
 
-import { Button } from "@/shared/ui/button";
-import { Plus, Target, List, Kanban } from "lucide-react";
-import { useStore } from "@/shared/store/store-config";
 import { TaskCard } from "@/entities/task/ui/TaskCard";
+import { useStore } from "@/shared/store/store-config";
+import { Button } from "@/shared/ui/button";
+import { Kanban, List, Plus } from "lucide-react";
 import { useState } from "react";
-import { cn } from "@/shared/lib/utils";
+import TasksEmptyState from "./TasksEmptyState";
 
 type ViewMode = 'list' | 'kanban';
 
@@ -59,15 +59,8 @@ const TasksPage = () => {
       {/* Список */}
       {viewMode === 'list' && (
         <div className="space-y-3">
-          {tasks.length === 0 ? (
-            <div className="text-center py-20">
-              <Target className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-medium">Задач пока нет</h3>
-              <p className="text-muted-foreground">Создай первую задачу</p>
-            </div>
-          ) : (
-            tasks.map(task => <TaskCard key={task.id} task={task} showGoalTitle />)
-          )}
+          {tasks.length === 0 && <TasksEmptyState />} 
+          {tasks.length > 0 && tasks.map(task => <TaskCard key={task.id} task={task} showGoalTitle />)}
         </div>
       )}
 
