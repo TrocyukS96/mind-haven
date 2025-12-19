@@ -8,4 +8,5 @@ export interface Task {
   goalId?: string;        // если есть — привязана к цели
   createdAt: string;
   completedAt?: string;
+  deadline?: string;
 }

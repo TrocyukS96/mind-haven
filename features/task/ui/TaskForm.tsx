@@ -29,7 +29,8 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
   const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'medium');
   const [goalId, setGoalId] = useState<string>(task?.goalId || defaultGoalId || 'none');
   const [completed, setCompleted] = useState(task?.completed || false);
-
+  const [deadline, setDeadline] = useState(task?.deadline || '');
+  
   const isEditMode = !!task;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -132,6 +133,17 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
           </Label>
         </div>
       )}
+
+      <div className="space-y-2">
+        <Label htmlFor="deadline">Дедлайн (необязательно)</Label>
+        <Input
+          id="deadline"
+          type="date"
+          value={deadline}
+          onChange={(e) => setDeadline(e.target.value)}
+          className="w-full"
+        />
+      </div>
 
       {/* Кнопки */}
       <div className="flex justify-end gap-3 pt-6 border-t border-border">

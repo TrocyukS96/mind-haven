@@ -1,95 +1,116 @@
+// app/tasks/page.tsx
 'use client';
 
-import { TaskCard } from "@/entities/task/ui/TaskCard";
-import { useStore } from "@/shared/store/store-config";
 import { Button } from "@/shared/ui/button";
-import { Kanban, List, Plus } from "lucide-react";
-import { useState } from "react";
+import { Plus, Target } from "lucide-react";
+import { useStore } from "@/shared/store/store-config";
+import { TaskCard } from "@/entities/task/ui/TaskCard";
+import { format, isToday, isTomorrow, addDays, isWithinInterval, startOfWeek, endOfWeek } from "date-fns";
+import { ru } from "date-fns/locale";
+import { useMemo, useState } from "react";
 import TasksEmptyState from "./TasksEmptyState";
+import { Task } from "@/entities/task/model/types";
 
-type ViewMode = 'list' | 'kanban';
+type ViewMode = 'list' | 'by-day';
 
 const TasksPage = () => {
   const { tasks, openTaskForm } = useStore();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
 
-  const todo = tasks.filter(t => !t.completed);
-  const done = tasks.filter(t => t.completed);
+  const tasksByDay = useMemo(() => {
+    const groups = {
+      today: [] as Task[],
+      tomorrow: [] as Task[],
+      thisWeek: [] as Task[],
+      later: [] as Task[],
+      backlog: [] as Task[],
+    };
 
-  return (
-    <div className="max-w-7xl mx-auto space-y-6 py-8">
-      {/* Заголовок и переключатель */}
+    tasks.forEach((task) => {
+      if (!task.deadline) {
+        groups.backlog.push(task);
+        return;
+      }
+
+      const date = new Date(task.deadline);
+      if (isToday(date)) groups.today.push(task);
+      else if (isTomorrow(date)) groups.tomorrow.push(task);
+      else if (isWithinInterval(date, { start: addDays(new Date(), 2), end: endOfWeek(new Date()) })) groups.thisWeek.push(task);
+      else groups.later.push(task);
+    });
+
+    return groups;
+  }, [tasks]);
+
+  const DaySection = ({ title, tasks, dateLabel }: { title: string; tasks: Task[]; dateLabel?: string }) => (
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Список дел</h1>
-          <p className="text-muted-foreground mt-1">
-            {todo.length} активных • {done.length} выполненных
-          </p>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="flex rounded-lg border bg-card p-1">
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-              className="gap-2"
-            >
-              <List className="h-4 w-4" />
-              Список
-            </Button>
-            <Button
-              variant={viewMode === 'kanban' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('kanban')}
-              className="gap-2"
-            >
-              <Kanban className="h-4 w-4" />
-              Канбан
-            </Button>
-          </div>
-
-          <Button onClick={() => openTaskForm()} size="lg">
-            <Plus className="mr-2 h-5 w-5" />
-            Новая задача
-          </Button>
-        </div>
+        <h2 className="text-xl font-semibold">
+          {title} {dateLabel && <span className="text-muted-foreground text-base">— {dateLabel}</span>} ({tasks.length})
+        </h2>
+        <Button size="sm" onClick={() => openTaskForm()}>
+          <Plus className="h-4 w-4 mr-1" />
+          Добавить
+        </Button>
       </div>
 
-      {/* Список */}
+      {tasks.length === 0 ? (
+        <div className="text-center py-12 bg-muted/30 rounded-xl">
+          <Target className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
+          <p className="text-muted-foreground">Нет задач</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {tasks.map((task) => (
+            <div key={task.id} className="bg-card rounded-xl border shadow-sm hover:shadow-md transition-shadow p-4">
+              <TaskCard task={task} showGoalTitle />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-8 py-8">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Список дел</h1>
+        <Button onClick={() => openTaskForm()} size="lg">
+          <Plus className="mr-2 h-5 w-5" />
+          Новая задача
+        </Button>
+      </div>
+
+      <div className="flex rounded-lg border bg-card p-1 w-max">
+        <Button variant={viewMode === 'list' ? 'default' : 'ghost'} onClick={() => setViewMode('list')}>
+          Список
+        </Button>
+        <Button variant={viewMode === 'by-day' ? 'default' : 'ghost'} onClick={() => setViewMode('by-day')}>
+          По дням
+        </Button>
+      </div>
+
       {viewMode === 'list' && (
         <div className="space-y-3">
-          {tasks.length === 0 && <TasksEmptyState />} 
-          {tasks.length > 0 && tasks.map(task => <TaskCard key={task.id} task={task} showGoalTitle />)}
+          {tasks.length === 0 ? <TasksEmptyState /> : tasks.map(task => <TaskCard key={task.id} task={task} showGoalTitle />)}
         </div>
       )}
 
-      {/* Канбан */}
-      {viewMode === 'kanban' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* To Do */}
-          <div className="rounded-xl border bg-card/50 p-4">
-            <h3 className="font-semibold mb-4 text-lg">К выполнению ({todo.length})</h3>
-            <div className="space-y-3">
-              {todo.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">Нет задач</p>
-              ) : (
-                todo.map(task => <TaskCard key={task.id} task={task} showGoalTitle />)
-              )}
-            </div>
-          </div>
-
-          {/* Done */}
-          <div className="rounded-xl border bg-card/50 p-4">
-            <h3 className="font-semibold mb-4 text-lg">Выполнено ({done.length})</h3>
-            <div className="space-y-3">
-              {done.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">Нет выполненных задач</p>
-              ) : (
-                done.map(task => <TaskCard key={task.id} task={task} showGoalTitle />)
-              )}
-            </div>
-          </div>
+      {viewMode === 'by-day' && (
+        <div className="space-y-12">
+          <DaySection
+            title="Сегодня"
+            tasks={tasksByDay.today}
+            dateLabel={format(new Date(), 'd MMMM', { locale: ru })}
+          />
+          <DaySection
+            title="Завтра"
+            tasks={tasksByDay.tomorrow}
+            dateLabel={format(addDays(new Date(), 1), 'd MMMM', { locale: ru })}
+          />
+          <DaySection title="На этой неделе" tasks={tasksByDay.thisWeek} />
+          <DaySection title="Позже" tasks={tasksByDay.later} />
+          <DaySection title="Бэклог (без срока)" tasks={tasksByDay.backlog} />
         </div>
       )}
     </div>
