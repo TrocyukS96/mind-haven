@@ -9,6 +9,7 @@ import Link from 'next/link';
 export function DashboardWidget() {
   const { journalEntries, goals, habits, tables } = useStore();
   const openGoalForm = useStore((state) => state.openGoalForm);
+  
   const stats = [
     { label: 'Записей в журнале', value: journalEntries.length, icon: BookOpen, color: 'hsl(var(--primary))' },
     { label: 'Активных целей', value: goals.length, icon: Target, color: 'hsl(var(--secondary))' },

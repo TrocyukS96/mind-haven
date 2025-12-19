@@ -1,5 +1,5 @@
-import { DashboardWidget } from '@/widgets/dashboard/ui/dashboard-widget';
+import { HomePage } from "@/screens/home";
 
-export default function HomePage() {
-  return <DashboardWidget />;
+export default function Page() {
+  return <HomePage />;
 }

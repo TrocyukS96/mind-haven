@@ -1,21 +1,21 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useTheme } from '@/shared/hooks/use-theme';
+import { cn } from '@/shared/lib/utils';
+import {
+  BookOpen,
+  CheckSquare,
+  Home,
+  Menu,
+  Moon,
+  Sun,
+  Table,
+  Target,
+  X,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  Home,
-  BookOpen,
-  Target,
-  CheckSquare,
-  Table,
-  Menu,
-  X,
-  Sun,
-  Moon,
-} from 'lucide-react';
-import { cn } from '@/shared/lib/utils';
-import { useAppStore } from '@/shared/store/slices/app-slice';
+import { useState } from 'react';
 
 const menuItems = [
   { id: 'dashboard', label: 'Главная', icon: Home, href: '/' },
@@ -28,35 +28,14 @@ const menuItems = [
 
 export function Sidebar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [themeReady, setThemeReady] = useState(false);
-  const { theme, setTheme } = useAppStore();
   const pathname = usePathname();
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setTheme(prefersDark ? 'dark' : 'light');
-    document.documentElement.classList.toggle('dark', prefersDark);
-
-    setThemeReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (!themeReady || typeof window === 'undefined') return;
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme, themeReady]);
-
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
-  };
-
+  const { theme, toggleTheme } = useTheme();
+  
   return (
     <>
-      {/* Mobile Menu Button */}
       <button
         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white shadow-md"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md"
       >
         {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
@@ -70,8 +49,8 @@ export function Sidebar() {
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="h-full flex flex-col">
-          <div className="flex-1 p-6">
+        <div className="h-full flex flex-col pb-24">
+          <div className="flex-1 p-6 overflow-y-auto">
             <h2 className="mb-8 text-lg font-semibold">Саморазвитие</h2>
             <nav className="space-y-2">
               {menuItems.map((item) => {
@@ -97,19 +76,28 @@ export function Sidebar() {
               })}
             </nav>
           </div>
-
-          <div className="border-t border-border p-6">
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="w-full flex items-center justify-between rounded-lg border border-border bg-background px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-            >
-              <span>{theme === 'dark' ? 'Темная тема' : 'Светлая тема'}</span>
-              {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
-            </button>
-          </div>
         </div>
       </aside>
+
+      {/* Fixed Theme Toggle Button */}
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className={cn(
+          "fixed left-0 z-40 cursor-pointer",
+          "w-64 bg-[#f3f4f6] dark:bg-[var(--sidebar)]",
+          "border-t border-r border-border",
+          "flex items-center justify-between px-6 py-4",
+          "text-sm font-medium text-foreground transition-colors",
+          "hover:bg-accent",
+          "transform transition-transform duration-200 ease-in-out",
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+          "bottom-0"
+        )}
+      >
+        <span>{theme === 'dark' ? 'Темная тема' : 'Светлая тема'}</span>
+        {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+      </button>
 
       {/* Mobile Overlay */}
       {mobileMenuOpen && (

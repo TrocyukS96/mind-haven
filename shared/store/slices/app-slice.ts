@@ -6,7 +6,7 @@ export interface AppSlice {
   }
 
 export const createAppSlice: StateCreator<AppSlice> = (set) => ({
-    theme: 'light',
+    theme: 'dark',
     setTheme: (theme: 'light' | 'dark') => set({ theme }),
   });
   
