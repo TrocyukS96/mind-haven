@@ -14,7 +14,6 @@ import {
   SelectValue,
 } from "@/shared/ui/select";
 import { useEffect, useState } from "react";
-import { toast } from "react-toastify";
 
 interface Props {
   task?: Task | null;
@@ -23,7 +22,7 @@ interface Props {
 }
 
 const TaskForm = ({ task, open, onOpenChange }: Props) => {
-  const { goals, addTask, updateTask, defaultGoalId } = useStore();
+  const { goals, addTask, updateTask, defaultGoalId, defaultDeadline } = useStore();
 
   const [title, setTitle] = useState(task?.title || '');
   const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'medium');
@@ -35,24 +34,20 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      toast.error('Название задачи не может быть пустым');
-      return;
-    };
+    if (!title.trim()) return;
 
     const finalGoalId = goalId === 'none' ? undefined : goalId;
-    const finalDeadline = deadline ? new Date(deadline).toISOString() : undefined;
+    const finalDeadline = deadline || undefined;
 
     if (isEditMode && task) {
       updateTask(task.id, {
         title: title.trim(),
         priority,
         goalId: finalGoalId,
-        completed,
         deadline: finalDeadline,
       });
     } else {
-      addTask(title.trim(), finalGoalId, priority);
+      addTask(title.trim(), finalGoalId, priority, finalDeadline);
     }
 
     onOpenChange(false);
@@ -64,18 +59,15 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
         setTitle(task.title);
         setPriority(task.priority);
         setGoalId(task.goalId || 'none');
-        setCompleted(task.completed);
         setDeadline(task.deadline || '');
       } else {
         setTitle('');
         setPriority('medium');
-        setGoalId('none');
-        setCompleted(false);
-        setDeadline('');
+        setGoalId(defaultGoalId || 'none');
+        setDeadline(defaultDeadline || '');
       }
     }
-
-  }, [open, task]);
+  }, [task, open, defaultGoalId, defaultDeadline]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -107,7 +99,7 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
           </Select>
         </div>
 
-        <div>
+        <div className="space-y-2">
           <Label htmlFor="deadline">Дедлайн</Label>
           <Input
             id="deadline"
@@ -117,6 +109,7 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
             className="mt-2"
           />
         </div>
+
       </div>
 
       <div>
