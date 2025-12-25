@@ -5,14 +5,16 @@ import { AppStore } from '../store-config';
 export interface TasksSlice {
     tasks: Task[];
     selectedTask: Task | null;
+    dailyTasks: Record<string, string[]>;
     isTaskFormOpen: boolean;
     defaultGoalId?: string;
+    defaultDeadline?: string;
 
     addTask: (title: string, goalId?: string, priority?: TaskPriority) => void;
     toggleTask: (id: string) => void;
     updateTask: (id: string, updates: Partial<Task>) => void;
     deleteTask: (task: Task) => void;
-    openTaskForm: (task?: Task, goalId?: string) => void;
+    openTaskForm: (task?: Task, goalId?: string, deadline?: string) => void;
     closeTaskForm: () => void;
 }
 
@@ -25,10 +27,11 @@ const calculateProgress = (subtasks: Task[]) => {
 
 export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set, get,) => ({
     tasks: [],
+    dailyTasks: {},
     selectedTask: null,
     isTaskFormOpen: false,
     defaultGoalId: undefined,
-    addTask: (title, goalId, priority = 'medium') => {
+    addTask: (title, goalId, priority = 'medium', deadline?: string) => {
         const newTask: Task = {
             id: Date.now().toString(),
             title: title.trim(),
@@ -41,6 +44,16 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
         set((state) => ({
             tasks: [...state.tasks, newTask],
         }));
+
+        if (deadline) {
+            const day = deadline.split('T')[0];
+            set((state) => ({
+                dailyTasks: {
+                    ...state.dailyTasks,
+                    [day]: [...(state.dailyTasks[day] || []), newTask.id],
+                },
+            }));
+        }
 
         if (goalId) {
             set((state) => {
@@ -95,6 +108,16 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
             tasks: state.tasks.filter((t) => t.id !== task.id),
         }))
 
+        if (task?.deadline) {
+            const day = task.deadline.split('T')[0];
+            set((state) => ({
+              dailyTasks: {
+                ...state.dailyTasks,
+                [day]: state.dailyTasks[day].filter(taskId => taskId !== task.id),
+              },
+            }));
+          }
+
         if (task.goalId) {
             set((state) => {
                 const goal = state.goals.find((g) => g.id === task.goalId!);
@@ -113,17 +136,31 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
 
     },
 
-    updateTask: (id, updates) =>
+    updateTask: (id, updates: Partial<Task> & { deadline?: string }) => {
         set((state) => ({
             tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
-        })),
+        }));
 
-    openTaskForm: (task, goalId) =>{
-        console.log(goalId,'goalId');
+        if (updates.deadline) {
+            const newDay = updates.deadline.split('T')[0];
+            set((state) => ({
+                dailyTasks: {
+                    ...state.dailyTasks,
+                    [newDay]: [...(state.dailyTasks[newDay] || []), id],
+                },
+            }));
+        }
+
+
+    },
+
+    openTaskForm: (task, goalId, deadline) => {
+        console.log(goalId, 'goalId');
         set({
             selectedTask: task || null,
             isTaskFormOpen: true,
             defaultGoalId: goalId,
+            defaultDeadline: deadline || '',
         });
     },
     closeTaskForm: () =>
@@ -131,6 +168,7 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
             selectedTask: null,
             isTaskFormOpen: false,
             defaultGoalId: undefined,
+            defaultDeadline: '',
         }),
 
 });

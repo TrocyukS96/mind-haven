@@ -30,7 +30,7 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
   const [goalId, setGoalId] = useState<string>(task?.goalId || defaultGoalId || 'none');
   const [completed, setCompleted] = useState(task?.completed || false);
   const [deadline, setDeadline] = useState(task?.deadline || '');
-  
+
   const isEditMode = !!task;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -41,6 +41,7 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
     };
 
     const finalGoalId = goalId === 'none' ? undefined : goalId;
+    const finalDeadline = deadline ? new Date(deadline).toISOString() : undefined;
 
     if (isEditMode && task) {
       updateTask(task.id, {
@@ -48,6 +49,7 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
         priority,
         goalId: finalGoalId,
         completed,
+        deadline: finalDeadline,
       });
     } else {
       addTask(title.trim(), finalGoalId, priority);
@@ -56,32 +58,44 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
     onOpenChange(false);
   };
 
+  useEffect(() => {
+    if (open) {
+      if (task) {
+        setTitle(task.title);
+        setPriority(task.priority);
+        setGoalId(task.goalId || 'none');
+        setCompleted(task.completed);
+        setDeadline(task.deadline || '');
+      } else {
+        setTitle('');
+        setPriority('medium');
+        setGoalId('none');
+        setCompleted(false);
+        setDeadline('');
+      }
+    }
+
+  }, [open, task]);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Название задачи */}
-      <div className="space-y-2">
-        <Label htmlFor="title" className="text-base font-medium">
-          Название задачи
-        </Label>
+      <div>
+        <Label htmlFor="title">Название задачи</Label>
         <Input
           id="title"
-          placeholder="Например: Подготовить презентацию для команды"
+          placeholder="Например: Подготовить презентацию"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
-          autoFocus
-          className="text-base"
+          className="mt-2"
         />
       </div>
 
-      {/* Приоритет и цель — аккуратная сетка */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <div className="space-y-2">
-          <Label htmlFor="priority" className="text-base font-medium">
-            Приоритет
-          </Label>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="priority">Приоритет</Label>
           <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
-            <SelectTrigger id="priority">
+            <SelectTrigger className="mt-2">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -93,71 +107,54 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="goal" className="text-base font-medium">
-            Привязать к цели
-          </Label>
-          <Select value={goalId} onValueChange={setGoalId}>
-            <SelectTrigger id="goal">
-              <SelectValue placeholder="Без цели" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Без цели</SelectItem>
-              {goals.length === 0 ? (
-                <div className="px-3 py-2 text-sm text-muted-foreground">
-                  Нет доступных целей
-                </div>
-              ) : (
-                goals.map((goal) => (
-                  <SelectItem key={goal.id} value={goal.id}>
-                    {goal.title}
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
+        <div>
+          <Label htmlFor="deadline">Дедлайн</Label>
+          <Input
+            id="deadline"
+            type="date"
+            value={deadline}
+            onChange={(e) => setDeadline(e.target.value)}
+            className="mt-2"
+          />
         </div>
       </div>
 
-      {/* Выполнено — только при редактировании */}
+      <div>
+        <Label htmlFor="goal">Привязать к цели</Label>
+        <Select value={goalId} onValueChange={setGoalId}>
+          <SelectTrigger className="mt-2">
+            <SelectValue placeholder="Без цели" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Без цели</SelectItem>
+            {goals.map((goal) => (
+              <SelectItem key={goal.id} value={goal.id}>
+                {goal.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {isEditMode && (
-        <div className="flex items-center space-x-3 py-2">
+        <div className="flex items-center space-x-2">
           <Checkbox
             id="completed"
             checked={completed}
             onCheckedChange={(checked) => setCompleted(checked as boolean)}
-            className="h-5 w-5"
           />
-          <Label htmlFor="completed" className="text-base cursor-pointer select-none">
+          <Label htmlFor="completed" className="cursor-pointer">
             Отметить как выполненную
           </Label>
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label htmlFor="deadline">Дедлайн (необязательно)</Label>
-        <Input
-          id="deadline"
-          type="date"
-          value={deadline}
-          onChange={(e) => setDeadline(e.target.value)}
-          className="w-full"
-        />
-      </div>
-
-      {/* Кнопки */}
-      <div className="flex justify-end gap-3 pt-6 border-t border-border">
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          onClick={() => onOpenChange(false)}
-          className="px-6"
-        >
+      <div className="flex justify-end gap-3 pt-4">
+        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
           Отмена
         </Button>
-        <Button type="submit" size="lg" className="px-8">
-          {isEditMode ? 'Сохранить изменения' : 'Создать задачу'}
+        <Button type="submit">
+          {isEditMode ? 'Сохранить' : 'Создать задачу'}
         </Button>
       </div>
     </form>
