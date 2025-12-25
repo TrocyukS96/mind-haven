@@ -9,4 +9,5 @@ export interface Task {
   createdAt: string;
   completedAt?: string;
   deadline?: string;
+  overdue?: boolean;
 }

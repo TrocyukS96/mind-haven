@@ -4,6 +4,7 @@ import { Task, TaskPriority } from "@/entities/task/model/types";
 import { useStore } from "@/shared/store/store-config";
 import { Button } from "@/shared/ui/button";
 import { Checkbox } from "@/shared/ui/checkbox";
+import { DatePicker } from "@/shared/ui/date-picker";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import {
@@ -101,12 +102,17 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
 
         <div className="space-y-2">
           <Label htmlFor="deadline">Дедлайн</Label>
-          <Input
+          {/* <Input
             id="deadline"
             type="date"
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
             className="mt-2"
+          /> */}
+          <DatePicker
+            id="deadline"
+            value={deadline}
+            onChange={(date) => setDeadline(date)}
           />
         </div>
 

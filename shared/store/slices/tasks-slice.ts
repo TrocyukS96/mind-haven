@@ -16,6 +16,8 @@ export interface TasksSlice {
     deleteTask: (task: Task) => void;
     openTaskForm: (task?: Task, goalId?: string, deadline?: string) => void;
     closeTaskForm: () => void;
+    getOverdueTasks: () => Task[];
+    markOverdueTasks: () => void;
 }
 
 const calculateProgress = (subtasks: Task[]) => {
@@ -112,12 +114,12 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
         if (task?.deadline) {
             const day = task.deadline.split('T')[0];
             set((state) => ({
-              dailyTasks: {
-                ...state.dailyTasks,
-                [day]: state.dailyTasks[day].filter(taskId => taskId !== task.id),
-              },
+                dailyTasks: {
+                    ...state.dailyTasks,
+                    [day]: state.dailyTasks[day].filter(taskId => taskId !== task.id),
+                },
             }));
-          }
+        }
 
         if (task.goalId) {
             set((state) => {
@@ -156,7 +158,6 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
     },
 
     openTaskForm: (task, goalId, deadline) => {
-        console.log(goalId, 'goalId');
         set({
             selectedTask: task || null,
             isTaskFormOpen: true,
@@ -171,5 +172,28 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
             defaultGoalId: undefined,
             defaultDeadline: undefined,
         }),
+
+    getOverdueTasks: () => {
+        const now = new Date().toISOString().split('T')[0];
+        return get().tasks.filter(task =>
+            task.deadline &&
+            task.deadline < now &&
+            !task.completed
+        );
+    },
+
+    // Вызывай при загрузке приложения или монтировании страницы
+    markOverdueTasks: () => {
+        const overdue = get().getOverdueTasks();
+        if (overdue.length > 0) {
+            set((state) => ({
+                tasks: state.tasks.map(t =>
+                    overdue.some(o => o.id === t.id)
+                        ? { ...t, overdue: true } // добавь поле overdue?: boolean в тип Task
+                        : t
+                ),
+            }));
+        }
+    },
 
 });

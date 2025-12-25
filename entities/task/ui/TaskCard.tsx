@@ -72,6 +72,12 @@ export function TaskCard({ task, showGoalTitle = false }: TaskCardProps) {
           {task.priority === 'urgent' && 'Срочно'}
         </Badge>
 
+        {task.overdue && (
+          <Badge variant="destructive" className="text-xs">
+            Просрочено
+          </Badge>
+        )}
+
         <div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

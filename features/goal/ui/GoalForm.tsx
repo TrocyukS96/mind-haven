@@ -3,12 +3,14 @@
 import { Goal, GoalCategory, GoalType } from '@/entities/goal/model/types';
 import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
+import { DatePicker } from '@/shared/ui/date-picker';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 import { Slider } from '@/shared/ui/slider';
 import { Textarea } from '@/shared/ui/textarea';
 import { useEffect, useState } from 'react';
+import { ru } from 'date-fns/locale';
 
 interface Props {
   goal?: Goal | null;
@@ -110,13 +112,18 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="deadline">Дедлайн</Label>
-          <Input
+          {/* <Input
             id="deadline"
             type="date"
             value={deadline}
             className="text-primary"
             onChange={(e) => setDeadline(e.target.value)}
             required
+          /> */}
+          <DatePicker
+            id="deadline"
+            value={deadline}
+            onChange={(date: string) => setDeadline(date)}
           />
         </div>
 

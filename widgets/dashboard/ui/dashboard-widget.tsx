@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Button } from '@/shared/ui/button';
 import { BookOpen, Calendar, CheckSquare, Plus, Table, Target, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
-
+import { useEffect } from 'react';
+  
 export function DashboardWidget() {
-  const { journalEntries, goals, habits, tables } = useStore();
+  const { journalEntries, goals, habits, tables, markOverdueTasks } = useStore();
   const openGoalForm = useStore((state) => state.openGoalForm);
   
   const stats = [
@@ -51,6 +52,10 @@ export function DashboardWidget() {
       href: '/tables',
     },
   ];
+
+  useEffect(() => {
+    markOverdueTasks();
+  }, [markOverdueTasks]);
 
   return (
     <div className="space-y-8">

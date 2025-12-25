@@ -7,12 +7,31 @@ import { useState } from "react";
 import { TasksByDayMode } from "./TasksByDayMode";
 import { TasksCalendarMode } from "./TasksCalendarMode";
 import { TasksListMode } from "./TasksListMode";
+import { TasksTabs } from "./TasksTabs";
+import { TasksSearch } from "./TasksSearch";
+import { TasksFilter } from "./TasksFilter";
+import { TaskPriority } from "@/entities/task/model/types";
+import { useFilteredTasks } from "@/features/task/hooks/use-filtered-tasks";
 
 type ViewMode = 'list' | 'by-day' | 'calendar';
+
+type FilterState = {
+  priority?: TaskPriority | 'all';
+  overdue?: boolean;
+  dateFrom?: string;
+  dateTo?: string;
+};
 
 const TasksPage = () => {
   const { tasks, openTaskForm } = useStore();
   const [viewMode, setViewMode] = useState<ViewMode>('by-day');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState<FilterState>({ priority: 'all' });
+
+  const filteredTasks = useFilteredTasks(tasks, searchQuery, filter);
+
+  const isFilterActive = Object.values(filter).some(v => v !== undefined && v !== 'all');
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 py-8">
       <div className="flex items-center justify-between">
@@ -23,28 +42,26 @@ const TasksPage = () => {
         </Button>
       </div>
 
-      <div className="flex rounded-lg border bg-card p-1 w-max">
-        <Button variant={viewMode === 'by-day' ? 'default' : 'ghost'} onClick={() => setViewMode('by-day')}>
-          По дням
-        </Button>
-        <Button variant={viewMode === 'calendar' ? 'default' : 'ghost'} onClick={() => setViewMode('calendar')}>
-          Календарь
-        </Button>
-        <Button variant={viewMode === 'list' ? 'default' : 'ghost'} onClick={() => setViewMode('list')}>
-          Список
-        </Button>
+      <div className="grid grid-cols-2 justify-between sm:flex-row gap-4">
+        <div className="col-span-1 flex gap-2">
+          <TasksFilter filter={filter} onApply={setFilter} onReset={() => setFilter({})} isActive={isFilterActive} />
+          <TasksSearch value={searchQuery} onChange={setSearchQuery} />
+        </div>
+        <div className="col-span-1 flex justify-end items-center">
+          <TasksTabs viewMode={viewMode} setViewMode={setViewMode} />
+        </div>
       </div>
 
       {viewMode === 'list' && (
-        <TasksListMode tasks={tasks} />
+        <TasksListMode tasks={filteredTasks} />
       )}
 
       {viewMode === 'by-day' && (
-        <TasksByDayMode tasks={tasks} />
+        <TasksByDayMode tasks={filteredTasks} />
       )}
 
       {viewMode === 'calendar' && (
-        <TasksCalendarMode />
+        <TasksCalendarMode tasks={filteredTasks} />
       )}
     </div>
   );

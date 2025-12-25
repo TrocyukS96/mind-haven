@@ -1,4 +1,3 @@
-// components/TasksCalendarMode.tsx
 'use client';
 
 import { useStore } from "@/shared/store/store-config";
@@ -22,14 +21,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/ui/select";
+import { Task } from "@/entities/task/model/types";
 
 const months = [
   "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
   "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
 ];
 
-export const TasksCalendarMode = () => {
-  const { tasks, dailyTasks, openTaskForm } = useStore();
+interface TasksCalendarModeProps {
+  tasks: Task[];
+}
+
+export const TasksCalendarMode = ({ tasks }: TasksCalendarModeProps) => {
+  const { openTaskForm } = useStore();
+
+  // Создаём dailyTasks из переданных tasks
+  const dailyTasks = tasks.reduce((acc, task) => {
+    if (task.deadline) {
+      const day = task.deadline.split('T')[0];
+      if (!acc[day]) acc[day] = [];
+      acc[day].push(task.id);
+    }
+    return acc;
+  }, {} as Record<string, string[]>);
+
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isDayModalOpen, setIsDayModalOpen] = useState(false);
