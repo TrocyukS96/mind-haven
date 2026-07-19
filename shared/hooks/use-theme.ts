@@ -1,34 +1,39 @@
 'use client';
-import { useEffect, useRef } from "react";
-import { useAppStore } from "../store/slices/app-slice";
+
+import { useEffect, useRef } from 'react';
+import { useAppStore } from '../store/slices/app-slice';
+
+const getStoredTheme = (): 'light' | 'dark' => {
+  const stored = localStorage.getItem('theme');
+  if (stored === 'dark' || stored === 'light') return stored;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
+
+const applyThemeToDocument = (theme: 'light' | 'dark') => {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.classList.toggle('dark', theme === 'dark');
+};
 
 export const useTheme = () => {
-    const { theme, setTheme } = useAppStore();
-    const isInitialized = useRef(false);
+  const { theme, setTheme } = useAppStore();
+  const isInitialized = useRef(false);
 
-    const toggleTheme = () => {
-        const newTheme = theme === 'light' ? 'dark' : 'light';
-        setTheme(newTheme);
-    };
-
-  useEffect(() => {
-    if (isInitialized.current) return;
-
-    const html = document.documentElement;
-    const domTheme =
-      html.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-
-    setTheme(domTheme);
-    isInitialized.current = true;
-  }, [setTheme]);
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  };
 
   useEffect(() => {
-    if (!isInitialized.current) return;
+    if (!isInitialized.current) {
+      isInitialized.current = true;
+      const storedTheme = getStoredTheme();
+      setTheme(storedTheme);
+      applyThemeToDocument(storedTheme);
+      return;
+    }
 
     localStorage.setItem('theme', theme);
-    document.documentElement.setAttribute('data-theme', theme);
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme]);
+    applyThemeToDocument(theme);
+  }, [theme, setTheme]);
 
   return { theme, toggleTheme };
 };

@@ -34,7 +34,31 @@
   },
   "dashboard": {
     "title": "Your room for growth",
-    "subtitle": "Welcome! Start your journey to a better version of yourself.",
+    "subtitle": "Clear your mind — keep tasks, goals, and thoughts in one place",
+    "descriptionSentences": [
+      "MindHaven is a space to move everything that's usually spinning in your head.",
+      "You no longer need to keep tasks, goals, and worries in memory — they're always at hand.",
+      "Here it's easier to see the big picture and understand where you're heading.",
+      "As you build goals, you gradually uncover new details that help you move forward.",
+      "The journal helps you reflect, capture thoughts, and observe yourself from the outside.",
+      "The AI assistant offers guidance, helps refine your plan, and reveals possible sources of anxiety.",
+      "At every step — in goals, tasks, or entries — you get support and clarity.",
+      "Free your mind from the noise and focus on what truly matters."
+    ],
+    "features": {
+      "goals": {
+        "title": "Goals & tasks",
+        "description": "Build structure, break goals into steps, and discover new details along the way"
+      },
+      "journal": {
+        "title": "Journal",
+        "description": "Reflect, capture your thoughts, and observe yourself — awareness starts with writing"
+      },
+      "ai": {
+        "title": "AI assistant",
+        "description": "Helps refine your plan, uncover sources of anxiety, and supports you in every section"
+      }
+    },
     "createGoal": "Create goal",
     "journalEntries": "Journal entries",
     "activeGoals": "Active goals",
