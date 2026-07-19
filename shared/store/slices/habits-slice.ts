@@ -1,52 +1,72 @@
 import { Habit } from '@/entities/habit/model/types';
-import { create, StateCreator } from 'zustand';
+import {
+  buildHabitDayEvent,
+  buildHabitStreakEvent,
+} from '@/entities/points/lib/calculate-points';
+import { tryEarnPoints, tryEarnPointsMany } from '@/entities/points/lib/process-point-event';
+import { StateCreator } from 'zustand';
+import type { AppStore } from '../store-config';
 
-const initialHabits: Habit[] = [
-    {
-      id: '1',
-      name: 'Медитация',
-      frequency: 'Ежедневно',
-      streak: 7,
-      completedDays: ['2025-11-19', '2025-11-18', '2025-11-17', '2025-11-16'],
-    },
-    {
-      id: '2',
-      name: 'Чтение книг',
-      frequency: 'Ежедневно',
-      streak: 12,
-      completedDays: ['2025-11-19', '2025-11-18', '2025-11-17'],
-    },
-  ];
-  
+const initialHabits: Habit[] = [];
 
 export interface HabitsSlice {
-    habits: Habit[];
-    addHabit: (habit: Omit<Habit, 'id' | 'streak' | 'completedDays'>) => void;
-    toggleHabitDay: (id: string, date: string) => void;
+  habits: Habit[];
+  isHabitFormOpen: boolean;
+
+  addHabit: (habit: Omit<Habit, 'id' | 'streak' | 'completedDays'>) => void;
+  toggleHabitDay: (id: string, date: string) => void;
+  deleteHabit: (id: string) => void;
+  openHabitForm: () => void;
+  closeHabitForm: () => void;
 }
 
-export const createHabitsSlice: StateCreator<HabitsSlice> = (set) => ({
+export const createHabitsSlice: StateCreator<AppStore, [], [], HabitsSlice> = (set, get) => ({
   habits: initialHabits,
+  isHabitFormOpen: false,
+
   addHabit: (habit) =>
     set((state) => ({
-      habits: [...state.habits, { ...habit, id: Date.now().toString(), streak: 0, completedDays: [] }],
+      habits: [
+        ...state.habits,
+        { ...habit, id: Date.now().toString(), streak: 0, completedDays: [] },
+      ],
     })),
 
-  toggleHabitDay: (id, date) =>
+  toggleHabitDay: (id, date) => {
+    const habit = get().habits.find((item) => item.id === id);
+    if (!habit) return;
+
+    const wasCompleted = habit.completedDays.includes(date);
+    const nextStreak = wasCompleted ? Math.max(0, habit.streak - 1) : habit.streak + 1;
+
     set((state) => ({
       habits: state.habits.map((h) => {
         if (h.id !== id) return h;
-        const completed = h.completedDays.includes(date);
-        const completedDays = completed
+        const completedDays = wasCompleted
           ? h.completedDays.filter((d) => d !== date)
           : [...h.completedDays, date];
         return {
           ...h,
           completedDays,
-          streak: completed ? Math.max(0, h.streak - 1) : h.streak + 1,
+          streak: nextStreak,
         };
       }),
-    })),
-});
+    }));
 
-export const useHabitsStore = create<HabitsSlice>()(createHabitsSlice);
+    if (!wasCompleted) {
+      tryEarnPointsMany(get, [
+        buildHabitDayEvent(id, date),
+        buildHabitStreakEvent(id, nextStreak),
+      ]);
+    }
+  },
+
+  deleteHabit: (id) =>
+    set((state) => ({
+      habits: state.habits.filter((h) => h.id !== id),
+    })),
+
+  openHabitForm: () => set({ isHabitFormOpen: true }),
+
+  closeHabitForm: () => set({ isHabitFormOpen: false }),
+});

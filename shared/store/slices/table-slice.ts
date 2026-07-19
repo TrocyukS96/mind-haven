@@ -1,6 +1,11 @@
-// src/store/slices/template.ts
 import { TableData } from '@/entities/table/model/types';
-import { create, StateCreator } from 'zustand';
+import {
+  buildTableCellEvent,
+  buildTableRowEvent,
+} from '@/entities/points/lib/calculate-points';
+import { tryEarnPoints } from '@/entities/points/lib/process-point-event';
+import { StateCreator } from 'zustand';
+import type { AppStore } from '../store-config';
 
 const initialTables: TableData[] = [
     {
@@ -23,14 +28,18 @@ export interface TablesSlice {
     deleteTableRow: (tableId: string, rowId: string) => void;
 }
 
-export const createTablesSlice: StateCreator<TablesSlice> = (set) => ({
+export const createTablesSlice: StateCreator<AppStore, [], [], TablesSlice> = (set, get) => ({
     tables: initialTables,
     addTable: (table) =>
         set((state) => ({
             tables: [...state.tables, { ...table, id: Date.now().toString(), rows: [] }],
         })),
 
-    addTableRow: (tableId) =>
+    addTableRow: (tableId) => {
+        const table = get().tables.find((item) => item.id === tableId);
+        if (!table) return;
+
+        const rowId = `${Date.now()}`;
         set((state) => ({
             tables: state.tables.map((t) =>
                 t.id === tableId
@@ -38,14 +47,34 @@ export const createTablesSlice: StateCreator<TablesSlice> = (set) => ({
                         ...t,
                         rows: [
                             ...t.rows,
-                            Object.fromEntries(t.columns.map((col) => [col, ''])) as any,
-                        ].map((row, i) => ({ ...row, id: row.id || Date.now().toString() + i })),
+                            {
+                                ...Object.fromEntries(t.columns.map((col) => [col, ''])),
+                                id: rowId,
+                            },
+                        ],
                     }
                     : t
             ),
-        })),
+        }));
 
-    updateTableCell: (tableId, rowId, column, value) =>
+        tryEarnPoints(get, buildTableRowEvent(tableId, rowId));
+    },
+
+    updateTableCell: (tableId, rowId, column, value) => {
+        if (!value.trim()) {
+            set((state) => ({
+                tables: state.tables.map((t) =>
+                    t.id === tableId
+                        ? {
+                            ...t,
+                            rows: t.rows.map((r) => (r.id === rowId ? { ...r, [column]: value } : r)),
+                        }
+                        : t
+                ),
+            }));
+            return;
+        }
+
         set((state) => ({
             tables: state.tables.map((t) =>
                 t.id === tableId
@@ -55,7 +84,11 @@ export const createTablesSlice: StateCreator<TablesSlice> = (set) => ({
                     }
                     : t
             ),
-        })),
+        }));
+
+        const today = new Date().toISOString().split('T')[0];
+        tryEarnPoints(get, buildTableCellEvent(tableId, rowId, today));
+    },
 
     deleteTableRow: (tableId, rowId) =>
         set((state) => ({
@@ -65,5 +98,3 @@ export const createTablesSlice: StateCreator<TablesSlice> = (set) => ({
         })),
 
 });
-
-export const useTablesStore = create<TablesSlice>()(createTablesSlice);

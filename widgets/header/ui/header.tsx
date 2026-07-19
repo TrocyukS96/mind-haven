@@ -1,5 +1,6 @@
 'use client';
 
+import { PointsBadge } from '@/features/points';
 import { useAccess } from '@/features/access';
 import { SignInButton, SignOutButton } from '@/features/auth';
 import { usePathname, useRouter } from '@/i18n/routing';
@@ -52,6 +53,7 @@ export function Header({ mobileMenuOpen, onMobileMenuToggle }: HeaderProps) {
       </button>
 
       <div className="ml-auto flex items-center gap-2 sm:gap-3">
+        <PointsBadge compact />
         <div className="flex items-center gap-2">
           <Globe size={16} className="hidden text-muted-foreground sm:block" />
           <Select value={locale} onValueChange={handleLocaleChange}>

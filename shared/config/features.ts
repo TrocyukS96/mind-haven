@@ -7,6 +7,7 @@ export const FEATURE_KEYS = [
   'journal',
   'habits',
   'tables',
+  'gamification',
   'analytics',
   'ai_assistant',
   'profile',
@@ -75,6 +76,14 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
   },
   tables: {
     key: 'tables',
+    category: 'core',
+    minRole: 'GUEST',
+    requiresSubscription: false,
+    adminToggleable: true,
+    defaultEnabled: true,
+  },
+  gamification: {
+    key: 'gamification',
     category: 'core',
     minRole: 'GUEST',
     requiresSubscription: false,

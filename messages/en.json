@@ -27,6 +27,7 @@
     "journal": "Journal",
     "habits": "Habits",
     "tables": "Tables",
+    "rewards": "Rewards",
     "admin": "Admin",
     "profile": "Profile",
     "signInWithGoogle": "Sign in with Google",
@@ -91,7 +92,73 @@
     "meditationGoal": "Goal: 7 days of meditation in a row",
     "daysLeft2": "2 days left",
     "weekReview": "Weekly review",
-    "sunday": "Sunday"
+    "sunday": "Sunday",
+    "pointsBalance": "Your points",
+    "pointsRating": "Activity rating",
+    "pointsRecent": "Recent earnings",
+    "pointsEmpty": "No points yet — complete a task or add a journal entry",
+    "viewRewards": "View rewards"
+  },
+  "points": {
+    "pointsShort": "pts",
+    "openRewards": "Rewards",
+    "rewardUnlockedTitle": "Reward unlocked!",
+    "rewardUnlockedDescription": "You've earned enough points — you can treat yourself now.",
+    "rewardUnlockedToast": "Reward available: {title}",
+    "rewardCost": "Cost: {cost} points",
+    "rewardDismiss": "Got it",
+    "reasons": {
+      "task_completed": "Task completed",
+      "task_completed_on_time": "Task completed on time",
+      "task_completed_early": "Task completed early",
+      "task_completed_late": "Overdue task closed",
+      "goal_completed": "Goal achieved",
+      "goal_completed_on_time": "Goal achieved on time",
+      "journal_free_entry": "Journal entry",
+      "journal_reflection": "Reflection",
+      "journal_reflection_full": "Full reflection",
+      "habit_day_completed": "Habit completed",
+      "habit_streak_7": "7-day streak",
+      "habit_streak_30": "30-day streak",
+      "table_row_added": "Table row added",
+      "table_cell_updated": "Table updated",
+      "reward_claimed": "Reward claimed"
+    }
+  },
+  "rewards": {
+    "title": "Rewards",
+    "subtitle": "Earn points for activity and exchange them for rewards",
+    "balance": "Balance: {balance} points",
+    "rating": "Rating: {rating}/100",
+    "platformRewards": "Platform rewards",
+    "personalRewards": "My rewards",
+    "createPersonal": "Create your own reward",
+    "personalHint": "Write a reward for yourself — when you earn enough points, the app will remind you that you can treat yourself.",
+    "titleLabel": "Reward title",
+    "titlePlaceholder": "e.g. Go archery",
+    "descriptionLabel": "Description (optional)",
+    "descriptionPlaceholder": "How do you imagine it?",
+    "costLabel": "Cost in points",
+    "addReward": "Add reward",
+    "claim": "Claim",
+    "claimed": "Claimed",
+    "available": "Available",
+    "locked": "Need {remaining} more points",
+    "delete": "Delete",
+    "platform": {
+      "subscription10": {
+        "title": "10% subscription discount",
+        "description": "One-time discount on your next payment"
+      },
+      "notebook": {
+        "title": "Mind Haven notebook",
+        "description": "Branded notebook for notes and reflection"
+      },
+      "masterclass": {
+        "title": "Masterclass certificate",
+        "description": "Access to an online productivity masterclass"
+      }
+    }
   },
   "tasks": {
     "title": "To-do list",
@@ -268,15 +335,115 @@
     "title": "Reflection journal",
     "subtitle": "Record your thoughts, feelings, and observations",
     "newEntry": "New entry",
+    "editEntry": "Edit entry",
     "searchPlaceholder": "Search entries...",
-    "aiTips": "AI tips",
     "entryHistory": "Entry history",
     "entryTitle": "Entry title",
+    "entryTitlePlaceholder": "Select or enter a title",
+    "createTitle": "Create \"{title}\"",
+    "noTitlesFound": "No titles found",
+    "entryContent": "Entry content",
     "entryContentPlaceholder": "Start writing your thoughts... (Markdown supported)",
-    "insights": {
-      "0": "Based on your entries: you often mention the importance of balance. Try setting clear boundaries between work and rest.",
-      "1": "Your entries show growing awareness. Keep practicing gratitude — it strengthens positive thinking.",
-      "2": "You write about productivity regularly. Maybe try the Pomodoro technique to improve focus."
+    "entryDate": "Date",
+    "createEntry": "Create entry",
+    "tag": "Tag",
+    "noTag": "No tag",
+    "addTag": "Tag",
+    "createTag": "Create new tag",
+    "existingTags": "Existing tags",
+    "tagNamePlaceholder": "Tag name",
+    "removeTag": "Remove tag {name}",
+    "filterByTags": "Filter by tags",
+    "deleteEntryTitle": "Delete entry?",
+    "deleteEntryDescription": "Are you sure you want to delete \"{title}\"? This action cannot be undone.",
+    "noEntriesYet": "No entries yet",
+    "noEntriesFound": "No entries found",
+    "createFirstEntry": "Create your first entry to start your reflection journal",
+    "adjustFilters": "Try adjusting your search or filter settings",
+    "entryType": "Entry type",
+    "entryTypes": {
+      "free": "Free entry",
+      "reflection": "Reflection"
+    },
+    "reflectionPeriod": "Reflection period",
+    "reflectionPeriods": {
+      "day": "Daily",
+      "week": "Weekly",
+      "month": "Monthly",
+      "year": "Yearly"
+    },
+    "reflectionHint": "Answer at least 3 questions — the rest can be skipped. The entry will be generated automatically.",
+    "reflectionAnswerPlaceholder": "Short answer...",
+    "reflectionProgress": "Question {current} of {total}",
+    "reflectionAnsweredCount": "Answers: {count} (min. {min})",
+    "reflectionStep": "Step {number}",
+    "reflectionBack": "Back",
+    "reflectionNext": "Next",
+    "reflectionSkip": "Skip",
+    "reflectionFinishHint": "You can save the entry below",
+    "reflectionNoQuestions": "No questions available for the selected period",
+    "reflectionTitles": {
+      "day": "Reflection for today",
+      "week": "Reflection for the week",
+      "month": "Reflection for the month",
+      "year": "Reflection for the year"
+    },
+    "reflectionTag": "Reflection",
+    "reflectionContentHeader": {
+      "day": "## Reflection for today",
+      "week": "## Reflection for the week",
+      "month": "## Reflection for the month",
+      "year": "## Reflection for the year"
+    },
+    "reflectionQuestions": {
+      "day": {
+        "0": "What moment stood out most today?",
+        "1": "What am I grateful for today?",
+        "2": "What was difficult or stressful?",
+        "3": "What did I learn today?",
+        "4": "How did I take care of myself?",
+        "5": "Who or what brought joy?",
+        "6": "What would I do differently?",
+        "7": "What am I proud of?",
+        "8": "What do I want to focus on tomorrow?",
+        "9": "How would I describe my mood and energy level?"
+      },
+      "week": {
+        "0": "What was the main takeaway of the week?",
+        "1": "What am I grateful for this week?",
+        "2": "What challenges did I overcome?",
+        "3": "What did I learn this week?",
+        "4": "How did I maintain balance and rest?",
+        "5": "Which relationships or moments were especially meaningful?",
+        "6": "What should I improve next week?",
+        "7": "What am I proud of this week?",
+        "8": "What is my main focus for next week?",
+        "9": "How did my state change by the end of the week?"
+      },
+      "month": {
+        "0": "What was the main takeaway of the month?",
+        "1": "What am I grateful for this month?",
+        "2": "What difficulties did I face?",
+        "3": "What key lessons did I learn?",
+        "4": "How did I care for my health and energy?",
+        "5": "Which achievements or joyful events mattered most?",
+        "6": "What didn't work and why?",
+        "7": "What am I proud of this month?",
+        "8": "What goals am I setting for next month?",
+        "9": "How did my inner state change over the month?"
+      },
+      "year": {
+        "0": "How was this year overall?",
+        "1": "What am I grateful for this year?",
+        "2": "What were the main difficulties?",
+        "3": "What are the most valuable lessons of the year?",
+        "4": "How did I grow and change?",
+        "5": "Which people and events influenced me most?",
+        "6": "What would I do differently?",
+        "7": "What am I proud of this year?",
+        "8": "What intention am I taking into the next cycle?",
+        "9": "What word or image describes my year?"
+      }
     }
   },
   "habits": {
@@ -291,23 +458,21 @@
     "activeHabits": "Active habits",
     "bestStreak": "Best streak",
     "completedToday": "Completed today",
-    "motivation": "Motivation",
     "habitTracker": "Habit tracker",
     "habitColumn": "Habit",
     "streakColumn": "Streak",
     "completedTodayBtn": "Completed today",
     "markCompletion": "Mark as done",
+    "noHabits": "No habits yet",
+    "createFirstHabit": "Create your first habit and start tracking your progress every day",
+    "deleteHabitTitle": "Delete habit?",
+    "deleteHabitDescription": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+    "habitDeleted": "Habit deleted",
     "frequencies": {
       "daily": "Daily",
       "threePerWeek": "3 times a week",
       "fivePerWeek": "5 times a week",
       "weekends": "Weekends"
-    },
-    "messages": {
-      "0": "You're on track! Keep it up! 🎯",
-      "1": "Great work! Your discipline is impressive! 💪",
-      "2": "Every day is a new opportunity to become better! ✨",
-      "3": "Habits shape character. You're building a better version of yourself! 🌟"
     }
   },
   "tables": {
@@ -404,6 +569,10 @@
           "title": "Tables",
           "description": "Custom data tables"
         },
+        "gamification": {
+          "title": "Gamification",
+          "description": "Activity points and rewards section"
+        },
         "analytics": {
           "title": "Analytics",
           "description": "Progress statistics and reports"
@@ -439,6 +608,17 @@
         "tasks": "Tasks",
         "goals": "Goals"
       }
+    },
+    "reflectionQuestions": {
+      "title": "Reflection questions",
+      "description": "Configure questions for daily, weekly, monthly, and yearly reflections.",
+      "saved": "Question saved",
+      "saveError": "Failed to save question",
+      "questionNumber": "Question {number}",
+      "textRu": "Text (RU)",
+      "textEn": "Text (EN)",
+      "enabled": "Enabled",
+      "saveQuestion": "Save"
     },
     "users": {
       "title": "Admin management",

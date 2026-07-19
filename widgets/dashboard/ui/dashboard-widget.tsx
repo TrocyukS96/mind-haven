@@ -1,5 +1,6 @@
 'use client';
 
+import { PointsDashboardWidget } from '@/features/points';
 import { Link } from '@/i18n/routing';
 import { useStore } from '@/shared/store/store-config';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
@@ -7,17 +8,15 @@ import {
   BookOpen,
   Brain,
   Calendar,
-  CheckSquare,
   Sparkles,
   Target,
-  TrendingUp
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect } from 'react';
 import { RotatingDescription } from './rotating-description';
 
 export function DashboardWidget() {
-  const { journalEntries, goals, habits, markOverdueTasks } = useStore();
+  const { markOverdueTasks, recalculateRating, tasks } = useStore();
   const t = useTranslations('dashboard');
   const descriptionSentences = t.raw('descriptionSentences') as string[];
 
@@ -48,7 +47,8 @@ export function DashboardWidget() {
 
   useEffect(() => {
     markOverdueTasks();
-  }, [markOverdueTasks]);
+    recalculateRating(tasks);
+  }, [markOverdueTasks, recalculateRating, tasks]);
 
   return (
     <div className="space-y-8">
@@ -105,37 +105,7 @@ export function DashboardWidget() {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>{t('recentActivity')}</CardTitle>
-              <TrendingUp size={20} className="text-secondary" />
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <div className="flex items-center gap-3">
-                <BookOpen size={18} className="text-primary" />
-                <span>{t('newJournalEntry')}</span>
-              </div>
-              <span className="text-sm text-muted-foreground">{t('hoursAgo')}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <div className="flex items-center gap-3">
-                <CheckSquare size={18} className="text-secondary" />
-                <span>{t('habitCompleted', { name: 'Meditation' })}</span>
-              </div>
-              <span className="text-sm text-muted-foreground">{t('today')}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <div className="flex items-center gap-3">
-                <Target size={18} style={{ color: '#f39c12' }} />
-                <span>{t('goalProgress', { name: 'Reading books' })}</span>
-              </div>
-              <span className="text-sm text-muted-foreground">{t('yesterday')}</span>
-            </div>
-          </CardContent>
-        </Card>
+        <PointsDashboardWidget />
 
         <Card>
           <CardHeader>

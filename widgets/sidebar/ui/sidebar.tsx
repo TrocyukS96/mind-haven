@@ -8,6 +8,7 @@ import {
   Brain,
   CheckSquare,
   Flame,
+  Gift,
   Home,
   Shield,
   Table2,
@@ -23,7 +24,7 @@ const menuItems: {
   id: string;
   labelKey: string;
   icon: typeof Home;
-  href: '/' | '/goals' | '/tasks' | '/journal' | '/habits' | '/tables';
+  href: '/' | '/goals' | '/tasks' | '/journal' | '/habits' | '/tables' | '/rewards';
   feature: FeatureKey;
 }[] = [
   { id: 'dashboard', labelKey: 'dashboard', icon: Home, href: '/', feature: 'dashboard' },
@@ -32,6 +33,7 @@ const menuItems: {
   { id: 'journal', labelKey: 'journal', icon: BookOpen, href: '/journal', feature: 'journal' },
   { id: 'habits', labelKey: 'habits', icon: Flame, href: '/habits', feature: 'habits' },
   { id: 'tables', labelKey: 'tables', icon: Table2, href: '/tables', feature: 'tables' },
+  { id: 'rewards', labelKey: 'rewards', icon: Gift, href: '/rewards', feature: 'gamification' },
 ];
 
 interface SidebarProps {

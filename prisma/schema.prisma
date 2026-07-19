@@ -166,6 +166,18 @@ model Task {
   @@index([goalId])
 }
 
+model ReflectionQuestion {
+  period    String
+  sortOrder Int
+  textRu    String   @db.Text
+  textEn    String   @db.Text
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@id([period, sortOrder])
+}
+
 model JournalEntry {
   id        String   @id @default(cuid())
   userId    String

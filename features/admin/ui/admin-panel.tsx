@@ -4,9 +4,11 @@ import { FeatureGate } from '@/features/access';
 import type { FeatureKey } from '@/shared/config/features';
 import type { DisplayModeSettings } from '@/shared/config/display-modes';
 import type { ItemTypeCatalog } from '@/shared/config/item-types';
+import type { ReflectionQuestionCatalog } from '@/shared/config/reflection-questions';
 import { FeatureSettings } from './feature-settings';
 import { DisplayModeSettingsPanel } from './display-mode-settings';
 import { ItemTypeSettingsPanel } from './item-type-settings';
+import { ReflectionQuestionSettingsPanel } from './reflection-question-settings';
 import { AdminUsersPanel } from './admin-users-panel';
 import { useTranslations } from 'next-intl';
 
@@ -14,12 +16,14 @@ interface AdminPanelProps {
   initialFlags: Record<FeatureKey, boolean>;
   initialDisplayModeSettings: DisplayModeSettings;
   initialItemTypes: ItemTypeCatalog;
+  initialReflectionQuestions: ReflectionQuestionCatalog;
 }
 
 export function AdminPanel({
   initialFlags,
   initialDisplayModeSettings,
   initialItemTypes,
+  initialReflectionQuestions,
 }: AdminPanelProps) {
   const t = useTranslations('admin');
 
@@ -46,6 +50,9 @@ export function AdminPanel({
           </div>
           <div className="pt-8">
             <ItemTypeSettingsPanel initialCatalog={initialItemTypes} />
+          </div>
+          <div className="pt-8">
+            <ReflectionQuestionSettingsPanel initialCatalog={initialReflectionQuestions} />
           </div>
         </FeatureGate>
 

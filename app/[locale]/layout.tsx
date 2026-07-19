@@ -2,6 +2,7 @@ import { AccessProvider } from '@/features/access';
 import { AuthSessionProvider } from '@/features/auth';
 import { DisplayModeProvider } from '@/features/display-modes';
 import { ItemTypeProvider } from '@/features/item-types';
+import { ReflectionQuestionProvider } from '@/features/reflection-questions';
 import { routing } from '@/i18n/routing';
 import type { Metadata } from 'next';
 import { Geist } from 'next/font/google';
@@ -14,6 +15,7 @@ import { getSessionProfile } from '@/shared/lib/auth/get-session-profile';
 import { getFeatureFlags } from '@/shared/lib/features/feature-service';
 import { getDisplayModeSettings } from '@/shared/lib/display-modes/display-mode-service';
 import { getItemTypes } from '@/shared/lib/item-types/item-type-service';
+import { getReflectionQuestions } from '@/shared/lib/reflection-questions/reflection-question-service';
 import { LayoutShell } from '@/widgets/layout-shell';
 import '../globals.css';
 
@@ -58,11 +60,13 @@ export default async function LocaleLayout({
 
   setRequestLocale(locale);
   const messages = await getMessages();
-  const [profile, globalFeatureFlags, displayModeSettings, itemTypes] = await Promise.all([
+  const [profile, globalFeatureFlags, displayModeSettings, itemTypes, reflectionQuestions] =
+    await Promise.all([
     getSessionProfile(),
     getFeatureFlags(),
     getDisplayModeSettings(),
     getItemTypes(),
+    getReflectionQuestions(),
   ]);
 
   return (
@@ -97,9 +101,11 @@ export default async function LocaleLayout({
             <AccessProvider profile={profile} globalFeatureFlags={globalFeatureFlags}>
               <DisplayModeProvider settings={displayModeSettings}>
                 <ItemTypeProvider catalog={itemTypes}>
-                  <LayoutShell>{children}</LayoutShell>
-                  <ModalProvider />
-                  <ToastProvider />
+                  <ReflectionQuestionProvider catalog={reflectionQuestions}>
+                    <LayoutShell>{children}</LayoutShell>
+                    <ModalProvider />
+                    <ToastProvider />
+                  </ReflectionQuestionProvider>
                 </ItemTypeProvider>
               </DisplayModeProvider>
             </AccessProvider>

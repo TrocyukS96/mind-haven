@@ -1,4 +1,9 @@
 import { Task, TaskPriority } from '@/entities/task/model/types';
+import {
+    buildGoalCompletionEvent,
+    buildTaskCompletionEvent,
+} from '@/entities/points/lib/calculate-points';
+import { tryEarnPoints } from '@/entities/points/lib/process-point-event';
 import { sortByKanbanOrder } from '@/shared/lib/kanban-utils';
 import { StateCreator } from 'zustand';
 import { AppStore } from '../store-config';
@@ -117,6 +122,19 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
                 };
             });
         }
+
+        if (toggledTask.completed) {
+            tryEarnPoints(get, buildTaskCompletionEvent(toggledTask));
+
+            if (task.goalId) {
+                const goal = get().goals.find((g) => g.id === task.goalId);
+                if (goal) {
+                    tryEarnPoints(get, buildGoalCompletionEvent(goal));
+                }
+            }
+        }
+
+        get().recalculateRating(get().tasks);
     },
 
     deleteTask: (task: Task) => {
@@ -268,11 +286,12 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
             set((state) => ({
                 tasks: state.tasks.map(t =>
                     overdue.some(o => o.id === t.id)
-                        ? { ...t, overdue: true } // добавь поле overdue?: boolean в тип Task
+                        ? { ...t, overdue: true }
                         : t
                 ),
             }));
         }
+        get().recalculateRating(get().tasks);
     },
 
 });

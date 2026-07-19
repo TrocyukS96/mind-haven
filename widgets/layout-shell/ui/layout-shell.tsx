@@ -1,5 +1,6 @@
 'use client';
 
+import { RewardUnlockListener } from '@/features/points';
 import { Header } from '@/widgets/header';
 import { Sidebar } from '@/widgets/sidebar';
 import { useState } from 'react';
@@ -13,6 +14,7 @@ export function LayoutShell({ children }: LayoutShellProps) {
 
   return (
     <div className="min-h-screen">
+      <RewardUnlockListener />
       <Sidebar
         mobileMenuOpen={mobileMenuOpen}
         onMobileMenuClose={() => setMobileMenuOpen(false)}
