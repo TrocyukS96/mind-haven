@@ -1,9 +1,11 @@
 import { Task, TaskPriority } from '@/entities/task/model/types';
+import { sortByKanbanOrder } from '@/shared/lib/kanban-utils';
 import { StateCreator } from 'zustand';
 import { AppStore } from '../store-config';
 
 export interface TasksSlice {
     tasks: Task[];
+    tasksKanbanColumnOrder: string[];
     selectedTask: Task | null;
     dailyTasks: Record<string, string[]>;
     isTaskFormOpen: boolean;
@@ -14,6 +16,8 @@ export interface TasksSlice {
     toggleTask: (id: string) => void;
     updateTask: (id: string, updates: Partial<Task>) => void;
     deleteTask: (task: Task) => void;
+    reorderTasksKanbanColumns: (columnKeys: string[]) => void;
+    moveTaskInKanban: (taskId: string, targetType: string, targetIndex: number) => void;
     openTaskForm: (task?: Task, goalId?: string, deadline?: string) => void;
     closeTaskForm: () => void;
     getOverdueTasks: () => Task[];
@@ -29,11 +33,18 @@ const calculateProgress = (subtasks: Task[]) => {
 
 export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set, get,) => ({
     tasks: [],
+    tasksKanbanColumnOrder: [],
     dailyTasks: {},
     selectedTask: null,
     isTaskFormOpen: false,
     defaultGoalId: undefined,
     addTask: (title, goalId, priority = 'medium', deadline?: string, type = 'backlog') => {
+        const columnTasks = get().tasks.filter((item) => item.type === type);
+        const maxOrder = columnTasks.reduce(
+            (max, item) => Math.max(max, item.kanbanOrder ?? -1),
+            -1
+        );
+
         const newTask: Task = {
             id: Date.now().toString(),
             title: title.trim(),
@@ -43,6 +54,7 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
             goalId,
             createdAt: new Date().toISOString(),
             deadline: deadline ? new Date(deadline).toISOString() : undefined,
+            kanbanOrder: maxOrder + 1,
         };
 
         set((state) => ({
@@ -157,6 +169,72 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
 
 
     },
+
+    reorderTasksKanbanColumns: (columnKeys) =>
+        set({ tasksKanbanColumnOrder: columnKeys }),
+
+    moveTaskInKanban: (taskId, targetType, targetIndex) =>
+        set((state) => {
+            const task = state.tasks.find((item) => item.id === taskId);
+            if (!task) {
+                return state;
+            }
+
+            const sourceType = task.type;
+            const currentColumnTasks = sortByKanbanOrder(
+                state.tasks.filter((item) => item.type === sourceType)
+            );
+            const currentIndex = currentColumnTasks.findIndex((item) => item.id === taskId);
+
+            const targetColumnTasks = sortByKanbanOrder(
+                state.tasks.filter((item) => item.type === targetType)
+            ).filter((item) => item.id !== taskId);
+
+            const clampedIndex = Math.max(0, Math.min(targetIndex, targetColumnTasks.length));
+
+            if (sourceType === targetType && currentIndex === clampedIndex) {
+                return state;
+            }
+
+            targetColumnTasks.splice(clampedIndex, 0, { ...task, type: targetType });
+
+            const orderUpdates = new Map<string, { type: string; kanbanOrder: number }>();
+            targetColumnTasks.forEach((item, index) => {
+                orderUpdates.set(item.id, { type: targetType, kanbanOrder: index });
+            });
+
+            if (sourceType !== targetType) {
+                sortByKanbanOrder(
+                    state.tasks.filter((item) => item.type === sourceType && item.id !== taskId)
+                ).forEach((item, index) => {
+                    orderUpdates.set(item.id, { type: sourceType, kanbanOrder: index });
+                });
+            }
+
+            const updatedTasks = state.tasks.map((item) => {
+                const update = orderUpdates.get(item.id);
+                return update ? { ...item, ...update } : item;
+            });
+
+            return {
+                tasks: updatedTasks,
+                goals: state.goals.map((goal) => {
+                    let changed = false;
+                    const tasks = goal.tasks.map((goalTask) => {
+                        const update = orderUpdates.get(goalTask.id);
+                        if (!update) {
+                            return goalTask;
+                        }
+                        changed = true;
+                        return { ...goalTask, ...update };
+                    });
+
+                    return changed
+                        ? { ...goal, tasks, progress: calculateProgress(tasks) }
+                        : goal;
+                }),
+            };
+        }),
 
     openTaskForm: (task, goalId, deadline) => {
         set({

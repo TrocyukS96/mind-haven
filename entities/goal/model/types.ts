@@ -17,6 +17,7 @@ export interface Goal {
   category: 'week' | 'month' | 'year';
   type: GoalType;
   priority: TaskPriority;
+  kanbanOrder?: number;
   tasks: Task[];
 }
 

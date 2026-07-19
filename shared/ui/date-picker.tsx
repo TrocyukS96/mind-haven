@@ -8,6 +8,7 @@ import { Label } from '@/shared/ui/label';
 import { Popover, PopoverTrigger, PopoverContent } from './popover';
 import { useEffect } from 'react';
 import { getDateLocale } from '@/shared/lib/date-locale';
+import { cn } from '@/shared/lib/utils';
 import { useLocale, useTranslations } from 'next-intl';
 
 interface Props {
@@ -15,9 +16,18 @@ interface Props {
   label?: string;
   id: string;
   onChange: (date: string) => void;
+  className?: string;
+  triggerClassName?: string;
 }
 
-export function DatePicker({ value, label, id, onChange }: Props) {
+export function DatePicker({
+  value,
+  label,
+  id,
+  onChange,
+  className,
+  triggerClassName,
+}: Props) {
   const [open, setOpen] = React.useState(false);
   const [date, setDate] = React.useState<Date | undefined>(
     value ? new Date(value) : undefined
@@ -33,7 +43,7 @@ export function DatePicker({ value, label, id, onChange }: Props) {
   }, [value]);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className={cn('flex flex-col gap-2', className)}>
       {label && (
         <Label htmlFor={id} className="px-1">
           {label}
@@ -41,7 +51,11 @@ export function DatePicker({ value, label, id, onChange }: Props) {
       )}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" id={id} className="w-48 justify-between font-normal">
+          <Button
+            variant="outline"
+            id={id}
+            className={cn('w-full justify-between font-normal', triggerClassName)}
+          >
             {date
               ? date.toLocaleDateString(locale === 'ru' ? 'ru-RU' : 'en-US')
               : t('selectDate')}

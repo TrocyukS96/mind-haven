@@ -16,18 +16,20 @@ const GoalFormModal = ({ open, onOpenChange }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
+        <DialogHeader className="space-y-1 border-b px-6 py-5 text-left">
+          <DialogTitle className="text-xl">
             {selectedGoal ? t('editGoal') : t('newGoal')}
           </DialogTitle>
         </DialogHeader>
 
-        <GoalForm
-          goal={selectedGoal}
-          open={isGoalFormOpen}
-          onOpenChange={(isOpen) => !isOpen && closeGoalForm()}
-        />
+        <div className="max-h-[calc(100vh-10rem)] overflow-y-auto px-6 py-5">
+          <GoalForm
+            goal={selectedGoal}
+            open={isGoalFormOpen}
+            onOpenChange={(isOpen) => !isOpen && closeGoalForm()}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );
