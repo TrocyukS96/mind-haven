@@ -35,18 +35,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       if (token.id) {
         const dbUser = await prisma.user.findUnique({
-          where: { id: token.id },
+          where: { id: token.id as string },
           select: { role: true },
         });
 
-        token.role = (dbUser?.role ?? 'USER') as UserRole;
+        token.role = (dbUser?.role ?? 'USER') as Exclude<UserRole, 'GUEST'>;
       }
 
       return token;
     },
     async session({ session, token }) {
       if (session.user && token.id) {
-        session.user.id = token.id;
+        session.user.id = token.id as string;
         session.user.role = (token.role ?? 'USER') as Exclude<UserRole, 'GUEST'>;
       }
 
