@@ -6,6 +6,7 @@ import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Textarea } from '@/shared/ui/textarea';
 import { useStore } from '@/shared/store/store-config';
+import { useTranslations } from 'next-intl';
 
 interface CreateEntryFormProps {
   onCancel: () => void;
@@ -16,6 +17,8 @@ export function CreateEntryForm({ onCancel, onSuccess }: CreateEntryFormProps) {
   const { addJournalEntry } = useStore();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const t = useTranslations('journal');
+  const tCommon = useTranslations('common');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,27 +33,27 @@ export function CreateEntryForm({ onCancel, onSuccess }: CreateEntryFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Новая запись</CardTitle>
+        <CardTitle>{t('newEntry')}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            placeholder="Заголовок записи"
+            placeholder={t('entryTitle')}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
           />
           <Textarea
-            placeholder="Начни писать свои мысли... (поддерживается Markdown)"
+            placeholder={t('entryContentPlaceholder')}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={8}
             required
           />
           <div className="flex gap-2">
-            <Button type="submit">Сохранить</Button>
+            <Button type="submit">{tCommon('save')}</Button>
             <Button type="button" variant="outline" onClick={onCancel}>
-              Отмена
+              {tCommon('cancel')}
             </Button>
           </div>
         </form>

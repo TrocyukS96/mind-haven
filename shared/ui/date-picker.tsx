@@ -1,14 +1,14 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import { ChevronDownIcon } from "lucide-react"
-
-import { Button } from "@/shared/ui/button"
-import { Calendar } from "@/shared/ui/calendar"
-import { Label } from "@/shared/ui/label"
-import { Popover, PopoverTrigger, PopoverContent } from "./popover"
-import { useEffect } from "react"
-import { ru } from "date-fns/locale"
+import * as React from 'react';
+import { ChevronDownIcon } from 'lucide-react';
+import { Button } from '@/shared/ui/button';
+import { Calendar } from '@/shared/ui/calendar';
+import { Label } from '@/shared/ui/label';
+import { Popover, PopoverTrigger, PopoverContent } from './popover';
+import { useEffect } from 'react';
+import { getDateLocale } from '@/shared/lib/date-locale';
+import { useLocale, useTranslations } from 'next-intl';
 
 interface Props {
   value: string;
@@ -18,49 +18,52 @@ interface Props {
 }
 
 export function DatePicker({ value, label, id, onChange }: Props) {
-  const [open, setOpen] = React.useState(false)
-  const [date, setDate] = React.useState<Date | undefined>(value ? new Date(value) : undefined)
+  const [open, setOpen] = React.useState(false);
+  const [date, setDate] = React.useState<Date | undefined>(
+    value ? new Date(value) : undefined
+  );
+  const t = useTranslations('datePicker');
+  const locale = useLocale();
+  const dateLocale = getDateLocale(locale);
 
   useEffect(() => {
     if (value) {
-      setDate(new Date(value))
+      setDate(new Date(value));
     }
-  }, [value])
+  }, [value]);
 
   return (
     <div className="flex flex-col gap-3">
-        {label && (
-          <Label htmlFor={id} className="px-1">
-            {label}
-          </Label>
-        )}
+      {label && (
+        <Label htmlFor={id} className="px-1">
+          {label}
+        </Label>
+      )}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            id={id}
-            className="w-48 justify-between font-normal"
-          >
-            {date ? date.toLocaleDateString() : "Выберите дату"}
+          <Button variant="outline" id={id} className="w-48 justify-between font-normal">
+            {date
+              ? date.toLocaleDateString(locale === 'ru' ? 'ru-RU' : 'en-US')
+              : t('selectDate')}
             <ChevronDownIcon />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto overflow-hidden p-0" align="start">
           <Calendar
             mode="single"
-            locale={ru}
+            locale={dateLocale}
             selected={date ? new Date(date) : undefined}
             captionLayout="dropdown"
             onSelect={(valueDate: Date | undefined) => {
               if (valueDate) {
-                setDate(valueDate)
-                onChange(valueDate.toISOString())
+                setDate(valueDate);
+                onChange(valueDate.toISOString());
               }
-              setOpen(false)
+              setOpen(false);
             }}
           />
         </PopoverContent>
       </Popover>
     </div>
-  )
+  );
 }

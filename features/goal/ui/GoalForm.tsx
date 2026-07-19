@@ -6,11 +6,17 @@ import { Button } from '@/shared/ui/button';
 import { DatePicker } from '@/shared/ui/date-picker';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select';
 import { Slider } from '@/shared/ui/slider';
 import { Textarea } from '@/shared/ui/textarea';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
-import { ru } from 'date-fns/locale';
 
 interface Props {
   goal?: Goal | null;
@@ -20,6 +26,8 @@ interface Props {
 
 export function GoalForm({ goal, open, onOpenChange }: Props) {
   const { addGoal, updateGoal } = useStore();
+  const t = useTranslations('goals');
+  const tCommon = useTranslations('common');
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -64,13 +72,12 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
   const isEditMode = !!goal;
 
   return (
-
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <Label htmlFor="title">Название цели</Label>
+        <Label htmlFor="title">{t('goalTitle')}</Label>
         <Input
           id="title"
-          placeholder="Например: Запустить MindHaven"
+          placeholder={t('goalTitlePlaceholder')}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
@@ -79,10 +86,10 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">Описание (необязательно)</Label>
+        <Label htmlFor="description">{t('descriptionOptional')}</Label>
         <Textarea
           id="description"
-          placeholder="Что именно ты хочешь достичь и зачем?"
+          placeholder={t('descriptionPlaceholder')}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
@@ -90,14 +97,11 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
         />
       </div>
 
-      {/* Прогресс — только в режиме редактирования */}
       {isEditMode && goal?.tasks.length === 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label>Прогресс</Label>
-            <span className="text-sm font-semibold text-primary">
-              {progress}%
-            </span>
+            <Label>{tCommon('progress')}</Label>
+            <span className="text-sm font-semibold text-primary">{progress}%</span>
           </div>
           <Slider
             value={[progress]}
@@ -111,15 +115,7 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="deadline">Дедлайн</Label>
-          {/* <Input
-            id="deadline"
-            type="date"
-            value={deadline}
-            className="text-primary"
-            onChange={(e) => setDeadline(e.target.value)}
-            required
-          /> */}
+          <Label htmlFor="deadline">{tCommon('deadline')}</Label>
           <DatePicker
             id="deadline"
             value={deadline}
@@ -128,47 +124,45 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
         </div>
 
         <div className="space-y-2 w-full">
-          <Label htmlFor="category">Категория</Label>
+          <Label htmlFor="category">{t('category')}</Label>
           <Select
             value={category}
-            
-            onValueChange={(value) => setCategory(value as 'week' | 'month' | 'year')}
+            onValueChange={(value) =>
+              setCategory(value as 'week' | 'month' | 'year')
+            }
           >
             <SelectTrigger id="category">
-              <SelectValue placeholder="Выберите категорию" />
+              <SelectValue placeholder={t('selectCategory')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="week">Неделя</SelectItem>
-              <SelectItem value="month">Месяц</SelectItem>
-              <SelectItem value="year">Год</SelectItem>
+              <SelectItem value="week">{t('categories.week')}</SelectItem>
+              <SelectItem value="month">{t('categories.month')}</SelectItem>
+              <SelectItem value="year">{t('categories.year')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label>Тип цели</Label>
-        <Select
-          value={type}
-          onValueChange={(value) => setType(value as GoalType)}
-        >
+        <Label>{t('goalType')}</Label>
+        <Select value={type} onValueChange={(value) => setType(value as GoalType)}>
           <SelectTrigger id="type">
-            <SelectValue placeholder="Выберите тип цели" />
+            <SelectValue placeholder={t('selectGoalType')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="short">Краткосрочная</SelectItem>
-            <SelectItem value="medium">Среднесрочная</SelectItem>
-            <SelectItem value="long">Долгосрочная</SelectItem>
+            <SelectItem value="short">{t('types.short')}</SelectItem>
+            <SelectItem value="medium">{t('types.medium')}</SelectItem>
+            <SelectItem value="long">{t('types.long')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-          Отмена
+          {tCommon('cancel')}
         </Button>
         <Button type="submit">
-          {isEditMode ? 'Сохранить изменения' : 'Создать цель'}
+          {isEditMode ? t('saveChanges') : t('createGoal')}
         </Button>
       </div>
     </form>

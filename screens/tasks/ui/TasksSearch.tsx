@@ -1,8 +1,9 @@
 'use client';
 
-import { Input } from "@/shared/ui/input";
-import { Search, X } from "lucide-react";
-import { useState } from "react";
+import { Input } from '@/shared/ui/input';
+import { Search, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { useState } from 'react';
 
 interface TasksSearchProps {
   value: string;
@@ -11,12 +12,13 @@ interface TasksSearchProps {
 
 export function TasksSearch({ value, onChange }: TasksSearchProps) {
   const [localValue, setLocalValue] = useState(value);
+  const t = useTranslations('tasks');
 
   return (
     <div className="relative flex-1 max-w-md h-[36px]">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
       <Input
-        placeholder="Поиск задач..."
+        placeholder={t('searchPlaceholder')}
         value={localValue}
         onChange={(e) => {
           setLocalValue(e.target.value);

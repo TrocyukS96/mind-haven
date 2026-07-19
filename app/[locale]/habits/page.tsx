@@ -5,11 +5,15 @@ import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { CheckSquare, Flame, Plus, TrendingUp } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 export default function HabitsPage() {
   const { habits, toggleHabitDay } = useStore();
   const [isCreating, setIsCreating] = useState(false);
+  const t = useTranslations('habits');
+  const tCommon = useTranslations('common');
+  const locale = useLocale();
 
   const getDaysOfWeek = () => {
     const days = [];
@@ -24,31 +28,21 @@ export default function HabitsPage() {
 
   const daysOfWeek = getDaysOfWeek();
   const today = new Date().toISOString().split('T')[0];
-
-  const motivationalMessages = [
-    'Ты на пути! Продолжай в том же духе! 🎯',
-    'Отличная работа! Твоя дисциплина впечатляет! 💪',
-    'Каждый день — это новая возможность стать лучше! ✨',
-    'Привычки формируют характер. Ты создаёшь лучшую версию себя! 🌟',
-  ];
+  const messageIndex = Math.floor(Math.random() * 4);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1>Привычки</h1>
-          <p className="text-muted-foreground mt-2">
-            Формируй полезные привычки каждый день
-          </p>
+          <h1>{t('title')}</h1>
+          <p className="text-muted-foreground mt-2">{t('subtitle')}</p>
         </div>
         <Button onClick={() => setIsCreating(!isCreating)}>
           <Plus size={20} />
-          Добавить привычку
+          {t('addHabit')}
         </Button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-6">
@@ -57,7 +51,7 @@ export default function HabitsPage() {
                 <CheckSquare size={24} className="text-primary" />
               </div>
               <div>
-                <p className="text-muted-foreground text-sm">Активных привычек</p>
+                <p className="text-muted-foreground text-sm">{t('activeHabits')}</p>
                 <p className="text-2xl font-semibold mt-1">{habits.length}</p>
               </div>
             </div>
@@ -71,9 +65,11 @@ export default function HabitsPage() {
                 <Flame size={24} className="text-orange-500" />
               </div>
               <div>
-                <p className="text-muted-foreground text-sm">Лучшая серия</p>
+                <p className="text-muted-foreground text-sm">{t('bestStreak')}</p>
                 <p className="text-2xl font-semibold mt-1">
-                  {Math.max(...habits.map(h => h.streak), 0)} дней
+                  {tCommon('days', {
+                    count: Math.max(...habits.map((h) => h.streak), 0),
+                  })}
                 </p>
               </div>
             </div>
@@ -87,9 +83,10 @@ export default function HabitsPage() {
                 <TrendingUp size={24} className="text-secondary" />
               </div>
               <div>
-                <p className="text-muted-foreground text-sm">Выполнено сегодня</p>
+                <p className="text-muted-foreground text-sm">{t('completedToday')}</p>
                 <p className="text-2xl font-semibold mt-1">
-                  {habits.filter(h => h.completedDays.includes(today)).length}/{habits.length}
+                  {habits.filter((h) => h.completedDays.includes(today)).length}/
+                  {habits.length}
                 </p>
               </div>
             </div>
@@ -97,22 +94,20 @@ export default function HabitsPage() {
         </Card>
       </div>
 
-      {/* AI Motivation */}
       <Card>
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
             <div className="text-3xl">🎉</div>
             <div>
-              <h3 className="mb-2">Мотивация</h3>
+              <h3 className="mb-2">{t('motivation')}</h3>
               <p className="text-muted-foreground">
-                {motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)]}
+                {t(`messages.${messageIndex}` as 'messages.0')}
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Create Habit Form */}
       {isCreating && (
         <CreateHabitForm
           onCancel={() => setIsCreating(false)}
@@ -120,31 +115,37 @@ export default function HabitsPage() {
         />
       )}
 
-      {/* Habits Tracker */}
       <Card>
         <CardHeader>
-          <CardTitle>Трекер привычек</CardTitle>
+          <CardTitle>{t('habitTracker')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b-2 border-border">
-                  <th className="text-left py-3 px-4 font-medium">Привычка</th>
-                  <th className="text-center py-3 px-2 font-medium text-sm">Серия</th>
+                  <th className="text-left py-3 px-4 font-medium">{t('habitColumn')}</th>
+                  <th className="text-center py-3 px-2 font-medium text-sm">
+                    {t('streakColumn')}
+                  </th>
                   {daysOfWeek.map((date, index) => (
                     <th key={index} className="text-center py-3 px-2 font-medium text-sm">
-                      <div>{date.toLocaleDateString('ru-RU', { weekday: 'short' })}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {date.getDate()}
+                      <div>
+                        {date.toLocaleDateString(locale === 'ru' ? 'ru-RU' : 'en-US', {
+                          weekday: 'short',
+                        })}
                       </div>
+                      <div className="text-xs text-muted-foreground">{date.getDate()}</div>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {habits.map((habit) => (
-                  <tr key={habit.id} className="border-b border-border hover:bg-muted/50">
+                  <tr
+                    key={habit.id}
+                    className="border-b border-border hover:bg-muted/50"
+                  >
                     <td className="py-4 px-4">
                       <div>
                         <p className="font-medium">{habit.name}</p>
@@ -168,14 +169,17 @@ export default function HabitsPage() {
                             disabled={!isToday}
                             className={`
                               w-8 h-8 rounded-lg border-2 transition-all
-                              ${isCompleted
-                                ? 'bg-secondary border-secondary text-white'
-                                : 'border-border hover:border-primary'
+                              ${
+                                isCompleted
+                                  ? 'bg-secondary border-secondary text-white'
+                                  : 'border-border hover:border-primary'
                               }
                               ${isToday ? 'cursor-pointer' : 'cursor-default opacity-50'}
                             `}
                           >
-                            {isCompleted && <CheckSquare size={20} className="mx-auto" />}
+                            {isCompleted && (
+                              <CheckSquare size={20} className="mx-auto" />
+                            )}
                           </button>
                         </td>
                       );
@@ -188,7 +192,6 @@ export default function HabitsPage() {
         </CardContent>
       </Card>
 
-      {/* Habit Cards for Mobile */}
       <div className="lg:hidden space-y-4">
         {habits.map((habit) => {
           const isCompletedToday = habit.completedDays.includes(today);
@@ -214,12 +217,12 @@ export default function HabitsPage() {
                     {isCompletedToday ? (
                       <>
                         <CheckSquare size={20} />
-                        Выполнено сегодня
+                        {t('completedTodayBtn')}
                       </>
                     ) : (
                       <>
                         <Plus size={20} />
-                        Отметить выполнение
+                        {t('markCompletion')}
                       </>
                     )}
                   </Button>

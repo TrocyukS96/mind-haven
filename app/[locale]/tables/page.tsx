@@ -7,37 +7,37 @@ import { Input } from '@/shared/ui/input';
 import { Plus, Table, Trash2 } from 'lucide-react';
 import { useStore } from '@/shared/store/store-config';
 import { CreateTableForm } from '@/features/table/create-table/ui/create-table-form';
+import { useTranslations } from 'next-intl';
 
 export default function TablesPage() {
   const { tables, addTableRow, updateTableCell, deleteTableRow } = useStore();
-  const [selectedTable, setSelectedTable] = useState<string | null>(tables[0]?.id || null);
+  const [selectedTable, setSelectedTable] = useState<string | null>(
+    tables[0]?.id || null
+  );
   const [isCreating, setIsCreating] = useState(false);
+  const t = useTranslations('tables');
+  const tCommon = useTranslations('common');
 
-  const currentTable = tables.find(t => t.id === selectedTable);
+  const currentTable = tables.find((table) => table.id === selectedTable);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1>Таблицы</h1>
-          <p className="text-muted-foreground mt-2">
-            Организуй данные с гибкими таблицами
-          </p>
+          <h1>{t('title')}</h1>
+          <p className="text-muted-foreground mt-2">{t('subtitle')}</p>
         </div>
         <Button onClick={() => setIsCreating(!isCreating)}>
           <Plus size={20} />
-          Создать таблицу
+          {t('createTable')}
         </Button>
       </div>
 
-      {/* Create Table Form */}
       {isCreating && (
         <CreateTableForm
           onCancel={() => setIsCreating(false)}
           onSuccess={() => {
             setIsCreating(false);
-            // Select the newly created table
             if (tables.length > 0) {
               setSelectedTable(tables[tables.length - 1].id);
             }
@@ -45,7 +45,6 @@ export default function TablesPage() {
         />
       )}
 
-      {/* Table Tabs */}
       {tables.length > 0 && (
         <Card>
           <CardContent className="p-4">
@@ -66,7 +65,6 @@ export default function TablesPage() {
         </Card>
       )}
 
-      {/* Table Content */}
       {currentTable ? (
         <Card>
           <CardHeader>
@@ -74,7 +72,7 @@ export default function TablesPage() {
               <CardTitle>{currentTable.name}</CardTitle>
               <Button onClick={() => addTableRow(currentTable.id)}>
                 <Plus size={20} />
-                Добавить строку
+                {t('addRow')}
               </Button>
             </div>
           </CardHeader>
@@ -94,24 +92,37 @@ export default function TablesPage() {
                 <tbody>
                   {currentTable.rows.length === 0 ? (
                     <tr>
-                      <td colSpan={currentTable.columns.length + 1} className="text-center py-12">
+                      <td
+                        colSpan={currentTable.columns.length + 1}
+                        className="text-center py-12"
+                      >
                         <Table size={48} className="mx-auto text-muted-foreground mb-4" />
-                        <p className="text-muted-foreground">
-                          Нет данных. Добавь первую строку.
-                        </p>
+                        <p className="text-muted-foreground">{t('noData')}</p>
                       </td>
                     </tr>
                   ) : (
                     currentTable.rows.map((row) => (
-                      <tr key={row.id} className="border-b border-border hover:bg-muted/50">
+                      <tr
+                        key={row.id}
+                        className="border-b border-border hover:bg-muted/50"
+                      >
                         {currentTable.columns.map((col, index) => (
                           <td key={index} className="py-3 px-4">
                             <Input
                               type="text"
                               value={row[col] || ''}
-                              onChange={(e) => updateTableCell(currentTable.id, row.id, col, e.target.value)}
+                              onChange={(e) =>
+                                updateTableCell(
+                                  currentTable.id,
+                                  row.id,
+                                  col,
+                                  e.target.value
+                                )
+                              }
                               className="border-transparent hover:border-border focus:border-primary"
-                              placeholder={`Введите ${col.toLowerCase()}`}
+                              placeholder={tCommon('enterValue', {
+                                field: col.toLowerCase(),
+                              })}
                             />
                           </td>
                         ))}
@@ -136,13 +147,11 @@ export default function TablesPage() {
           <CardContent className="p-12">
             <div className="text-center">
               <Table size={48} className="mx-auto text-muted-foreground mb-4" />
-              <h3 className="mb-2">Нет таблиц</h3>
-              <p className="text-muted-foreground mb-4">
-                Создай свою первую таблицу для организации данных
-              </p>
+              <h3 className="mb-2">{t('noTables')}</h3>
+              <p className="text-muted-foreground mb-4">{t('createFirstTable')}</p>
               <Button onClick={() => setIsCreating(true)}>
                 <Plus size={20} />
-                Создать таблицу
+                {t('createTable')}
               </Button>
             </div>
           </CardContent>

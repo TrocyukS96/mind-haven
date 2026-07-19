@@ -1,36 +1,54 @@
 'use client';
 
+import { Link, usePathname, useRouter } from '@/i18n/routing';
 import { useTheme } from '@/shared/hooks/use-theme';
 import { cn } from '@/shared/lib/utils';
 import {
   BookOpen,
+  Brain,
   CheckSquare,
+  Flame,
+  Globe,
   Home,
   Menu,
   Moon,
   Sun,
-  Table,
   Target,
   X,
 } from 'lucide-react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
+import { useState, useTransition } from 'react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select';
 
 const menuItems = [
-  { id: 'dashboard', label: 'Главная', icon: Home, href: '/' },
-  { id: 'goals', label: 'Цели', icon: Target, href: '/goals' },
-  { id: 'tasks', label: 'Задачи', icon: CheckSquare, href: '/tasks' },
-  { id: 'journal', label: 'Журнал', icon: BookOpen, href: '/journal' },
-  { id: 'habits', label: 'Привычки', icon: CheckSquare, href: '/habits' },
-  { id: 'tables', label: 'Таблицы', icon: Table, href: '/tables' },
-];
+  { id: 'dashboard', labelKey: 'dashboard', icon: Home, href: '/' },
+  { id: 'goals', labelKey: 'goals', icon: Target, href: '/goals' },
+  { id: 'tasks', labelKey: 'tasks', icon: CheckSquare, href: '/tasks' },
+  { id: 'journal', labelKey: 'journal', icon: BookOpen, href: '/journal' },
+  { id: 'habits', labelKey: 'habits', icon: Flame, href: '/habits' },
+] as const;
 
 export function Sidebar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
-  
+  const t = useTranslations('sidebar');
+  const locale = useLocale();
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+
+  const handleLocaleChange = (newLocale: string) => {
+    startTransition(() => {
+      router.replace(pathname, { locale: newLocale });
+    });
+  };
+
   return (
     <>
       <button
@@ -40,18 +58,25 @@ export function Sidebar() {
         {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      {/* Sidebar */}
       <aside
         className={cn(
-          "fixed lg:static inset-y-0 left-0 z-40",
-          "w-64 bg-muted dark:bg-[var(--sidebar)] border-r border-border text-foreground",
-          "transform transition-transform duration-200 ease-in-out",
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          'fixed lg:static inset-y-0 left-0 z-40',
+          'w-64 bg-muted dark:bg-[var(--sidebar)] border-r border-border text-foreground',
+          'transform transition-transform duration-200 ease-in-out',
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
-        <div className="h-full flex flex-col pb-24">
+        <div className="h-full flex flex-col pb-32">
           <div className="flex-1 p-6 overflow-y-auto">
-            <h2 className="mb-8 text-lg font-semibold">Саморазвитие</h2>
+            <div className="mb-8 flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Brain size={22} className="text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold leading-tight">Mind Haven</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('tagline')}</p>
+              </div>
+            </div>
             <nav className="space-y-2">
               {menuItems.map((item) => {
                 const Icon = item.icon;
@@ -62,15 +87,15 @@ export function Sidebar() {
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 rounded-lg",
-                      "transition-all duration-200",
+                      'w-full flex items-center gap-3 px-4 py-3 rounded-lg',
+                      'transition-all duration-200',
                       isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-accent"
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-accent'
                     )}
                   >
                     <Icon size={20} />
-                    <span>{item.label}</span>
+                    <span>{t(item.labelKey)}</span>
                   </Link>
                 );
               })}
@@ -79,27 +104,47 @@ export function Sidebar() {
         </div>
       </aside>
 
-      {/* Fixed Theme Toggle Button */}
-      <button
-        type="button"
-        onClick={toggleTheme}
+      <div
         className={cn(
-          "fixed left-0 z-40 cursor-pointer",
-          "w-64 bg-[#f3f4f6] dark:bg-[var(--sidebar)]",
-          "border-t border-r border-border",
-          "flex items-center justify-between px-6 py-4",
-          "text-sm font-medium text-foreground transition-colors",
-          "hover:bg-accent",
-          "transform transition-transform duration-200 ease-in-out",
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-          "bottom-0"
+          'fixed left-0 z-40 w-64',
+          'bg-[#f3f4f6] dark:bg-[var(--sidebar)]',
+          'border-t border-r border-border',
+          'transform transition-transform duration-200 ease-in-out',
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+          'bottom-0'
         )}
       >
-        <span>{theme === 'dark' ? 'Темная тема' : 'Светлая тема'}</span>
-        {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
-      </button>
+        <div className="flex items-center justify-between px-6 py-3 border-b border-border">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Globe size={16} />
+            <span>{t('language')}</span>
+          </div>
+          <Select value={locale} onValueChange={handleLocaleChange}>
+            <SelectTrigger className="w-28 h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ru">{t('ru')}</SelectItem>
+              <SelectItem value="en">{t('en')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-      {/* Mobile Overlay */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className={cn(
+            'w-full cursor-pointer',
+            'flex items-center justify-between px-6 py-4',
+            'text-sm font-medium text-foreground transition-colors',
+            'hover:bg-accent'
+          )}
+        >
+          <span>{theme === 'dark' ? t('darkTheme') : t('lightTheme')}</span>
+          {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+        </button>
+      </div>
+
       {mobileMenuOpen && (
         <div
           className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"

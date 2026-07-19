@@ -6,6 +6,7 @@ import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Select } from '@/shared/ui/select';
 import { useStore } from '@/shared/store/store-config';
+import { useTranslations } from 'next-intl';
 
 interface CreateHabitFormProps {
   onCancel: () => void;
@@ -14,15 +15,27 @@ interface CreateHabitFormProps {
 
 export function CreateHabitForm({ onCancel, onSuccess }: CreateHabitFormProps) {
   const { addHabit } = useStore();
+  const t = useTranslations('habits');
+  const tCommon = useTranslations('common');
   const [name, setName] = useState('');
-  const [frequency, setFrequency] = useState('Ежедневно');
+  const [frequency, setFrequency] = useState('daily');
+
+  const frequencyValues = {
+    daily: t('frequencies.daily'),
+    threePerWeek: t('frequencies.threePerWeek'),
+    fivePerWeek: t('frequencies.fivePerWeek'),
+    weekends: t('frequencies.weekends'),
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name) {
-      addHabit({ name, frequency });
+      addHabit({
+        name,
+        frequency: frequencyValues[frequency as keyof typeof frequencyValues],
+      });
       setName('');
-      setFrequency('Ежедневно');
+      setFrequency('daily');
       onSuccess?.();
     }
   };
@@ -30,32 +43,32 @@ export function CreateHabitForm({ onCancel, onSuccess }: CreateHabitFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Новая привычка</CardTitle>
+        <CardTitle>{t('newHabit')}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Название привычки</label>
+            <label className="block text-sm font-medium mb-2">{t('habitName')}</label>
             <Input
-              placeholder="Например: Медитация, Чтение, Спорт"
+              placeholder={t('habitNamePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-2">Частота</label>
+            <label className="block text-sm font-medium mb-2">{t('frequency')}</label>
             <Select value={frequency} onValueChange={(value) => setFrequency(value)}>
-              <option value="Ежедневно">Ежедневно</option>
-              <option value="3 раза в неделю">3 раза в неделю</option>
-              <option value="5 раз в неделю">5 раз в неделю</option>
-              <option value="По выходным">По выходным</option>
+              <option value="daily">{t('frequencies.daily')}</option>
+              <option value="threePerWeek">{t('frequencies.threePerWeek')}</option>
+              <option value="fivePerWeek">{t('frequencies.fivePerWeek')}</option>
+              <option value="weekends">{t('frequencies.weekends')}</option>
             </Select>
           </div>
           <div className="flex gap-2">
-            <Button type="submit">Создать привычку</Button>
+            <Button type="submit">{t('createHabit')}</Button>
             <Button type="button" variant="outline" onClick={onCancel}>
-              Отмена
+              {tCommon('cancel')}
             </Button>
           </div>
         </form>

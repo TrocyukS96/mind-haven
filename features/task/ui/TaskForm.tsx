@@ -1,20 +1,21 @@
 'use client';
 
-import { Task, TaskPriority } from "@/entities/task/model/types";
-import { useStore } from "@/shared/store/store-config";
-import { Button } from "@/shared/ui/button";
-import { Checkbox } from "@/shared/ui/checkbox";
-import { DatePicker } from "@/shared/ui/date-picker";
-import { Input } from "@/shared/ui/input";
-import { Label } from "@/shared/ui/label";
+import { Task, TaskPriority } from '@/entities/task/model/types';
+import { useStore } from '@/shared/store/store-config';
+import { Button } from '@/shared/ui/button';
+import { Checkbox } from '@/shared/ui/checkbox';
+import { DatePicker } from '@/shared/ui/date-picker';
+import { Input } from '@/shared/ui/input';
+import { Label } from '@/shared/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/shared/ui/select";
-import { useEffect, useState } from "react";
+} from '@/shared/ui/select';
+import { useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
 
 interface Props {
   task?: Task | null;
@@ -24,6 +25,9 @@ interface Props {
 
 const TaskForm = ({ task, open, onOpenChange }: Props) => {
   const { goals, addTask, updateTask, defaultGoalId, defaultDeadline } = useStore();
+  const t = useTranslations('tasks');
+  const tCommon = useTranslations('common');
+  const tPriorities = useTranslations('priorities');
 
   const [title, setTitle] = useState(task?.title || '');
   const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'medium');
@@ -73,10 +77,10 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <Label htmlFor="title">Название задачи</Label>
+        <Label htmlFor="title">{t('taskTitle')}</Label>
         <Input
           id="title"
-          placeholder="Например: Подготовить презентацию"
+          placeholder={t('taskTitlePlaceholder')}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
@@ -86,46 +90,38 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="priority">Приоритет</Label>
+          <Label htmlFor="priority">{t('priority')}</Label>
           <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
             <SelectTrigger className="mt-2">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="low">Низкий</SelectItem>
-              <SelectItem value="medium">Средний</SelectItem>
-              <SelectItem value="high">Высокий</SelectItem>
-              <SelectItem value="urgent">Срочно!</SelectItem>
+              <SelectItem value="low">{tPriorities('low')}</SelectItem>
+              <SelectItem value="medium">{tPriorities('medium')}</SelectItem>
+              <SelectItem value="high">{tPriorities('high')}</SelectItem>
+              <SelectItem value="urgent">{tPriorities('urgentExclaim')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="deadline">Дедлайн</Label>
-          {/* <Input
-            id="deadline"
-            type="date"
-            value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
-            className="mt-2"
-          /> */}
+          <Label htmlFor="deadline">{tCommon('deadline')}</Label>
           <DatePicker
             id="deadline"
             value={deadline}
             onChange={(date) => setDeadline(date)}
           />
         </div>
-
       </div>
 
       <div>
-        <Label htmlFor="goal">Привязать к цели</Label>
+        <Label htmlFor="goal">{t('linkToGoal')}</Label>
         <Select value={goalId} onValueChange={setGoalId}>
           <SelectTrigger className="mt-2">
-            <SelectValue placeholder="Без цели" />
+            <SelectValue placeholder={t('noGoal')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="none">Без цели</SelectItem>
+            <SelectItem value="none">{t('noGoal')}</SelectItem>
             {goals.map((goal) => (
               <SelectItem key={goal.id} value={goal.id}>
                 {goal.title}
@@ -143,21 +139,21 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
             onCheckedChange={(checked) => setCompleted(checked as boolean)}
           />
           <Label htmlFor="completed" className="cursor-pointer">
-            Отметить как выполненную
+            {t('markCompleted')}
           </Label>
         </div>
       )}
 
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-          Отмена
+          {tCommon('cancel')}
         </Button>
         <Button type="submit">
-          {isEditMode ? 'Сохранить' : 'Создать задачу'}
+          {isEditMode ? tCommon('save') : t('createTask')}
         </Button>
       </div>
     </form>
   );
-}
+};
 
 export default TaskForm;

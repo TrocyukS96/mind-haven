@@ -1,32 +1,36 @@
 'use client';
 
-import { useStore } from "@/shared/store/store-config";
-import { TaskCard } from "@/entities/task/ui/TaskCard";
-import { Button } from "@/shared/ui/button";
-import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from "date-fns";
-import { ru } from "date-fns/locale";
-import { useState } from "react";
+import { useStore } from '@/shared/store/store-config';
+import { TaskCard } from '@/entities/task/ui/TaskCard';
+import { Button } from '@/shared/ui/button';
+import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  format,
+  addMonths,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isToday,
+} from 'date-fns';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/shared/ui/dialog";
-import { cn } from "@/shared/lib/utils";
+} from '@/shared/ui/dialog';
+import { cn } from '@/shared/lib/utils';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/shared/ui/select";
-import { Task } from "@/entities/task/model/types";
-
-const months = [
-  "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
-  "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
-];
+} from '@/shared/ui/select';
+import { Task } from '@/entities/task/model/types';
+import { getDateLocale } from '@/shared/lib/date-locale';
+import { useLocale, useTranslations } from 'next-intl';
 
 interface TasksCalendarModeProps {
   tasks: Task[];
@@ -34,16 +38,22 @@ interface TasksCalendarModeProps {
 
 export const TasksCalendarMode = ({ tasks }: TasksCalendarModeProps) => {
   const { openTaskForm } = useStore();
+  const t = useTranslations('tasks');
+  const tCommon = useTranslations('common');
+  const locale = useLocale();
+  const dateLocale = getDateLocale(locale);
 
-  // Создаём dailyTasks из переданных tasks
-  const dailyTasks = tasks.reduce((acc, task) => {
-    if (task.deadline) {
-      const day = task.deadline.split('T')[0];
-      if (!acc[day]) acc[day] = [];
-      acc[day].push(task.id);
-    }
-    return acc;
-  }, {} as Record<string, string[]>);
+  const dailyTasks = tasks.reduce(
+    (acc, task) => {
+      if (task.deadline) {
+        const day = task.deadline.split('T')[0];
+        if (!acc[day]) acc[day] = [];
+        acc[day].push(task.id);
+      }
+      return acc;
+    },
+    {} as Record<string, string[]>
+  );
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -73,15 +83,19 @@ export const TasksCalendarMode = ({ tasks }: TasksCalendarModeProps) => {
   };
 
   const dayTasks = selectedDate
-    ? dailyTasks[format(selectedDate, 'yyyy-MM-dd')]?.map(id => tasks.find(t => t.id === id)).filter(Boolean) || []
+    ? dailyTasks[format(selectedDate, 'yyyy-MM-dd')]
+        ?.map((id) => tasks.find((task) => task.id === id))
+        .filter(Boolean) || []
     : [];
 
-  const getTaskCount = (date: Date) => dailyTasks[format(date, 'yyyy-MM-dd')]?.length || 0;
+  const getTaskCount = (date: Date) =>
+    dailyTasks[format(date, 'yyyy-MM-dd')]?.length || 0;
+
+  const weekdayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
   return (
     <>
       <div className="rounded-xl border bg-card p-6">
-        {/* Навигация */}
         <div className="flex items-center justify-between mb-6">
           <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
             <ChevronLeft className="h-5 w-5" />
@@ -93,8 +107,10 @@ export const TasksCalendarMode = ({ tasks }: TasksCalendarModeProps) => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {months.map((m, i) => (
-                  <SelectItem key={i} value={i.toString()}>{m}</SelectItem>
+                {Array.from({ length: 12 }, (_, i) => (
+                  <SelectItem key={i} value={i.toString()}>
+                    {t(`months.${i}` as 'months.0')}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -104,8 +120,10 @@ export const TasksCalendarMode = ({ tasks }: TasksCalendarModeProps) => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Array.from({ length: 10 }, (_, i) => year - 5 + i).map(y => (
-                  <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                {Array.from({ length: 10 }, (_, i) => year - 5 + i).map((y) => (
+                  <SelectItem key={y} value={y.toString()}>
+                    {y}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -116,12 +134,12 @@ export const TasksCalendarMode = ({ tasks }: TasksCalendarModeProps) => {
           </Button>
         </div>
 
-        {/* Дни недели */}
         <div className="grid grid-cols-7 gap-2 text-center text-sm font-medium text-muted-foreground mb-2">
-          <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+          {weekdayKeys.map((key) => (
+            <div key={key}>{t(`weekdays.${key}`)}</div>
+          ))}
         </div>
 
-        {/* Сетка дней */}
         <div className="grid grid-cols-7 gap-3">
           {days.map((day) => {
             const taskCount = getTaskCount(day);
@@ -132,13 +150,15 @@ export const TasksCalendarMode = ({ tasks }: TasksCalendarModeProps) => {
                 key={day.toString()}
                 onClick={() => handleDayClick(day)}
                 className={cn(
-                  "min-h-32 rounded-xl border bg-card p-3 cursor-pointer transition-all hover:shadow-md hover:border-primary/50",
-                  isCurrentDay && "ring-2 ring-primary ring-offset-2",
-                  taskCount > 0 && "border-primary/30"
+                  'min-h-32 rounded-xl border bg-card p-3 cursor-pointer transition-all hover:shadow-md hover:border-primary/50',
+                  isCurrentDay && 'ring-2 ring-primary ring-offset-2',
+                  taskCount > 0 && 'border-primary/30'
                 )}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className={cn("text-sm font-semibold", isCurrentDay && "text-primary")}>
+                  <span
+                    className={cn('text-sm font-semibold', isCurrentDay && 'text-primary')}
+                  >
                     {format(day, 'd')}
                   </span>
                   {taskCount > 0 && (
@@ -146,7 +166,7 @@ export const TasksCalendarMode = ({ tasks }: TasksCalendarModeProps) => {
                   )}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {taskCount === 0 ? "Нет задач" : `${taskCount} задач${taskCount > 4 ? '' : taskCount === 1 ? 'а' : 'и'}`}
+                  {t('taskCount', { count: taskCount })}
                 </div>
               </div>
             );
@@ -154,24 +174,39 @@ export const TasksCalendarMode = ({ tasks }: TasksCalendarModeProps) => {
         </div>
       </div>
 
-      {/* Модалка дня */}
       <Dialog open={isDayModalOpen} onOpenChange={setIsDayModalOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Задачи на {selectedDate && format(selectedDate, 'd MMMM yyyy', { locale: ru })}
+              {selectedDate &&
+                t('tasksOnDate', {
+                  date: format(selectedDate, 'd MMMM yyyy', { locale: dateLocale }),
+                })}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 mt-4">
             {dayTasks.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">Нет задач</p>
+              <p className="text-center text-muted-foreground py-8">
+                {tCommon('noTasks')}
+              </p>
             ) : (
-              dayTasks.map(task => task && <TaskCard key={task.id} task={task} showGoalTitle />)
+              dayTasks.map(
+                (task) => task && <TaskCard key={task.id} task={task} showGoalTitle />
+              )
             )}
           </div>
-          <Button className="w-full mt-6" onClick={() => openTaskForm(undefined, undefined, selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined)}>
+          <Button
+            className="w-full mt-6"
+            onClick={() =>
+              openTaskForm(
+                undefined,
+                undefined,
+                selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined
+              )
+            }
+          >
             <Plus className="mr-2 h-4 w-4" />
-            Добавить задачу
+            {t('addTask')}
           </Button>
         </DialogContent>
       </Dialog>

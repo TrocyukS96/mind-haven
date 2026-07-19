@@ -9,6 +9,7 @@ import {
 } from '@/shared/ui/dialog';
 import TaskForm from './TaskForm';
 import { useStore } from '@/shared/store/store-config';
+import { useTranslations } from 'next-intl';
 
 interface Props {
   task?: Task | null;
@@ -17,25 +18,28 @@ interface Props {
 }
 
 const TaskFormModal = ({ open, onOpenChange }: Props) => {
-  const { selectedTask, isTaskFormOpen, openTaskForm, closeTaskForm } = useStore();
+  const { selectedTask, isTaskFormOpen, closeTaskForm } = useStore();
+  const t = useTranslations('tasks');
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} >
-      {
-        open && (
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>
-                {selectedTask ? 'Редактировать задачу' : 'Новая задача'}
-              </DialogTitle>
-            </DialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open && (
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedTask ? t('editTask') : t('newTask')}
+            </DialogTitle>
+          </DialogHeader>
 
-            <TaskForm task={selectedTask} open={isTaskFormOpen} onOpenChange={(open) => !open && closeTaskForm()} />
-          </DialogContent>
-        )
-      }
+          <TaskForm
+            task={selectedTask}
+            open={isTaskFormOpen}
+            onOpenChange={(isOpen) => !isOpen && closeTaskForm()}
+          />
+        </DialogContent>
+      )}
     </Dialog>
   );
-}
+};
 
 export default TaskFormModal;

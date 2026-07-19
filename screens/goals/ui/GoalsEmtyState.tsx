@@ -3,6 +3,7 @@
 import { Target } from 'lucide-react';
 import { EmptyState } from '@/shared/ui/empty-state';
 import { useStore } from '@/shared/store/store-config';
+import { useTranslations } from 'next-intl';
 
 interface GoalEmptyStateProps {
   category?: string;
@@ -11,21 +12,19 @@ interface GoalEmptyStateProps {
 
 const GoalsEmptyState = ({ category, compact = false }: GoalEmptyStateProps) => {
   const openGoalForm = useStore((state) => state.openGoalForm);
+  const t = useTranslations('goals');
 
-  const title = category 
-    ? `Нет целей в категории "${category}"`
-    : 'Нет целей';
-
+  const title = category ? t('noGoalsInCategory', { category }) : t('noGoals');
   const description = category
-    ? 'Создайте цель в этой категории, чтобы начать работу'
-    : 'Создайте свою первую цель, чтобы начать путь к успеху';
+    ? t('createGoalInCategory')
+    : t('createFirstGoal');
 
   return (
     <EmptyState
       icon={Target}
       title={title}
       description={description}
-      actionLabel="Создать цель"
+      actionLabel={t('createGoal')}
       onAction={openGoalForm}
       compact={compact}
     />

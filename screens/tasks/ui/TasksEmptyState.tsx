@@ -1,19 +1,24 @@
-import { useStore } from "@/shared/store/store-config";
-import { EmptyState } from "@/shared/ui/empty-state";
-import { CheckSquare } from "lucide-react";
+'use client';
+
+import { useStore } from '@/shared/store/store-config';
+import { EmptyState } from '@/shared/ui/empty-state';
+import { CheckSquare } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const TasksEmptyState = () => {
-    const openTaskForm = useStore((state) => state.openTaskForm);
-    return (
-        <EmptyState
-            icon={CheckSquare}
-            title="Нет задач"
-            description="Создайте первую задачу"
-            actionLabel="Создать задачу"
-            onAction={openTaskForm}
-            compact={true}
-        />
-    );
+  const openTaskForm = useStore((state) => state.openTaskForm);
+  const t = useTranslations('tasks');
+
+  return (
+    <EmptyState
+      icon={CheckSquare}
+      title={t('noTasksYet')}
+      description={t('createFirstTaskDescription')}
+      actionLabel={t('createFirstTask')}
+      onAction={openTaskForm}
+      compact={true}
+    />
+  );
 };
 
 export default TasksEmptyState;
