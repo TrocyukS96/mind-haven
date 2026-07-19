@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 
-const env = fs.readFileSync('.env', 'utf8');
+const env = fs.readFileSync('.env.local', 'utf8');
 const vars = {};
 
 for (const line of env.split('\n')) {
@@ -16,14 +16,32 @@ for (const line of env.split('\n')) {
   vars[match[1]] = value;
 }
 
-for (const key of [
-  'DATABASE_URL',
-  'DIRECT_URL',
-  'POSTGRES_URL',
-  'POSTGRES_URL_NON_POOLING',
-  'POSTGRES_PRISMA_URL',
-]) {
+for (const key of ['DATABASE_URL', 'DIRECT_URL', 'POSTGRES_URL', 'POSTGRES_URL_NON_POOLING']) {
   const value = vars[key] || '';
-  const startsWithPostgres = value.startsWith('postgres://') || value.startsWith('postgresql://');
-  console.log(`${key}: len=${value.length}, postgres=${startsWithPostgres}, preview=${JSON.stringify(value.slice(0, 20))}`);
+  const isPostgres = value.startsWith('postgres://') || value.startsWith('postgresql://');
+  const isTemplate = value.includes('${') || value.startsWith('@');
+  console.log(
+    `${key}: len=${value.length}, postgres=${isPostgres}, template=${isTemplate}, preview=${JSON.stringify(value.slice(0, 30))}`
+  );
 }
+
+fs.writeFileSync(
+  'scripts/env-debug.txt',
+  JSON.stringify(
+    Object.fromEntries(
+      ['DATABASE_URL', 'DIRECT_URL', 'POSTGRES_URL', 'POSTGRES_URL_NON_POOLING'].map((key) => {
+        const value = vars[key] || '';
+        return [
+          key,
+          {
+            len: value.length,
+            postgres: value.startsWith('postgres://') || value.startsWith('postgresql://'),
+            startsWith: value.slice(0, 12),
+          },
+        ];
+      })
+    ),
+    null,
+    2
+  )
+);

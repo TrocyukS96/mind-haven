@@ -1,6 +1,7 @@
 'use client';
 
 import { Link, usePathname, useRouter } from '@/i18n/routing';
+import { useAccess } from '@/features/access';
 import { useTheme } from '@/shared/hooks/use-theme';
 import { cn } from '@/shared/lib/utils';
 import {
@@ -12,12 +13,14 @@ import {
   Home,
   Menu,
   Moon,
+  Shield,
   Sun,
+  Table2,
   Target,
   X,
 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import {
   Select,
   SelectContent,
@@ -25,14 +28,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select';
+import type { FeatureKey } from '@/shared/config/features';
+import { SidebarAuthSection } from './sidebar-auth-section';
 
-const menuItems = [
-  { id: 'dashboard', labelKey: 'dashboard', icon: Home, href: '/' },
-  { id: 'goals', labelKey: 'goals', icon: Target, href: '/goals' },
-  { id: 'tasks', labelKey: 'tasks', icon: CheckSquare, href: '/tasks' },
-  { id: 'journal', labelKey: 'journal', icon: BookOpen, href: '/journal' },
-  { id: 'habits', labelKey: 'habits', icon: Flame, href: '/habits' },
-] as const;
+const menuItems: {
+  id: string;
+  labelKey: string;
+  icon: typeof Home;
+  href: '/' | '/goals' | '/tasks' | '/journal' | '/habits' | '/tables';
+  feature: FeatureKey;
+}[] = [
+  { id: 'dashboard', labelKey: 'dashboard', icon: Home, href: '/', feature: 'dashboard' },
+  { id: 'goals', labelKey: 'goals', icon: Target, href: '/goals', feature: 'goals' },
+  { id: 'tasks', labelKey: 'tasks', icon: CheckSquare, href: '/tasks', feature: 'tasks' },
+  { id: 'journal', labelKey: 'journal', icon: BookOpen, href: '/journal', feature: 'journal' },
+  { id: 'habits', labelKey: 'habits', icon: Flame, href: '/habits', feature: 'habits' },
+  { id: 'tables', labelKey: 'tables', icon: Table2, href: '/tables', feature: 'tables' },
+];
 
 export function Sidebar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -42,6 +54,15 @@ export function Sidebar() {
   const locale = useLocale();
   const router = useRouter();
   const [, startTransition] = useTransition();
+  const { getAccessibleFeatures, canAccessFeature } = useAccess();
+
+  const visibleMenuItems = useMemo(
+    () =>
+      menuItems.filter((item) =>
+        getAccessibleFeatures([item.feature]).includes(item.feature)
+      ),
+    [getAccessibleFeatures]
+  );
 
   const handleLocaleChange = (newLocale: string) => {
     startTransition(() => {
@@ -78,7 +99,7 @@ export function Sidebar() {
               </div>
             </div>
             <nav className="space-y-2">
-              {menuItems.map((item) => {
+              {visibleMenuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
                 return (
@@ -99,6 +120,23 @@ export function Sidebar() {
                   </Link>
                 );
               })}
+
+              {canAccessFeature('admin_panel') && (
+                <Link
+                  href="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-4 py-3 rounded-lg',
+                    'transition-all duration-200',
+                    pathname === '/admin'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-accent'
+                  )}
+                >
+                  <Shield size={20} />
+                  <span>{t('admin')}</span>
+                </Link>
+              )}
             </nav>
           </div>
         </div>
@@ -114,6 +152,8 @@ export function Sidebar() {
           'bottom-0'
         )}
       >
+        <SidebarAuthSection />
+
         <div className="flex items-center justify-between px-6 py-3 border-b border-border">
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <Globe size={16} />

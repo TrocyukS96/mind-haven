@@ -26,6 +26,12 @@
     "tasks": "Tasks",
     "journal": "Journal",
     "habits": "Habits",
+    "tables": "Tables",
+    "admin": "Admin",
+    "profile": "Profile",
+    "signInWithGoogle": "Sign in with Google",
+    "signOut": "Sign out",
+    "guestStorageHint": "Your data is stored only in this browser. Sign in to sync it with your account.",
     "darkTheme": "Dark theme",
     "lightTheme": "Light theme",
     "language": "Language",
@@ -281,5 +287,72 @@
     "thisQuarter": "This quarter",
     "thisYear": "This year",
     "custom": "Custom"
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Your account details",
+    "authRequiredTitle": "Sign in required",
+    "authRequiredDescription": "Sign in with Google to open your profile.",
+    "unnamed": "Unnamed",
+    "role": "Role",
+    "roles": {
+      "USER": "User",
+      "ADMIN": "Admin",
+      "SUPER_ADMIN": "Super admin"
+    },
+    "storageTitle": "Data storage",
+    "storageDescription": "Your data is synced to the database and available when you sign in from any device."
+  },
+  "admin": {
+    "title": "Admin panel",
+    "subtitle": "Manage feature visibility and roles",
+    "accessDeniedTitle": "Access denied",
+    "accessDeniedDescription": "This page is available to administrators only.",
+    "features": {
+      "title": "Feature settings",
+      "description": "Hide or enable sections for regular users and guests.",
+      "premiumBadge": "Premium feature — available with subscription, admins, and super admins",
+      "saved": "Settings saved",
+      "saveError": "Failed to save settings",
+      "items": {
+        "dashboard": {
+          "title": "Home",
+          "description": "Progress and activity overview"
+        },
+        "goals": {
+          "title": "Goals",
+          "description": "Goal setting and tracking"
+        },
+        "tasks": {
+          "title": "Tasks",
+          "description": "Task list and calendar"
+        },
+        "journal": {
+          "title": "Journal",
+          "description": "Entries and reflection"
+        },
+        "habits": {
+          "title": "Habits",
+          "description": "Habit tracker"
+        },
+        "tables": {
+          "title": "Tables",
+          "description": "Custom data tables"
+        },
+        "analytics": {
+          "title": "Analytics",
+          "description": "Progress statistics and reports"
+        },
+        "ai_assistant": {
+          "title": "AI assistant",
+          "description": "AI-powered tips and analysis"
+        }
+      }
+    },
+    "users": {
+      "title": "Admin management",
+      "description": "Assign and remove administrators. Super admin only.",
+      "placeholder": "The admin list will appear here after auth is connected."
+    }
   }
 }
