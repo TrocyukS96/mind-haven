@@ -10,7 +10,7 @@ export interface TasksSlice {
     defaultGoalId?: string;
     defaultDeadline?: string;
 
-    addTask: (title: string, goalId?: string, priority?: TaskPriority, deadline?: string) => void;
+    addTask: (title: string, goalId?: string, priority?: TaskPriority, deadline?: string, type?: string) => void;
     toggleTask: (id: string) => void;
     updateTask: (id: string, updates: Partial<Task>) => void;
     deleteTask: (task: Task) => void;
@@ -33,12 +33,13 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
     selectedTask: null,
     isTaskFormOpen: false,
     defaultGoalId: undefined,
-    addTask: (title, goalId, priority = 'medium', deadline?: string) => {
+    addTask: (title, goalId, priority = 'medium', deadline?: string, type = 'backlog') => {
         const newTask: Task = {
             id: Date.now().toString(),
             title: title.trim(),
             completed: false,
             priority,
+            type,
             goalId,
             createdAt: new Date().toISOString(),
             deadline: deadline ? new Date(deadline).toISOString() : undefined,

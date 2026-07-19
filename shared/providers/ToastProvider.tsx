@@ -1,10 +1,10 @@
 'use client';
 
 import { ToastContainer } from "react-toastify";
-import { useAppStore } from "../store/slices/app-slice";
+import { useStore } from "../store/store-config";
 
 const ToastProvider = () => {
-    const { theme } = useAppStore();
+    const theme = useStore((state) => state.theme);
     return (
         <ToastContainer
           position="top-right"

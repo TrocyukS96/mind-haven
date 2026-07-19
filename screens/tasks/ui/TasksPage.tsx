@@ -3,18 +3,20 @@
 import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
 import { Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TasksByDayMode } from './TasksByDayMode';
 import { TasksCalendarMode } from './TasksCalendarMode';
 import { TasksListMode } from './TasksListMode';
-import { TasksTabs } from './TasksTabs';
+import { TasksKanbanMode } from './TasksKanbanMode';
 import { TasksSearch } from './TasksSearch';
 import { TasksFilter } from './TasksFilter';
 import { TaskPriority } from '@/entities/task/model/types';
 import { useFilteredTasks } from '@/features/task/hooks/use-filtered-tasks';
 import { useTranslations } from 'next-intl';
-
-type ViewMode = 'list' | 'by-day' | 'calendar';
+import type { DisplayMode } from '@/shared/config/display-modes';
+import { PageToolbar } from '@/shared/ui/page-toolbar';
+import { DisplayModeTabs } from '@/shared/ui/display-mode-tabs';
+import { useDisplayModeSettings, resolveDisplayMode } from '@/features/display-modes';
 
 type FilterState = {
   priority?: TaskPriority | 'all';
@@ -25,15 +27,36 @@ type FilterState = {
 
 const TasksPage = () => {
   const { tasks, openTaskForm } = useStore();
-  const [viewMode, setViewMode] = useState<ViewMode>('by-day');
+  const { settings, getDefaultMode } = useDisplayModeSettings();
+  const [displayMode, setDisplayMode] = useState<DisplayMode>(() => getDefaultMode('tasks'));
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<FilterState>({ priority: 'all' });
   const t = useTranslations('tasks');
 
+  useEffect(() => {
+    setDisplayMode((current) => resolveDisplayMode('tasks', current, settings));
+  }, [settings]);
+
   const filteredTasks = useFilteredTasks(tasks, searchQuery, filter);
+
   const isFilterActive = Object.values(filter).some(
     (v) => v !== undefined && v !== 'all'
   );
+
+  const renderContent = () => {
+    switch (displayMode) {
+      case 'kanban':
+        return <TasksKanbanMode tasks={filteredTasks} />;
+      case 'list':
+        return <TasksListMode tasks={filteredTasks} />;
+      case 'by-day':
+        return <TasksByDayMode tasks={filteredTasks} />;
+      case 'calendar':
+        return <TasksCalendarMode tasks={filteredTasks} />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -45,24 +68,28 @@ const TasksPage = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 justify-between sm:flex-row gap-4">
-        <div className="col-span-1 flex gap-2">
-          <TasksFilter
-            filter={filter}
-            onApply={setFilter}
-            onReset={() => setFilter({})}
-            isActive={isFilterActive}
+      <PageToolbar
+        left={
+          <>
+            <TasksFilter
+              filter={filter}
+              onApply={setFilter}
+              onReset={() => setFilter({})}
+              isActive={isFilterActive}
+            />
+            <TasksSearch value={searchQuery} onChange={setSearchQuery} />
+          </>
+        }
+        right={
+          <DisplayModeTabs
+            section="tasks"
+            value={displayMode}
+            onChange={setDisplayMode}
           />
-          <TasksSearch value={searchQuery} onChange={setSearchQuery} />
-        </div>
-        <div className="col-span-1 flex justify-end items-center">
-          <TasksTabs viewMode={viewMode} setViewMode={setViewMode} />
-        </div>
-      </div>
+        }
+      />
 
-      {viewMode === 'list' && <TasksListMode tasks={filteredTasks} />}
-      {viewMode === 'by-day' && <TasksByDayMode tasks={filteredTasks} />}
-      {viewMode === 'calendar' && <TasksCalendarMode tasks={filteredTasks} />}
+      {renderContent()}
     </div>
   );
 };

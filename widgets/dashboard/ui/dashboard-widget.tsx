@@ -3,47 +3,23 @@
 import { Link } from '@/i18n/routing';
 import { useStore } from '@/shared/store/store-config';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
-import { Button } from '@/shared/ui/button';
 import {
   BookOpen,
   Brain,
   Calendar,
   CheckSquare,
-  Plus,
   Sparkles,
   Target,
-  TrendingUp,
+  TrendingUp
 } from 'lucide-react';
-import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import { useEffect } from 'react';
 import { RotatingDescription } from './rotating-description';
 
 export function DashboardWidget() {
   const { journalEntries, goals, habits, markOverdueTasks } = useStore();
-  const openGoalForm = useStore((state) => state.openGoalForm);
   const t = useTranslations('dashboard');
   const descriptionSentences = t.raw('descriptionSentences') as string[];
-
-  const stats = [
-    {
-      label: t('journalEntries'),
-      value: journalEntries.length,
-      icon: BookOpen,
-      color: 'hsl(var(--primary))',
-    },
-    {
-      label: t('activeGoals'),
-      value: goals.length,
-      icon: Target,
-      color: 'hsl(var(--secondary))',
-    },
-    {
-      label: t('activeHabits'),
-      value: habits.length,
-      icon: CheckSquare,
-      color: '#f39c12',
-    },
-  ];
 
   const features: {
     key: 'goals' | 'journal' | 'ai';
@@ -76,17 +52,6 @@ export function DashboardWidget() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1>{t('title')}</h1>
-          <p className="text-muted-foreground mt-2 max-w-2xl">{t('subtitle')}</p>
-        </div>
-        <Button size="lg" onClick={() => openGoalForm()}>
-          <Plus size={20} />
-          {t('createGoal')}
-        </Button>
-      </div>
-
       <Card className="relative overflow-hidden border-primary/15 bg-gradient-to-br from-primary/5 via-background to-chart-2/5">
         <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-primary/5 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 -left-10 size-40 rounded-full bg-chart-2/10 blur-3xl" />
@@ -138,30 +103,6 @@ export function DashboardWidget() {
           </div>
         </CardContent>
       </Card>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={index}>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div
-                    className="p-3 rounded-lg"
-                    style={{ backgroundColor: `${stat.color}20` }}
-                  >
-                    <Icon size={24} style={{ color: stat.color }} />
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-sm">{stat.label}</p>
-                    <p className="text-2xl font-semibold mt-1">{stat.value}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>

@@ -1,5 +1,7 @@
 import { AccessProvider } from '@/features/access';
 import { AuthSessionProvider } from '@/features/auth';
+import { DisplayModeProvider } from '@/features/display-modes';
+import { ItemTypeProvider } from '@/features/item-types';
 import { routing } from '@/i18n/routing';
 import type { Metadata } from 'next';
 import { Geist } from 'next/font/google';
@@ -10,7 +12,9 @@ import { ModalProvider } from '@/shared/providers/ModalProvider';
 import ToastProvider from '@/shared/providers/ToastProvider';
 import { getSessionProfile } from '@/shared/lib/auth/get-session-profile';
 import { getFeatureFlags } from '@/shared/lib/features/feature-service';
-import { Sidebar } from '@/widgets/sidebar/ui/sidebar';
+import { getDisplayModeSettings } from '@/shared/lib/display-modes/display-mode-service';
+import { getItemTypes } from '@/shared/lib/item-types/item-type-service';
+import { LayoutShell } from '@/widgets/layout-shell';
 import '../globals.css';
 
 const geistSans = Geist({
@@ -54,9 +58,11 @@ export default async function LocaleLayout({
 
   setRequestLocale(locale);
   const messages = await getMessages();
-  const [profile, globalFeatureFlags] = await Promise.all([
+  const [profile, globalFeatureFlags, displayModeSettings, itemTypes] = await Promise.all([
     getSessionProfile(),
     getFeatureFlags(),
+    getDisplayModeSettings(),
+    getItemTypes(),
   ]);
 
   return (
@@ -89,14 +95,13 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           <AuthSessionProvider>
             <AccessProvider profile={profile} globalFeatureFlags={globalFeatureFlags}>
-              <div className="min-h-screen flex">
-                <Sidebar />
-                <main className="flex-1 p-6 lg:p-8 overflow-auto">
-                  <div className="max-w-7xl mx-auto">{children}</div>
-                </main>
-              </div>
-              <ModalProvider />
-              <ToastProvider />
+              <DisplayModeProvider settings={displayModeSettings}>
+                <ItemTypeProvider catalog={itemTypes}>
+                  <LayoutShell>{children}</LayoutShell>
+                  <ModalProvider />
+                  <ToastProvider />
+                </ItemTypeProvider>
+              </DisplayModeProvider>
             </AccessProvider>
           </AuthSessionProvider>
         </NextIntlClientProvider>

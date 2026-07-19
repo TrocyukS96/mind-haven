@@ -4,18 +4,20 @@ import { Input } from '@/shared/ui/input';
 import { Search, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { cn } from '@/shared/lib/utils';
 
 interface TasksSearchProps {
   value: string;
   onChange: (value: string) => void;
+  className?: string;
 }
 
-export function TasksSearch({ value, onChange }: TasksSearchProps) {
+export function TasksSearch({ value, onChange, className }: TasksSearchProps) {
   const [localValue, setLocalValue] = useState(value);
   const t = useTranslations('tasks');
 
   return (
-    <div className="relative flex-1 max-w-md h-[36px]">
+    <div className={cn('relative h-9 w-[350px]', className)}>
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
       <Input
         placeholder={t('searchPlaceholder')}

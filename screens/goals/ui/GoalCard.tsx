@@ -13,7 +13,7 @@ import {
 } from '@/shared/ui/alert-dialog';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent } from '@/shared/ui/card';
-import { Brain, Calendar, Clock, Edit, MoreVertical, Plus, Target, Trash2 } from 'lucide-react';
+import { Brain, Calendar, Clock, Edit, MoreVertical, Plus, Target, Trash2, Inbox } from 'lucide-react';
 import { getProgressColor } from '../libs/get-progress-color';
 import {
   DropdownMenu,
@@ -29,6 +29,7 @@ import { getGoalStatus } from '@/shared/lib/goal-heplers';
 import { Badge } from '@/shared/ui/badge';
 import { cn } from '@/shared/lib/utils';
 import { useLocale, useTranslations } from 'next-intl';
+import { useItemTypes } from '@/features/item-types';
 
 interface Props {
   goal: Goal;
@@ -41,8 +42,11 @@ const GoalCard = ({ goal }: Props) => {
   const t = useTranslations('goals');
   const tCommon = useTranslations('common');
   const locale = useLocale();
+  const { catalog } = useItemTypes();
 
   const getTypeConfig = (type: Goal['type']) => {
+    const customType = catalog.goals.find((item) => item.key === type);
+
     switch (type) {
       case 'short':
         return {
@@ -68,9 +72,17 @@ const GoalCard = ({ goal }: Props) => {
           bgColor: 'bg-purple-50 dark:bg-purple-900/20',
           borderColor: 'border-purple-200 dark:border-purple-800',
         };
+      case 'backlog':
+        return {
+          label: t('types.backlog'),
+          icon: Inbox,
+          color: 'text-slate-600 dark:text-slate-400',
+          bgColor: 'bg-slate-50 dark:bg-slate-900/20',
+          borderColor: 'border-slate-200 dark:border-slate-800',
+        };
       default:
         return {
-          label: t('defaultLabel'),
+          label: customType?.label || type,
           icon: Target,
           color: 'text-gray-600 dark:text-gray-400',
           bgColor: 'bg-gray-50 dark:bg-gray-900/20',

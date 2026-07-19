@@ -1,6 +1,7 @@
 'use client';
 
-import { Task, TaskPriority } from '@/entities/task/model/types';
+import { Task, TaskPriority, TaskType } from '@/entities/task/model/types';
+import { useItemTypes } from '@/features/item-types';
 import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
 import { Checkbox } from '@/shared/ui/checkbox';
@@ -25,12 +26,15 @@ interface Props {
 
 const TaskForm = ({ task, open, onOpenChange }: Props) => {
   const { goals, addTask, updateTask, defaultGoalId, defaultDeadline } = useStore();
+  const { getEnabledTypes, getDefaultTypeKey } = useItemTypes();
+  const taskTypes = getEnabledTypes('tasks');
   const t = useTranslations('tasks');
   const tCommon = useTranslations('common');
   const tPriorities = useTranslations('priorities');
 
   const [title, setTitle] = useState(task?.title || '');
   const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'medium');
+  const [type, setType] = useState<TaskType>(task?.type || getDefaultTypeKey('tasks'));
   const [goalId, setGoalId] = useState<string>(task?.goalId || defaultGoalId || 'none');
   const [completed, setCompleted] = useState(task?.completed || false);
   const [deadline, setDeadline] = useState(task?.deadline || '');
@@ -48,11 +52,12 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
       updateTask(task.id, {
         title: title.trim(),
         priority,
+        type,
         goalId: finalGoalId,
         deadline: finalDeadline,
       });
     } else {
-      addTask(title.trim(), finalGoalId, priority, finalDeadline);
+      addTask(title.trim(), finalGoalId, priority, finalDeadline, type);
     }
 
     onOpenChange(false);
@@ -63,16 +68,18 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
       if (task) {
         setTitle(task.title);
         setPriority(task.priority);
+        setType(task.type || getDefaultTypeKey('tasks'));
         setGoalId(task.goalId || 'none');
         setDeadline(task.deadline || '');
       } else {
         setTitle('');
         setPriority('medium');
+        setType(getDefaultTypeKey('tasks'));
         setGoalId(defaultGoalId || 'none');
         setDeadline(defaultDeadline || '');
       }
     }
-  }, [task, open, defaultGoalId, defaultDeadline]);
+  }, [task, open, defaultGoalId, defaultDeadline, getDefaultTypeKey]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -89,6 +96,22 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="type">{t('taskType')}</Label>
+          <Select value={type} onValueChange={(v) => setType(v)}>
+            <SelectTrigger className="mt-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {taskTypes.map((taskType) => (
+                <SelectItem key={taskType.key} value={taskType.key}>
+                  {taskType.label || t(`types.${taskType.key}` as 'types.short')}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div>
           <Label htmlFor="priority">{t('priority')}</Label>
           <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>

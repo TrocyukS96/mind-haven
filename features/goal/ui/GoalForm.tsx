@@ -1,6 +1,7 @@
 'use client';
 
 import { Goal, GoalCategory, GoalType } from '@/entities/goal/model/types';
+import { useItemTypes } from '@/features/item-types';
 import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
 import { DatePicker } from '@/shared/ui/date-picker';
@@ -26,6 +27,8 @@ interface Props {
 
 export function GoalForm({ goal, open, onOpenChange }: Props) {
   const { addGoal, updateGoal } = useStore();
+  const { getEnabledTypes, getDefaultTypeKey } = useItemTypes();
+  const goalTypes = getEnabledTypes('goals');
   const t = useTranslations('goals');
   const tCommon = useTranslations('common');
 
@@ -34,7 +37,7 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
   const [deadline, setDeadline] = useState('');
   const [category, setCategory] = useState<Exclude<GoalCategory, 'all'>>('month');
   const [progress, setProgress] = useState(0);
-  const [type, setType] = useState<GoalType>('short');
+  const [type, setType] = useState<GoalType>(() => getDefaultTypeKey('goals'));
 
   useEffect(() => {
     if (goal && open) {
@@ -43,14 +46,14 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
       setDeadline(goal.deadline);
       setCategory(goal.category);
       setProgress(goal.progress);
-      setType(goal.type);
+      setType(goal.type || getDefaultTypeKey('goals'));
     } else if (!goal && open) {
       setTitle('');
       setDescription('');
       setDeadline('');
       setCategory('month');
       setProgress(0);
-      setType('short');
+      setType(getDefaultTypeKey('goals'));
     }
   }, [goal, open]);
 
@@ -58,7 +61,7 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
     e.preventDefault();
     if (!title.trim() || !deadline) return;
 
-    const goalData = { title, description, deadline, category, progress };
+    const goalData = { title, description, deadline, category, progress, type };
 
     if (goal) {
       updateGoal(goal.id, goalData);
@@ -145,14 +148,16 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
 
       <div className="space-y-2">
         <Label>{t('goalType')}</Label>
-        <Select value={type} onValueChange={(value) => setType(value as GoalType)}>
+        <Select value={type} onValueChange={(value) => setType(value)}>
           <SelectTrigger id="type">
             <SelectValue placeholder={t('selectGoalType')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="short">{t('types.short')}</SelectItem>
-            <SelectItem value="medium">{t('types.medium')}</SelectItem>
-            <SelectItem value="long">{t('types.long')}</SelectItem>
+            {goalTypes.map((goalType) => (
+              <SelectItem key={goalType.key} value={goalType.key}>
+                {goalType.label || t(`types.${goalType.key}` as 'types.short')}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

@@ -38,6 +38,15 @@
     "ru": "Русский",
     "en": "English"
   },
+  "header": {
+    "adminPanel": "Admin panel",
+    "profile": "Profile",
+    "language": "Language",
+    "ru": "Русский",
+    "en": "English",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
   "dashboard": {
     "title": "Your room for growth",
     "subtitle": "Clear your mind — keep tasks, goals, and thoughts in one place",
@@ -92,6 +101,17 @@
     "byDay": "By day",
     "calendar": "Calendar",
     "list": "List",
+    "kanban": "Kanban",
+    "taskType": "Task type",
+    "types": {
+      "short": "Short-term",
+      "medium": "Medium-term",
+      "long": "Long-term",
+      "backlog": "Backlog"
+    },
+    "kanbanActive": "Active",
+    "kanbanCompleted": "Completed",
+    "kanbanEmptyColumn": "No items",
     "priority": "Priority",
     "overdue": "Overdue",
     "overdueBadge": "Overdue",
@@ -161,6 +181,14 @@
     "editGoal": "Edit goal",
     "searchPlaceholder": "Search by title or description...",
     "clearSearch": "Clear search",
+    "byDay": "By day",
+    "calendar": "Calendar",
+    "list": "List",
+    "kanban": "Kanban",
+    "kanbanEmptyColumn": "No items",
+    "noGoalsInSection": "No goals in this section",
+    "goalsOnDate": "Goals for {date}",
+    "goalCount": "{count, plural, =0 {No goals} one {# goal} other {# goals}}",
     "allGoals": "All goals",
     "noGoals": "No goals",
     "noGoalsInCategory": "No goals in \"{category}\" category",
@@ -190,13 +218,45 @@
     "types": {
       "short": "Short-term",
       "medium": "Medium-term",
-      "long": "Long-term"
+      "long": "Long-term",
+      "backlog": "Backlog"
     },
     "status": {
       "completed": "Completed",
       "onTrack": "On track",
       "atRisk": "At risk",
       "notStarted": "Not started"
+    },
+    "sections": {
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "thisWeek": "This week",
+      "thisMonth": "This month",
+      "thisYear": "This year",
+      "later": "Later"
+    },
+    "months": {
+      "0": "January",
+      "1": "February",
+      "2": "March",
+      "3": "April",
+      "4": "May",
+      "5": "June",
+      "6": "July",
+      "7": "August",
+      "8": "September",
+      "9": "October",
+      "10": "November",
+      "11": "December"
+    },
+    "weekdays": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
     }
   },
   "journal": {
@@ -347,6 +407,32 @@
           "title": "AI assistant",
           "description": "AI-powered tips and analysis"
         }
+      }
+    },
+    "displayModes": {
+      "title": "Display modes",
+      "description": "Choose which card display modes are available in Tasks and Goals.",
+      "saved": "Display settings saved",
+      "saveError": "Failed to save display settings",
+      "sections": {
+        "tasks": "Tasks",
+        "goals": "Goals"
+      }
+    },
+    "itemTypes": {
+      "title": "Task and goal types",
+      "description": "Manage kanban columns: enable built-in types or add custom ones.",
+      "saved": "Type settings saved",
+      "saveError": "Failed to save type settings",
+      "added": "Type added",
+      "addError": "Failed to add type",
+      "fillAllFields": "Fill in the key and label",
+      "keyPlaceholder": "Type key (e.g. sprint)",
+      "labelPlaceholder": "Display name",
+      "addType": "Add type",
+      "sections": {
+        "tasks": "Tasks",
+        "goals": "Goals"
       }
     },
     "users": {

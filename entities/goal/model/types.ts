@@ -1,6 +1,6 @@
 import { Task } from "@/entities/task/model/types";
 
-export type GoalType = 'short' | 'medium' | 'long';
+export type GoalType = string;
 
 export type GoalStatus =
   | 'not-started'

@@ -97,6 +97,26 @@ model FeatureFlag {
   updatedBy String?
 }
 
+model DisplayModeFlag {
+  key       String   @id
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}
+
+model ItemType {
+  key       String
+  section   String
+  label     String   @default("")
+  enabled   Boolean  @default(true)
+  sortOrder Int      @default(0)
+  isSystem  Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@id([section, key])
+}
+
 model UserFeatureGrant {
   id          String    @id @default(cuid())
   userId      String
@@ -133,6 +153,7 @@ model Task {
   title       String
   completed   Boolean   @default(false)
   priority    String    @default("medium")
+  type        String    @default("backlog")
   createdAt   DateTime  @default(now())
   completedAt DateTime?
   deadline    DateTime?
