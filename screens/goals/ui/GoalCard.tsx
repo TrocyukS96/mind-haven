@@ -13,8 +13,7 @@ import {
 } from '@/shared/ui/alert-dialog';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent } from '@/shared/ui/card';
-import { Brain, Calendar, Clock, Edit, MoreVertical, Plus, Target, Trash2, Inbox } from 'lucide-react';
-import { getProgressColor } from '../libs/get-progress-color';
+import { Brain, Calendar, ChevronRight, Edit, MoreVertical, Plus, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,73 +21,40 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu';
 import { TaskCard } from '@/entities/task';
+import { getTaskPriorityStyle } from '@/entities/task/lib/get-task-priority-style';
+import { TaskPriority } from '@/entities/task/model/types';
 import { useStore } from '@/shared/store/store-config';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { getGoalStatus } from '@/shared/lib/goal-heplers';
-import { Badge } from '@/shared/ui/badge';
+import { ItemTypeBadge } from '@/shared/ui/item-type-badge';
 import { cn } from '@/shared/lib/utils';
 import { useLocale, useTranslations } from 'next-intl';
-import { useItemTypes } from '@/features/item-types';
+import { getGoalStatusCardStyle } from '../libs/get-goal-card-status-style';
 
 interface Props {
   goal: Goal;
+  showType?: boolean;
 }
 
-const GoalCard = ({ goal }: Props) => {
+const GoalCard = ({ goal, showType = true }: Props) => {
   const { openTaskForm, deleteGoal, openGoalForm } = useStore();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [stepsExpanded, setStepsExpanded] = useState(false);
   const status = getGoalStatus(goal.progress);
+  const statusStyle = getGoalStatusCardStyle(status);
   const t = useTranslations('goals');
   const tCommon = useTranslations('common');
+  const tPriorities = useTranslations('priorities');
   const locale = useLocale();
-  const { catalog } = useItemTypes();
 
-  const getTypeConfig = (type: Goal['type']) => {
-    const customType = catalog.goals.find((item) => item.key === type);
-
-    switch (type) {
-      case 'short':
-        return {
-          label: t('types.short'),
-          icon: Clock,
-          color: 'text-blue-600 dark:text-blue-400',
-          bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-          borderColor: 'border-blue-200 dark:border-blue-800',
-        };
-      case 'medium':
-        return {
-          label: t('types.medium'),
-          icon: Clock,
-          color: 'text-amber-600 dark:text-amber-400',
-          bgColor: 'bg-amber-50 dark:bg-amber-900/20',
-          borderColor: 'border-amber-200 dark:border-amber-800',
-        };
-      case 'long':
-        return {
-          label: t('types.long'),
-          icon: Target,
-          color: 'text-purple-600 dark:text-purple-400',
-          bgColor: 'bg-purple-50 dark:bg-purple-900/20',
-          borderColor: 'border-purple-200 dark:border-purple-800',
-        };
-      case 'backlog':
-        return {
-          label: t('types.backlog'),
-          icon: Inbox,
-          color: 'text-slate-600 dark:text-slate-400',
-          bgColor: 'bg-slate-50 dark:bg-slate-900/20',
-          borderColor: 'border-slate-200 dark:border-slate-800',
-        };
-      default:
-        return {
-          label: customType?.label || type,
-          icon: Target,
-          color: 'text-gray-600 dark:text-gray-400',
-          bgColor: 'bg-gray-50 dark:bg-gray-900/20',
-          borderColor: 'border-gray-200 dark:border-gray-800',
-        };
-    }
+  const goalPriority: TaskPriority = goal.priority || 'medium';
+  const priorityStyle = getTaskPriorityStyle(goalPriority);
+  const priorityLabels: Record<TaskPriority, string> = {
+    low: tPriorities('low'),
+    medium: tPriorities('medium'),
+    high: tPriorities('high'),
+    urgent: tPriorities('urgent'),
   };
 
   const statusLabels = {
@@ -98,151 +64,149 @@ const GoalCard = ({ goal }: Props) => {
     'not-started': t('status.notStarted'),
   };
 
-  const typeConfig = getTypeConfig(goal.type);
-  const TypeIcon = typeConfig.icon;
-
   return (
     <>
-      <Card className="hover:shadow-lg transition-shadow duration-300 group border-border/50">
-        <CardContent className="p-5">
-          <div className="space-y-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-3">
-                  <span
-                    className={cn(
-                      'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border',
-                      typeConfig.bgColor,
-                      typeConfig.borderColor,
-                      typeConfig.color
-                    )}
-                  >
-                    <TypeIcon className="h-3 w-3" />
-                    {typeConfig.label}
-                  </span>
+      <Card
+        className={cn(
+          'overflow-hidden transition-all duration-300 hover:shadow-md',
+          statusStyle.card
+        )}
+      >
+        <div className={statusStyle.cornerGlow} aria-hidden />
+        <CardContent className="relative z-[1] px-3 py-2.5">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span
+              className={cn(
+                'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                priorityStyle.badge,
+                status === 'completed' && 'opacity-60'
+              )}
+            >
+              {priorityLabels[goalPriority]}
+            </span>
 
-                  <Badge
-                    variant={
-                      status === 'completed'
-                        ? 'default'
-                        : status === 'on-track'
-                          ? 'default'
-                          : status === 'at-risk'
-                            ? 'destructive'
-                            : 'secondary'
-                    }
-                    className="text-xs font-medium"
-                  >
-                    {statusLabels[status]}
-                  </Badge>
-                </div>
+            {status !== 'not-started' && (
+              <span
+                className={cn(
+                  'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+                  statusStyle.badge
+                )}
+              >
+                {statusLabels[status]}
+              </span>
+            )}
+          </div>
 
-                <h3 className="text-xl font-semibold text-foreground mb-2 break-words">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-base font-semibold text-foreground break-words leading-snug">
                   {goal.title}
                 </h3>
-
-                {goal.description && (
-                  <p className="text-muted-foreground text-sm line-clamp-2 mb-3">
-                    {goal.description}
-                  </p>
+                {showType && (
+                  <ItemTypeBadge
+                    section="goals"
+                    typeKey={goal.type}
+                    className="text-xs font-normal"
+                  />
                 )}
               </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => openGoalForm(goal)}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    {tCommon('edit')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                    onClick={() => setIsDeleteOpen(true)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {tCommon('delete')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      toast.info(t('analyzeNotImplemented'), {
-                        icon: <Brain className="h-4 w-4" />,
-                        className: 'border border-border',
-                      });
-                    }}
-                  >
-                    <Brain className="mr-2 h-4 w-4" />
-                    {tCommon('analyze')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+              {goal.description && (
+                <p className="text-muted-foreground text-sm line-clamp-2">
+                  {goal.description}
+                </p>
+              )}
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground">
-                  {tCommon('progress')}
-                </span>
-                <span className="text-sm font-semibold text-primary">{goal.progress}%</span>
-              </div>
-              <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-700 ease-out"
-                  style={{
-                    width: `${goal.progress}%`,
-                    backgroundColor: getProgressColor(goal.progress),
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-3 border-t border-border/50">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar size={16} className="text-primary" />
-                <span className="font-medium">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Calendar size={14} className="text-primary shrink-0" />
+                <span>
                   {new Date(goal.deadline).toLocaleDateString(
                     locale === 'ru' ? 'ru-RU' : 'en-US',
                     {
                       day: 'numeric',
-                      month: 'long',
+                      month: 'short',
                       year: 'numeric',
                     }
                   )}
                 </span>
               </div>
-              <div className="p-2 rounded-full bg-primary/10">
-                <Target size={20} className="text-primary" />
-              </div>
             </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => openGoalForm(goal)}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  {tCommon('edit')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                  onClick={() => setIsDeleteOpen(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {tCommon('delete')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    toast.info(t('analyzeNotImplemented'), {
+                      icon: <Brain className="h-4 w-4" />,
+                      className: 'border border-border',
+                    });
+                  }}
+                >
+                  <Brain className="mr-2 h-4 w-4" />
+                  {tCommon('analyze')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
-          <div className="mt-6 pt-5 border-t border-border/50 space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-base font-semibold text-foreground">{t('stepsToGoal')}</h4>
+          <div className="mt-2 border-t border-border/40 pt-2">
+            <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setStepsExpanded((expanded) => !expanded)}
+                className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary transition-colors"
+                aria-expanded={stepsExpanded}
+              >
+                <ChevronRight
+                  className={cn(
+                    'h-4 w-4 shrink-0 transition-transform duration-200',
+                    stepsExpanded && 'rotate-90'
+                  )}
+                />
+                <span className="truncate">{t('stepsToGoal')}</span>
+                <span className="text-muted-foreground font-normal">({goal.tasks.length})</span>
+              </button>
+
               <Button
-                size="sm"
+                size="icon"
                 variant="outline"
                 onClick={() => openTaskForm(undefined, goal.id)}
-                className="h-8 px-3"
+                className="h-8 w-8 shrink-0 bg-background/60 backdrop-blur-sm"
+                aria-label={tCommon('add')}
               >
-                <Plus className="h-3.5 w-3.5 mr-1.5" />
-                {tCommon('add')}
+                <Plus className="h-4 w-4" />
               </Button>
             </div>
 
-            <div className="space-y-2.5">
-              {goal.tasks.map((task) => (
-                <TaskCard key={task.id} task={task} />
-              ))}
-              {goal.tasks.length === 0 && (
-                <div className="py-4 text-center">
-                  <p className="text-sm text-muted-foreground italic">{t('noStepsYet')}</p>
-                </div>
-              )}
-            </div>
+            {stepsExpanded && (
+              <div className="mt-2 space-y-1.5">
+                {goal.tasks.map((task) => (
+                  <TaskCard key={task.id} task={task} showType={false} variant="step" />
+                ))}
+                {goal.tasks.length === 0 && (
+                  <p className="py-1 text-sm text-muted-foreground italic">
+                    {t('noStepsYet')}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

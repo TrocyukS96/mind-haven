@@ -115,6 +115,9 @@
     "priority": "Priority",
     "overdue": "Overdue",
     "overdueBadge": "Overdue",
+    "status": {
+      "completed": "Completed"
+    },
     "noTasksYet": "No tasks yet",
     "createFirstTask": "Create task",
     "createFirstTaskDescription": "Create your first task",
@@ -126,6 +129,7 @@
     "taskTitle": "Task title",
     "taskTitlePlaceholder": "e.g. Prepare presentation",
     "linkToGoal": "Link to goal",
+    "linkedToGoal": "Linked to goal: {goal}",
     "noGoal": "No goal",
     "markCompleted": "Mark as completed",
     "createTask": "Create task",
@@ -202,6 +206,7 @@
     "selectCategory": "Select category",
     "goalType": "Goal type",
     "selectGoalType": "Select goal type",
+    "priority": "Priority",
     "saveChanges": "Save changes",
     "stepsToGoal": "Steps to goal",
     "noStepsYet": "No steps yet. Add the first one!",

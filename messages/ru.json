@@ -115,6 +115,9 @@
     "priority": "Приоритет",
     "overdue": "Просроченные",
     "overdueBadge": "Просрочено",
+    "status": {
+      "completed": "Завершена"
+    },
     "noTasksYet": "Задач пока нет",
     "createFirstTask": "Создать задачу",
     "createFirstTaskDescription": "Создайте первую задачу",
@@ -126,6 +129,7 @@
     "taskTitle": "Название задачи",
     "taskTitlePlaceholder": "Например: Подготовить презентацию",
     "linkToGoal": "Привязать к цели",
+    "linkedToGoal": "Привязка к цели: {goal}",
     "noGoal": "Без цели",
     "markCompleted": "Отметить как выполненную",
     "createTask": "Создать задачу",
@@ -202,6 +206,7 @@
     "selectCategory": "Выберите категорию",
     "goalType": "Тип цели",
     "selectGoalType": "Выберите тип цели",
+    "priority": "Приоритет",
     "saveChanges": "Сохранить изменения",
     "stepsToGoal": "Шаги к цели",
     "noStepsYet": "Ещё нет шагов. Добавьте первый!",

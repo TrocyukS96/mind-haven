@@ -195,12 +195,7 @@ export function TasksByDayMode({ tasks }: TasksByDayModeProps) {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {dayTasks.map((task) => (
-            <div
-              key={task.id}
-              className="bg-card rounded-xl border shadow-sm hover:shadow-md transition-shadow p-4"
-            >
-              <TaskCard task={task} showGoalTitle />
-            </div>
+            <TaskCard key={task.id} task={task} showGoalTitle />
           ))}
         </div>
       )}

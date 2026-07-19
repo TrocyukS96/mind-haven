@@ -17,7 +17,9 @@ export function TasksKanbanMode({ tasks }: TasksKanbanModeProps) {
       section="tasks"
       items={tasks}
       getItemType={(task) => task.type}
-      renderItem={(task) => <TaskCard key={task.id} task={task} showGoalTitle />}
+      renderItem={(task) => (
+        <TaskCard key={task.id} task={task} showGoalTitle showType={false} />
+      )}
       emptyMessage={t('noTasksYet')}
     />
   );

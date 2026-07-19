@@ -1,4 +1,4 @@
-import { Task } from "@/entities/task/model/types";
+import { Task, TaskPriority } from "@/entities/task/model/types";
 
 export type GoalType = string;
 
@@ -16,6 +16,7 @@ export interface Goal {
   deadline: string;
   category: 'week' | 'month' | 'year';
   type: GoalType;
+  priority: TaskPriority;
   tasks: Task[];
 }
 

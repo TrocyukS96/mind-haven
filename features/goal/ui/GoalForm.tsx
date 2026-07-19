@@ -1,6 +1,7 @@
 'use client';
 
 import { Goal, GoalCategory, GoalType } from '@/entities/goal/model/types';
+import { TaskPriority } from '@/entities/task/model/types';
 import { useItemTypes } from '@/features/item-types';
 import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
@@ -31,6 +32,7 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
   const goalTypes = getEnabledTypes('goals');
   const t = useTranslations('goals');
   const tCommon = useTranslations('common');
+  const tPriorities = useTranslations('priorities');
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -38,6 +40,7 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
   const [category, setCategory] = useState<Exclude<GoalCategory, 'all'>>('month');
   const [progress, setProgress] = useState(0);
   const [type, setType] = useState<GoalType>(() => getDefaultTypeKey('goals'));
+  const [priority, setPriority] = useState<TaskPriority>('medium');
 
   useEffect(() => {
     if (goal && open) {
@@ -47,6 +50,7 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
       setCategory(goal.category);
       setProgress(goal.progress);
       setType(goal.type || getDefaultTypeKey('goals'));
+      setPriority(goal.priority || 'medium');
     } else if (!goal && open) {
       setTitle('');
       setDescription('');
@@ -54,19 +58,20 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
       setCategory('month');
       setProgress(0);
       setType(getDefaultTypeKey('goals'));
+      setPriority('medium');
     }
-  }, [goal, open]);
+  }, [goal, open, getDefaultTypeKey]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !deadline) return;
 
-    const goalData = { title, description, deadline, category, progress, type };
+    const goalData = { title, description, deadline, category, progress, type, priority };
 
     if (goal) {
       updateGoal(goal.id, goalData);
     } else {
-      addGoal({ ...goalData, tasks: [], type });
+      addGoal({ ...goalData, tasks: [] });
     }
 
     onOpenChange(false);
@@ -146,20 +151,37 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label>{t('goalType')}</Label>
-        <Select value={type} onValueChange={(value) => setType(value)}>
-          <SelectTrigger id="type">
-            <SelectValue placeholder={t('selectGoalType')} />
-          </SelectTrigger>
-          <SelectContent>
-            {goalTypes.map((goalType) => (
-              <SelectItem key={goalType.key} value={goalType.key}>
-                {goalType.label || t(`types.${goalType.key}` as 'types.short')}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>{t('goalType')}</Label>
+          <Select value={type} onValueChange={(value) => setType(value)}>
+            <SelectTrigger id="type">
+              <SelectValue placeholder={t('selectGoalType')} />
+            </SelectTrigger>
+            <SelectContent>
+              {goalTypes.map((goalType) => (
+                <SelectItem key={goalType.key} value={goalType.key}>
+                  {goalType.label || t(`types.${goalType.key}` as 'types.short')}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="priority">{t('priority')}</Label>
+          <Select value={priority} onValueChange={(value) => setPriority(value as TaskPriority)}>
+            <SelectTrigger id="priority">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">{tPriorities('low')}</SelectItem>
+              <SelectItem value="medium">{tPriorities('medium')}</SelectItem>
+              <SelectItem value="high">{tPriorities('high')}</SelectItem>
+              <SelectItem value="urgent">{tPriorities('urgentExclaim')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="flex justify-end gap-3 pt-4">

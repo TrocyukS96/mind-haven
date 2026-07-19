@@ -87,7 +87,7 @@ export function GoalsByDayMode({ goals }: GoalsByDayModeProps) {
             ({section.items.length})
           </h2>
           {section.items.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-6">{t('noGoalsInSection')}</p>
+            <p className="text-sm text-muted-foreground">{t('noGoalsInSection')}</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {section.items.map((goal) => (

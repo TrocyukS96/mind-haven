@@ -66,7 +66,7 @@ export function KanbanBoard<T>({
             </div>
             <div className="space-y-2 min-h-24">
               {columnItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-6 text-center">
+                <p className="text-sm text-muted-foreground text-center">
                   {t('kanbanEmptyColumn')}
                 </p>
               ) : (

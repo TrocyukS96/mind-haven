@@ -5,7 +5,7 @@ import GoalsEmptyState from "./GoalsEmtyState";
 const GoalsList = ({ filteredGoals }: { filteredGoals: Goal[] }) => {
     return (
         <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredGoals.map((goal) => (
                     <GoalCard
                         goal={goal}

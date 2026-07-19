@@ -17,7 +17,7 @@ export function GoalsKanbanMode({ goals }: GoalsKanbanModeProps) {
       section="goals"
       items={goals}
       getItemType={(goal) => goal.type}
-      renderItem={(goal) => <GoalCard key={goal.id} goal={goal} />}
+      renderItem={(goal) => <GoalCard key={goal.id} goal={goal} showType={false} />}
       emptyMessage={t('noGoals')}
     />
   );
