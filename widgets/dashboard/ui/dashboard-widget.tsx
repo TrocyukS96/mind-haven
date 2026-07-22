@@ -114,18 +114,18 @@ export function DashboardWidget() {
               <Calendar size={20} className="text-primary" />
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="p-3 border-l-4 border-primary bg-primary/10 rounded">
+          <CardContent className="space-y-4">
+            <div className="rounded-lg border-l-4 border-primary bg-primary/10 px-4 py-3">
               <p className="font-medium">{t('deadlineProject')}</p>
-              <p className="text-sm text-muted-foreground mt-1">{t('in3Days')}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{t('in3Days')}</p>
             </div>
-            <div className="p-3 border-l-4 border-chart-2 bg-chart-2/10 rounded">
+            <div className="rounded-lg border-l-4 border-chart-2 bg-chart-2/10 px-4 py-3">
               <p className="font-medium">{t('meditationGoal')}</p>
-              <p className="text-sm text-muted-foreground mt-1">{t('daysLeft2')}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{t('daysLeft2')}</p>
             </div>
-            <div className="p-3 border-l-4 border-[#f39c12] bg-chart-4/10 rounded">
+            <div className="rounded-lg border-l-4 border-[#f39c12] bg-chart-4/10 px-4 py-3">
               <p className="font-medium">{t('weekReview')}</p>
-              <p className="text-sm text-muted-foreground mt-1">{t('sunday')}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{t('sunday')}</p>
             </div>
           </CardContent>
         </Card>

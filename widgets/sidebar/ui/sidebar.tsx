@@ -11,20 +11,19 @@ import {
   Gift,
   Home,
   Shield,
-  Table2,
   Target,
   User,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
-import type { FeatureKey } from '@/shared/config/features';
+import { UI_HIDDEN_FEATURES, type FeatureKey } from '@/shared/config/features';
 import { ThemeToggle } from './theme-toggle';
 
 const menuItems: {
   id: string;
   labelKey: string;
   icon: typeof Home;
-  href: '/' | '/goals' | '/tasks' | '/journal' | '/habits' | '/tables' | '/rewards';
+  href: '/' | '/goals' | '/tasks' | '/journal' | '/habits' | '/rewards';
   feature: FeatureKey;
 }[] = [
   { id: 'dashboard', labelKey: 'dashboard', icon: Home, href: '/', feature: 'dashboard' },
@@ -32,7 +31,6 @@ const menuItems: {
   { id: 'tasks', labelKey: 'tasks', icon: CheckSquare, href: '/tasks', feature: 'tasks' },
   { id: 'journal', labelKey: 'journal', icon: BookOpen, href: '/journal', feature: 'journal' },
   { id: 'habits', labelKey: 'habits', icon: Flame, href: '/habits', feature: 'habits' },
-  { id: 'tables', labelKey: 'tables', icon: Table2, href: '/tables', feature: 'tables' },
   { id: 'rewards', labelKey: 'rewards', icon: Gift, href: '/rewards', feature: 'gamification' },
 ];
 
@@ -49,8 +47,10 @@ export function Sidebar({ mobileMenuOpen, onMobileMenuClose }: SidebarProps) {
 
   const visibleMenuItems = useMemo(
     () =>
-      menuItems.filter((item) =>
-        getAccessibleFeatures([item.feature]).includes(item.feature)
+      menuItems.filter(
+        (item) =>
+          !UI_HIDDEN_FEATURES.has(item.feature) &&
+          getAccessibleFeatures([item.feature]).includes(item.feature)
       ),
     [getAccessibleFeatures]
   );

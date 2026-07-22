@@ -2,15 +2,19 @@
 
 import { useAccess } from '@/features/access';
 import { Link } from '@/i18n/routing';
+import { getDateLocale } from '@/shared/lib/date-locale';
 import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
+import { format } from 'date-fns';
 import { Star, TrendingUp } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 
 export function PointsDashboardWidget() {
   const { canAccessFeature } = useAccess();
+  const locale = useLocale();
+  const dateLocale = getDateLocale(locale);
   const t = useTranslations('dashboard');
   const tPoints = useTranslations('points');
   const balance = useStore((state) => state.balance);
@@ -28,7 +32,7 @@ export function PointsDashboardWidget() {
           <Star size={20} className="text-primary" />
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
         <div className="flex flex-wrap items-end gap-4">
           <div>
             <p className="text-3xl font-semibold">{balance}</p>
@@ -40,7 +44,7 @@ export function PointsDashboardWidget() {
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-3">
           <p className="text-sm font-medium">{t('pointsRecent')}</p>
           {recentTransactions.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('pointsEmpty')}</p>
@@ -48,11 +52,23 @@ export function PointsDashboardWidget() {
             recentTransactions.map((transaction) => (
               <div
                 key={transaction.id}
-                className="flex items-center justify-between rounded-lg bg-muted p-3 text-sm"
+                className="flex items-center justify-between gap-3 rounded-lg bg-muted px-4 py-3 text-sm"
               >
-                <span>{tPoints(`reasons.${transaction.reason}`)}</span>
-                <span className={transaction.amount > 0 ? 'text-primary font-medium' : 'text-muted-foreground'}>
-                  {transaction.amount > 0 ? '+' : ''}{transaction.amount}
+                <div className="min-w-0">
+                  <p>{tPoints(`reasons.${transaction.reason}`)}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {format(new Date(transaction.createdAt), 'd MMM yyyy, HH:mm', {
+                      locale: dateLocale,
+                    })}
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 ${
+                    transaction.amount > 0 ? 'text-primary font-medium' : 'text-muted-foreground'
+                  }`}
+                >
+                  {transaction.amount > 0 ? '+' : ''}
+                  {transaction.amount}
                 </span>
               </div>
             ))

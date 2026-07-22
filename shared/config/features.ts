@@ -80,7 +80,7 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     minRole: 'GUEST',
     requiresSubscription: false,
     adminToggleable: true,
-    defaultEnabled: true,
+    defaultEnabled: false,
   },
   gamification: {
     key: 'gamification',
@@ -146,8 +146,10 @@ export const NAV_FEATURE_KEYS: FeatureKey[] = [
   'tasks',
   'journal',
   'habits',
-  'tables',
 ];
+
+/** Features hidden from navigation and direct page access (code kept for later). */
+export const UI_HIDDEN_FEATURES: ReadonlySet<FeatureKey> = new Set(['tables']);
 
 export function getDefaultFeatureFlags(): Record<FeatureKey, boolean> {
   return Object.fromEntries(

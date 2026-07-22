@@ -25,6 +25,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://mindhaven.com'),
   title: 'MindHaven',
   description:
     'Mind Haven is a platform for creating and sharing your own mind maps.',
