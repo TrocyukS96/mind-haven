@@ -16,7 +16,7 @@ import { useEffect } from 'react';
 import { RotatingDescription } from './rotating-description';
 
 export function DashboardWidget() {
-  const { markOverdueTasks, recalculateRating, tasks } = useStore();
+  const markOverdueTasks = useStore((state) => state.markOverdueTasks);
   const t = useTranslations('dashboard');
   const descriptionSentences = t.raw('descriptionSentences') as string[];
 
@@ -47,8 +47,7 @@ export function DashboardWidget() {
 
   useEffect(() => {
     markOverdueTasks();
-    recalculateRating(tasks);
-  }, [markOverdueTasks, recalculateRating, tasks]);
+  }, [markOverdueTasks]);
 
   return (
     <div className="space-y-8">

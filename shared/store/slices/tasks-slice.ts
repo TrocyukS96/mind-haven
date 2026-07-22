@@ -281,17 +281,27 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
 
     // Вызывай при загрузке приложения или монтировании страницы
     markOverdueTasks: () => {
-        const overdue = get().getOverdueTasks();
-        if (overdue.length > 0) {
-            set((state) => ({
-                tasks: state.tasks.map(t =>
-                    overdue.some(o => o.id === t.id)
-                        ? { ...t, overdue: true }
-                        : t
-                ),
-            }));
+        const now = new Date().toISOString().split('T')[0];
+        let hasChanges = false;
+
+        const nextTasks = get().tasks.map((task) => {
+            const shouldBeOverdue = Boolean(
+                task.deadline && task.deadline < now && !task.completed
+            );
+
+            if (shouldBeOverdue === Boolean(task.overdue)) {
+                return task;
+            }
+
+            hasChanges = true;
+            return { ...task, overdue: shouldBeOverdue };
+        });
+
+        if (hasChanges) {
+            set({ tasks: nextTasks });
         }
-        get().recalculateRating(get().tasks);
+
+        get().recalculateRating(hasChanges ? nextTasks : get().tasks);
     },
 
 });

@@ -164,7 +164,10 @@ export const createPointsSlice: StateCreator<AppStore, [], [], PointsSlice> = (s
   },
 
   recalculateRating: (tasks) => {
-    set({ rating: computeRatingFromTasks(tasks) });
+    const nextRating = computeRatingFromTasks(tasks);
+    if (get().rating !== nextRating) {
+      set({ rating: nextRating });
+    }
   },
 
   getRecentTransactions: (limit = 5) => get().transactions.slice(0, limit),
