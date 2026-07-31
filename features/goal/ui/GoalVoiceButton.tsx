@@ -1,9 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
 import { isAuthenticatedUser } from '@/entities/user';
-import type { ParsedTaskVoiceResult } from '@/entities/voice';
-import { mapVoiceResultToTaskDraft } from '@/features/task/lib/map-voice-to-task-draft';
+import { mapVoiceResultToGoalDraft } from '@/features/goal/lib/map-voice-to-goal-draft';
+import type { ParsedGoalVoiceResult } from '@/entities/voice';
 import { useAccess } from '@/features/access';
 import { useStore } from '@/shared/store/store-config';
 import { VoiceButton } from '@/features/voice/ui/VoiceButton';
@@ -12,22 +11,16 @@ import { useVoiceInput } from '@/features/voice/hooks/use-voice-input';
 import { useVoiceErrorMessage } from '@/features/voice/hooks/use-voice-error-message';
 import { toast } from 'react-toastify';
 
-export function TaskVoiceButton() {
+export function GoalVoiceButton() {
   const { profile } = useAccess();
-  const { openTaskFormFromVoice, goals } = useStore();
+  const { openGoalFormFromVoice } = useStore();
   const resolveErrorMessage = useVoiceErrorMessage();
   const isAuthenticated = isAuthenticatedUser(profile);
 
-  const voiceGoals = useMemo(
-    () => goals.map((goal) => ({ id: goal.id, title: goal.title })),
-    [goals]
-  );
-
-  const voice = useVoiceInput<ParsedTaskVoiceResult>({
-    entityType: 'task',
-    goals: voiceGoals,
+  const voice = useVoiceInput<ParsedGoalVoiceResult>({
+    entityType: 'goal',
     onResult: (result) => {
-      openTaskFormFromVoice(mapVoiceResultToTaskDraft(result.parsed));
+      openGoalFormFromVoice(mapVoiceResultToGoalDraft(result.parsed));
     },
     onError: (error) => {
       toast.error(resolveErrorMessage(error));

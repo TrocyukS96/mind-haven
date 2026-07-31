@@ -280,6 +280,7 @@
     "priority": "Priority",
     "saveChanges": "Save changes",
     "stepsToGoal": "Steps to goal",
+    "stepPlaceholder": "Step title",
     "noStepsYet": "No steps yet. Add the first one!",
     "deleteGoalTitle": "Delete goal?",
     "deleteGoalDescription": "Are you sure you want to delete \"{title}\"? This action cannot be undone and all related tasks will be deleted.",

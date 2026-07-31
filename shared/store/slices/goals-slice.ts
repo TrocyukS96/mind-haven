@@ -1,5 +1,6 @@
 import { Goal } from '@/entities/goal/model/types';
 import { getGoalCategoryFromDeadline } from '@/entities/goal/lib/get-goal-category-from-deadline';
+import type { GoalFormDraft } from '@/features/goal/lib/map-voice-to-goal-draft';
 import { sortByKanbanOrder } from '@/shared/lib/kanban-utils';
 import { StateCreator } from 'zustand';
 
@@ -9,7 +10,7 @@ export interface GoalsSlice {
   goals: Goal[];
   goalsKanbanColumnOrder: string[];
 
-  addGoal: (goal: Omit<Goal, 'id' | 'progress' | 'category'>) => void;
+  addGoal: (goal: Omit<Goal, 'id' | 'progress' | 'category'>) => string;
   updateGoal: (id: string, updates: Partial<Goal>) => void;
   deleteGoal: (id: string) => void;
   updateGoalProgress: (id: string, progress: number) => void;
@@ -18,7 +19,9 @@ export interface GoalsSlice {
 
   selectedGoal: Goal | null;
   isGoalFormOpen: boolean;
+  goalFormDraft: GoalFormDraft | null;
   openGoalForm: (goal?: Goal) => void;
+  openGoalFormFromVoice: (draft: GoalFormDraft) => void;
   closeGoalForm: () => void;
 }
 
@@ -27,8 +30,11 @@ export const createGoalsSlice: StateCreator<GoalsSlice> = (set) => ({
   goalsKanbanColumnOrder: [],
   selectedGoal: null,
   isGoalFormOpen: false,
+  goalFormDraft: null,
 
-  addGoal: (goal) =>
+  addGoal: (goal) => {
+    const id = Date.now().toString();
+
     set((state) => {
       const columnGoals = state.goals.filter((item) => item.type === goal.type);
       const maxOrder = columnGoals.reduce(
@@ -42,13 +48,16 @@ export const createGoalsSlice: StateCreator<GoalsSlice> = (set) => ({
           {
             ...goal,
             category: getGoalCategoryFromDeadline(goal.deadline),
-            id: Date.now().toString(),
+            id,
             progress: 0,
             kanbanOrder: maxOrder + 1,
           },
         ],
       };
-    }),
+    });
+
+    return id;
+  },
 
   updateGoal: (id, updates) =>
     set((state) => ({
@@ -128,11 +137,20 @@ export const createGoalsSlice: StateCreator<GoalsSlice> = (set) => ({
     set({
       selectedGoal: goal || null,
       isGoalFormOpen: true,
+      goalFormDraft: null,
+    }),
+
+  openGoalFormFromVoice: (draft) =>
+    set({
+      selectedGoal: null,
+      isGoalFormOpen: true,
+      goalFormDraft: draft,
     }),
 
   closeGoalForm: () =>
     set({
       selectedGoal: null,
       isGoalFormOpen: false,
+      goalFormDraft: null,
     }),
 });

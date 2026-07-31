@@ -1,16 +1,16 @@
 'use client';
 
-import type { VoiceEntityType, VoiceGoalOption, VoiceProcessResult, ParsedTaskVoiceResult } from '@/entities/voice';
+import type { VoiceEntityType, VoiceGoalOption, VoiceProcessResult } from '@/entities/voice';
 import { useLocale } from 'next-intl';
 import { useCallback, useMemo, useState } from 'react';
 import { useSpeechToText } from './use-speech-to-text';
 import { useVoiceRecorder } from './use-voice-recorder';
 import type { VoiceRecorderStatus } from '../model/types';
 
-interface UseVoiceInputOptions {
+interface UseVoiceInputOptions<TParsed> {
   entityType: VoiceEntityType;
   goals?: VoiceGoalOption[];
-  onResult: (result: VoiceProcessResult<ParsedTaskVoiceResult>) => void;
+  onResult: (result: VoiceProcessResult<TParsed>) => void;
   onError?: (error: unknown) => void;
 }
 
@@ -27,12 +27,12 @@ interface UseVoiceInputReturn {
   isProcessing: boolean;
 }
 
-export function useVoiceInput({
+export function useVoiceInput<TParsed>({
   entityType,
   goals,
   onResult,
   onError,
-}: UseVoiceInputOptions): UseVoiceInputReturn {
+}: UseVoiceInputOptions<TParsed>): UseVoiceInputReturn {
   const locale = useLocale();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -51,7 +51,7 @@ export function useVoiceInput({
     [onError]
   );
 
-  const { status: speechStatus, processAudio } = useSpeechToText({
+  const { status: speechStatus, processAudio } = useSpeechToText<TParsed>({
     entityType,
     locale,
     goals,

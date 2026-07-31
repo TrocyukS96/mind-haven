@@ -2,7 +2,6 @@
 
 import {
   processVoiceInput,
-  type ParsedTaskVoiceResult,
   type VoiceEntityType,
   type VoiceGoalOption,
   type VoiceProcessResult,
@@ -26,13 +25,13 @@ interface UseSpeechToTextReturn {
   reset: () => void;
 }
 
-export function useSpeechToText({
+export function useSpeechToText<TParsed>({
   entityType,
   locale,
   goals,
   onSuccess,
   onError,
-}: UseSpeechToTextOptions<ParsedTaskVoiceResult>): UseSpeechToTextReturn {
+}: UseSpeechToTextOptions<TParsed>): UseSpeechToTextReturn {
   const [status, setStatus] = useState<VoiceRecorderStatus>('idle');
 
   const reset = useCallback(() => {
@@ -52,7 +51,7 @@ export function useSpeechToText({
           size: preparedAudio.size,
         });
 
-        const result = await processVoiceInput({
+        const result = await processVoiceInput<TParsed>({
           audio: preparedAudio,
           entityType,
           locale,

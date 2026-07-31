@@ -1,8 +1,7 @@
 import type { VoiceEntityType, VoiceGoalOption, VoiceProcessResult } from '@/shared/lib/voice/types';
 import { VoiceError } from '@/shared/lib/voice/types';
-import type { ParsedTaskVoiceResult } from '@/shared/lib/voice/parsers';
 
-export type { VoiceEntityType, VoiceProcessResult, ParsedTaskVoiceResult };
+export type { VoiceEntityType, VoiceProcessResult };
 
 export interface VoiceProcessRequest {
   audio: Blob;
@@ -11,12 +10,12 @@ export interface VoiceProcessRequest {
   goals?: VoiceGoalOption[];
 }
 
-export async function processVoiceInput({
+export async function processVoiceInput<TParsed = unknown>({
   audio,
   entityType,
   locale,
   goals,
-}: VoiceProcessRequest): Promise<VoiceProcessResult<ParsedTaskVoiceResult>> {
+}: VoiceProcessRequest): Promise<VoiceProcessResult<TParsed>> {
   const formData = new FormData();
   formData.append('audio', audio, 'recording.webm');
   formData.append('entityType', entityType);
@@ -40,7 +39,7 @@ export async function processVoiceInput({
 
   const payload = (await response.json()) as {
     transcript?: string;
-    parsed?: ParsedTaskVoiceResult;
+    parsed?: TParsed;
     error?: string;
     code?: string;
   };

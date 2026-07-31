@@ -16,6 +16,7 @@ import { useTranslations } from 'next-intl';
 import type { DisplayMode } from '@/shared/config/display-modes';
 import { PageToolbar } from '@/shared/ui/page-toolbar';
 import { DisplayModeTabs } from '@/shared/ui/display-mode-tabs';
+import { GoalVoiceButton } from '@/features/goal/ui/GoalVoiceButton';
 import { useDisplayModeSettings, resolveDisplayMode } from '@/features/display-modes';
 
 const GoalsPage = () => {
@@ -74,10 +75,13 @@ const GoalsPage = () => {
           <p className="text-muted-foreground mt-1">{t('subtitle')}</p>
         </div>
 
-        <Button onClick={() => openGoalForm()} size="lg" className="shrink-0">
-          <Plus className="mr-2 h-5 w-5" />
-          {t('createGoal')}
-        </Button>
+        <div className="flex items-center gap-3 shrink-0">
+          <GoalVoiceButton />
+          <Button onClick={() => openGoalForm()} size="lg">
+            <Plus className="mr-2 h-5 w-5" />
+            {t('createGoal')}
+          </Button>
+        </div>
       </div>
 
       <PageToolbar

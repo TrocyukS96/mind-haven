@@ -3,6 +3,7 @@
 import { Goal, GoalType } from '@/entities/goal/model/types';
 import { getGoalCategoryFromDeadline } from '@/entities/goal/lib/get-goal-category-from-deadline';
 import { TaskPriority } from '@/entities/task/model/types';
+import { buildGoalFormValues } from '@/features/goal/lib/goal-form-initial-values';
 import { useItemTypes } from '@/features/item-types';
 import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
@@ -20,6 +21,7 @@ import {
 import { Slider } from '@/shared/ui/slider';
 import { Textarea } from '@/shared/ui/textarea';
 import { cn } from '@/shared/lib/utils';
+import { X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, type ReactNode } from 'react';
 
@@ -51,37 +53,49 @@ function FormField({
 }
 
 export function GoalForm({ goal, open, onOpenChange }: Props) {
-  const { addGoal, updateGoal } = useStore();
+  const { addGoal, updateGoal, addTask, goalFormDraft } = useStore();
   const { getEnabledTypes, getDefaultTypeKey } = useItemTypes();
   const goalTypes = getEnabledTypes('goals');
+  const defaultType = getDefaultTypeKey('goals');
   const t = useTranslations('goals');
   const tCommon = useTranslations('common');
   const tPriorities = useTranslations('priorities');
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [deadline, setDeadline] = useState('');
-  const [progress, setProgress] = useState(0);
-  const [type, setType] = useState<GoalType>(() => getDefaultTypeKey('goals'));
-  const [priority, setPriority] = useState<TaskPriority>('medium');
+  const initialValues = buildGoalFormValues({
+    goal,
+    draft: goalFormDraft,
+    defaultType,
+  });
+
+  const [title, setTitle] = useState(initialValues.title);
+  const [description, setDescription] = useState(initialValues.description);
+  const [deadline, setDeadline] = useState(initialValues.deadline);
+  const [progress, setProgress] = useState(initialValues.progress);
+  const [type, setType] = useState<GoalType>(initialValues.type);
+  const [priority, setPriority] = useState<TaskPriority>(initialValues.priority);
+  const [steps, setSteps] = useState<string[]>(initialValues.steps);
+
+  const isEditMode = !!goal;
 
   useEffect(() => {
-    if (goal && open) {
-      setTitle(goal.title);
-      setDescription(goal.description || '');
-      setDeadline(goal.deadline);
-      setProgress(goal.progress);
-      setType(goal.type || getDefaultTypeKey('goals'));
-      setPriority(goal.priority || 'medium');
-    } else if (!goal && open) {
-      setTitle('');
-      setDescription('');
-      setDeadline('');
-      setProgress(0);
-      setType(getDefaultTypeKey('goals'));
-      setPriority('medium');
+    if (!open) {
+      return;
     }
-  }, [goal, open, getDefaultTypeKey]);
+
+    const nextValues = buildGoalFormValues({
+      goal,
+      draft: goalFormDraft,
+      defaultType,
+    });
+
+    setTitle(nextValues.title);
+    setDescription(nextValues.description);
+    setDeadline(nextValues.deadline);
+    setProgress(nextValues.progress);
+    setType(nextValues.type);
+    setPriority(nextValues.priority);
+    setSteps(nextValues.steps);
+  }, [goal, open, goalFormDraft, defaultType]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,13 +106,27 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
     if (goal) {
       updateGoal(goal.id, goalData);
     } else {
-      addGoal({ ...goalData, tasks: [] });
+      const goalId = addGoal({ ...goalData, tasks: [] });
+
+      steps
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .forEach((stepTitle) => {
+          addTask(stepTitle, goalId, priority, deadline, type);
+        });
     }
 
     onOpenChange(false);
   };
 
-  const isEditMode = !!goal;
+  const updateStep = (index: number, value: string) => {
+    setSteps((current) => current.map((item, i) => (i === index ? value : item)));
+  };
+
+  const removeStep = (index: number) => {
+    setSteps((current) => current.filter((_, i) => i !== index));
+  };
+
   const autoCategory = deadline ? getGoalCategoryFromDeadline(deadline) : null;
 
   return (
@@ -126,6 +154,32 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
           />
         </FormField>
       </div>
+
+      {steps.length > 0 && !isEditMode && (
+        <div className="space-y-2">
+          <Label>{t('stepsToGoal')}</Label>
+          <div className="space-y-2">
+            {steps.map((step, index) => (
+              <div key={index} className="flex gap-2">
+                <Input
+                  value={step}
+                  onChange={(e) => updateStep(index, e.target.value)}
+                  placeholder={t('stepPlaceholder')}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeStep(index)}
+                  aria-label={tCommon('delete')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {isEditMode && goal?.tasks.length === 0 && (
         <div className="rounded-lg border border-border/60 bg-muted/25 px-4 py-4">
@@ -155,7 +209,7 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField label={t('goalType')}>
-            <Select value={type} onValueChange={setType}>
+            <Select key={`type-${type}`} value={type} onValueChange={setType}>
               <SelectTrigger id="type" className="h-10 w-full">
                 <SelectValue placeholder={t('selectGoalType')} />
               </SelectTrigger>
@@ -170,7 +224,11 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
           </FormField>
 
           <FormField label={t('priority')} htmlFor="priority">
-            <Select value={priority} onValueChange={(value) => setPriority(value as TaskPriority)}>
+            <Select
+              key={`priority-${priority}`}
+              value={priority}
+              onValueChange={(value) => setPriority(value as TaskPriority)}
+            >
               <SelectTrigger id="priority" className="h-10 w-full">
                 <SelectValue />
               </SelectTrigger>
