@@ -35,6 +35,7 @@ export function useVoiceRecorder({
   const timerRef = useRef<number | null>(null);
   const startedAtRef = useRef<number | null>(null);
   const cancelledRef = useRef(false);
+  const sessionRef = useRef(0);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current !== null) {
@@ -54,10 +55,15 @@ export function useVoiceRecorder({
     mediaRecorderRef.current = null;
     chunksRef.current = [];
     startedAtRef.current = null;
-    cancelledRef.current = false;
     setDurationMs(0);
     setStatus('idle');
   }, [clearTimer, stopMediaStream]);
+
+  const invalidateSession = useCallback(() => {
+    sessionRef.current += 1;
+    cancelledRef.current = true;
+    stopMediaStream();
+  }, [stopMediaStream]);
 
   const reportError = useCallback(
     (error: unknown) => {
@@ -87,17 +93,37 @@ export function useVoiceRecorder({
       return;
     }
 
-    try {
-      resetRecorder();
-      cancelledRef.current = false;
+    const sessionId = sessionRef.current + 1;
+    sessionRef.current = sessionId;
+    cancelledRef.current = false;
 
+    clearTimer();
+    stopMediaStream();
+    mediaRecorderRef.current = null;
+    chunksRef.current = [];
+    startedAtRef.current = null;
+    setDurationMs(0);
+
+    try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      if (sessionId !== sessionRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+
       mediaStreamRef.current = stream;
 
       const mimeType = pickSupportedMimeType();
       const recorder = mimeType
         ? new MediaRecorder(stream, { mimeType })
         : new MediaRecorder(stream);
+
+      if (sessionId !== sessionRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        mediaStreamRef.current = null;
+        return;
+      }
 
       chunksRef.current = [];
       mediaRecorderRef.current = recorder;
@@ -148,10 +174,21 @@ export function useVoiceRecorder({
         }
       }, 200);
     } catch (error) {
+      if (sessionId !== sessionRef.current) {
+        return;
+      }
+
       stopMediaStream();
       reportError(error);
     }
-  }, [clearTimer, onRecordingComplete, reportError, resetRecorder, status, stopMediaStream]);
+  }, [
+    clearTimer,
+    onRecordingComplete,
+    reportError,
+    resetRecorder,
+    status,
+    stopMediaStream,
+  ]);
 
   const stopRecording = useCallback(() => {
     const recorder = mediaRecorderRef.current;
@@ -168,7 +205,8 @@ export function useVoiceRecorder({
   }, []);
 
   const cancelRecording = useCallback(() => {
-    cancelledRef.current = true;
+    invalidateSession();
+
     const recorder = mediaRecorderRef.current;
 
     if (recorder && recorder.state !== 'inactive') {
@@ -177,20 +215,19 @@ export function useVoiceRecorder({
     }
 
     resetRecorder();
-  }, [resetRecorder]);
+  }, [invalidateSession, resetRecorder]);
 
   useEffect(() => {
     return () => {
-      cancelledRef.current = true;
+      invalidateSession();
       clearTimer();
-      stopMediaStream();
 
       const recorder = mediaRecorderRef.current;
       if (recorder && recorder.state !== 'inactive') {
         recorder.stop();
       }
     };
-  }, [clearTimer, stopMediaStream]);
+  }, [clearTimer, invalidateSession]);
 
   return {
     status,

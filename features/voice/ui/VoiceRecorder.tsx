@@ -67,6 +67,10 @@ export function VoiceRecorder({
     onOpenChange(nextOpen);
   };
 
+  const handleCancel = () => {
+    handleOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md" showCloseButton={!isProcessing}>
@@ -112,7 +116,7 @@ export function VoiceRecorder({
 
           <div className="flex w-full gap-3">
             {!isProcessing && (
-              <Button type="button" variant="outline" className="flex-1" onClick={onCancel}>
+              <Button type="button" variant="outline" className="flex-1" onClick={handleCancel}>
                 {t('cancel')}
               </Button>
             )}
