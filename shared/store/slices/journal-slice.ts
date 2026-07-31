@@ -1,6 +1,14 @@
+import {
+  createJournalEntryRequest,
+  createJournalTagRequest,
+  deleteJournalEntryRequest,
+  updateJournalEntryRequest,
+} from '@/entities/journal/api/journal-client';
 import { JournalEntry, JournalTag } from '@/entities/journal/model/types';
 import { buildJournalEntryEvent } from '@/entities/points/lib/calculate-points';
 import { tryEarnPoints } from '@/entities/points/lib/process-point-event';
+import type { JournalData } from '@/shared/lib/journal/journal-entry-service';
+import { shouldUseJournalApi } from '@/entities/journal/lib/resolve-journal-api';
 import { StateCreator } from 'zustand';
 import type { AppStore } from '../store-config';
 
@@ -8,8 +16,11 @@ export interface JournalSlice {
   journalEntries: JournalEntry[];
   journalTags: JournalTag[];
   journalTitles: string[];
+  journalApiEnabled: boolean;
   selectedJournalEntry: JournalEntry | null;
   isJournalFormOpen: boolean;
+  setJournalApiEnabled: (enabled: boolean) => void;
+  hydrateJournalData: (data: JournalData) => void;
   addJournalEntry: (
     entry: Pick<JournalEntry, 'title' | 'content'> &
       Partial<
@@ -18,12 +29,12 @@ export interface JournalSlice {
           'date' | 'tagIds' | 'entryType' | 'reflectionPeriod' | 'reflectionAnswers'
         >
       >
-  ) => void;
-  updateJournalEntry: (id: string, data: Partial<Omit<JournalEntry, 'id'>>) => void;
-  deleteJournalEntry: (id: string) => void;
-  addJournalTag: (name: string) => string;
-  addTagToEntry: (entryId: string, tagId: string) => void;
-  removeTagFromEntry: (entryId: string, tagId: string) => void;
+  ) => Promise<void>;
+  updateJournalEntry: (id: string, data: Partial<Omit<JournalEntry, 'id'>>) => Promise<void>;
+  deleteJournalEntry: (id: string) => Promise<void>;
+  addJournalTag: (name: string) => Promise<string>;
+  addTagToEntry: (entryId: string, tagId: string) => Promise<void>;
+  removeTagFromEntry: (entryId: string, tagId: string) => Promise<void>;
   openJournalForm: (entry?: JournalEntry) => void;
   closeJournalForm: () => void;
 }
@@ -41,16 +52,31 @@ function ensureTitle(titles: string[], title: string): string[] {
   return [...titles, trimmed];
 }
 
+function upsertTag(tags: JournalTag[], tag: JournalTag): JournalTag[] {
+  const exists = tags.some((item) => item.id === tag.id);
+  if (exists) return tags;
+  return [...tags, tag].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = (set, get) => ({
   journalEntries: [],
   journalTags: [],
   journalTitles: [],
+  journalApiEnabled: false,
   selectedJournalEntry: null,
   isJournalFormOpen: false,
 
-  addJournalEntry: (entry) => {
-    const newEntry: JournalEntry = {
-      id: Date.now().toString(),
+  setJournalApiEnabled: (enabled) => set({ journalApiEnabled: enabled }),
+
+  hydrateJournalData: (data) =>
+    set({
+      journalEntries: data.entries,
+      journalTags: data.tags,
+      journalTitles: data.titles,
+    }),
+
+  addJournalEntry: async (entry) => {
+    const payload = {
       title: entry.title,
       content: entry.content,
       date: entry.date ?? todayDateString(),
@@ -60,15 +86,45 @@ export const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = 
       reflectionAnswers: entry.reflectionAnswers,
     };
 
+    if (await shouldUseJournalApi()) {
+      const savedEntry = await createJournalEntryRequest(payload);
+      set((state) => ({
+        journalTitles: ensureTitle(state.journalTitles, savedEntry.title),
+        journalEntries: [savedEntry, ...state.journalEntries],
+      }));
+      tryEarnPoints(get, buildJournalEntryEvent(savedEntry));
+      return;
+    }
+
+    const newEntry: JournalEntry = {
+      id: Date.now().toString(),
+      ...payload,
+    };
+
     set((state) => ({
-      journalTitles: ensureTitle(state.journalTitles, entry.title),
+      journalTitles: ensureTitle(state.journalTitles, newEntry.title),
       journalEntries: [newEntry, ...state.journalEntries],
     }));
 
     tryEarnPoints(get, buildJournalEntryEvent(newEntry));
   },
 
-  updateJournalEntry: (id, data) =>
+  updateJournalEntry: async (id, data) => {
+    if (await shouldUseJournalApi()) {
+      const savedEntry = await updateJournalEntryRequest(id, data);
+      set((state) => ({
+        journalTitles: data.title
+          ? ensureTitle(state.journalTitles, data.title)
+          : state.journalTitles,
+        journalEntries: state.journalEntries.map((entry) =>
+          entry.id === id ? savedEntry : entry
+        ),
+        selectedJournalEntry:
+          state.selectedJournalEntry?.id === id ? savedEntry : state.selectedJournalEntry,
+      }));
+      return;
+    }
+
     set((state) => ({
       journalTitles: data.title
         ? ensureTitle(state.journalTitles, data.title)
@@ -76,15 +132,32 @@ export const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = 
       journalEntries: state.journalEntries.map((entry) =>
         entry.id === id ? { ...entry, ...data } : entry
       ),
-    })),
+    }));
+  },
 
-  deleteJournalEntry: (id) =>
+  deleteJournalEntry: async (id) => {
+    if (await shouldUseJournalApi()) {
+      await deleteJournalEntryRequest(id);
+    }
+
     set((state) => ({
       journalEntries: state.journalEntries.filter((entry) => entry.id !== id),
-    })),
+      selectedJournalEntry:
+        state.selectedJournalEntry?.id === id ? null : state.selectedJournalEntry,
+    }));
+  },
 
-  addJournalTag: (name) => {
+  addJournalTag: async (name) => {
     const trimmed = name.trim();
+
+    if (await shouldUseJournalApi()) {
+      const tag = await createJournalTagRequest(trimmed);
+      set((state) => ({
+        journalTags: upsertTag(state.journalTags, tag),
+      }));
+      return tag.id;
+    }
+
     let tagId = '';
 
     set((state) => {
@@ -105,24 +178,24 @@ export const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = 
     return tagId;
   },
 
-  addTagToEntry: (entryId, tagId) =>
-    set((state) => ({
-      journalEntries: state.journalEntries.map((entry) => {
-        const tagIds = entry.tagIds ?? [];
-        return entry.id === entryId && !tagIds.includes(tagId)
-          ? { ...entry, tagIds: [...tagIds, tagId] }
-          : entry;
-      }),
-    })),
+  addTagToEntry: async (entryId, tagId) => {
+    const entry = get().journalEntries.find((item) => item.id === entryId);
+    if (!entry) return;
 
-  removeTagFromEntry: (entryId, tagId) =>
-    set((state) => ({
-      journalEntries: state.journalEntries.map((entry) =>
-        entry.id === entryId
-          ? { ...entry, tagIds: (entry.tagIds ?? []).filter((id) => id !== tagId) }
-          : entry
-      ),
-    })),
+    const tagIds = entry.tagIds ?? [];
+    if (tagIds.includes(tagId)) return;
+
+    const nextTagIds = [...tagIds, tagId];
+    await get().updateJournalEntry(entryId, { tagIds: nextTagIds });
+  },
+
+  removeTagFromEntry: async (entryId, tagId) => {
+    const entry = get().journalEntries.find((item) => item.id === entryId);
+    if (!entry) return;
+
+    const nextTagIds = (entry.tagIds ?? []).filter((id) => id !== tagId);
+    await get().updateJournalEntry(entryId, { tagIds: nextTagIds });
+  },
 
   openJournalForm: (entry) =>
     set({

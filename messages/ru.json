@@ -346,6 +346,7 @@
     "entryContentPlaceholder": "Начни писать свои мысли... (поддерживается Markdown)",
     "entryDate": "Дата",
     "createEntry": "Создать запись",
+    "saveError": "Не удалось сохранить запись. Попробуй ещё раз.",
     "tag": "Тег",
     "noTag": "Без тега",
     "addTag": "Тег",

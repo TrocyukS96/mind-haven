@@ -18,6 +18,7 @@ import {
 } from '@/shared/ui/select';
 import { Textarea } from '@/shared/ui/textarea';
 import { useTranslations } from 'next-intl';
+import { toast } from 'react-toastify';
 
 interface Props {
   entry?: JournalEntry | null;
@@ -68,10 +69,10 @@ function FreeEntryForm({
     }
   }, [entry, open]);
 
-  const resolveTagIds = (): string[] => {
+  const resolveTagIds = async (): Promise<string[]> => {
     const trimmed = newTagName.trim();
     if (trimmed) {
-      return [addJournalTag(trimmed)];
+      return [await addJournalTag(trimmed)];
     }
     if (selectedTagId !== 'none') {
       return [selectedTagId];
@@ -79,32 +80,36 @@ function FreeEntryForm({
     return [];
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) return;
 
-    const tagIds = resolveTagIds();
-    const finalDate = toDateString(date);
+    try {
+      const tagIds = await resolveTagIds();
+      const finalDate = toDateString(date);
 
-    if (isEditMode && entry) {
-      updateJournalEntry(entry.id, {
-        title: title.trim(),
-        content: content.trim(),
-        date: finalDate,
-        entryType: 'free',
-        tagIds: tagIds.length > 0 ? tagIds : (entry.tagIds ?? []),
-      });
-    } else {
-      addJournalEntry({
-        title: title.trim(),
-        content: content.trim(),
-        date: finalDate,
-        tagIds,
-        entryType: 'free',
-      });
+      if (isEditMode && entry) {
+        await updateJournalEntry(entry.id, {
+          title: title.trim(),
+          content: content.trim(),
+          date: finalDate,
+          entryType: 'free',
+          tagIds: tagIds.length > 0 ? tagIds : (entry.tagIds ?? []),
+        });
+      } else {
+        await addJournalEntry({
+          title: title.trim(),
+          content: content.trim(),
+          date: finalDate,
+          tagIds,
+          entryType: 'free',
+        });
+      }
+
+      onOpenChange(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('saveError'));
     }
-
-    onOpenChange(false);
   };
 
   return (

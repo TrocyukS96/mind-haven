@@ -43,11 +43,11 @@ export function normalizeAnswers(existing: string[] | undefined, count: number):
   return [...existing, ...createEmptyAnswers(count)].slice(0, count);
 }
 
-export function resolveReflectionTagIds(
-  addJournalTag: (name: string) => string,
+export async function resolveReflectionTagIds(
+  addJournalTag: (name: string) => string | Promise<string>,
   tagName: string,
   existingTagIds?: string[]
-): string[] {
-  const reflectionTagId = addJournalTag(tagName);
+): Promise<string[]> {
+  const reflectionTagId = await addJournalTag(tagName);
   return Array.from(new Set([...(existingTagIds ?? []), reflectionTagId]));
 }

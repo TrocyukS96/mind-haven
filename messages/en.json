@@ -346,6 +346,7 @@
     "entryContentPlaceholder": "Start writing your thoughts... (Markdown supported)",
     "entryDate": "Date",
     "createEntry": "Create entry",
+    "saveError": "Could not save the entry. Please try again.",
     "tag": "Tag",
     "noTag": "No tag",
     "addTag": "Tag",

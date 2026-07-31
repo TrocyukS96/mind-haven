@@ -24,7 +24,17 @@ export const useStore = create<AppStore>()(
         ...createPointsSlice(...args),
       }),
       {
-        name: 'mindhaven-storage', // всё сохраняется между сессиями
+        name: 'mindhaven-storage',
+        partialize: (state) => {
+          const {
+            journalApiEnabled: _journalApiEnabled,
+            selectedJournalEntry: _selectedJournalEntry,
+            isJournalFormOpen: _isJournalFormOpen,
+            ...persistedState
+          } = state;
+
+          return persistedState;
+        },
       }
     )
   )

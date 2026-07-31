@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select';
 import { useTranslations } from 'next-intl';
+import { toast } from 'react-toastify';
 
 interface Props {
   entry?: JournalEntry | null;
@@ -95,45 +96,49 @@ export function ReflectionForm({ entry, open, onOpenChange }: Props) {
     setTitle(value);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!hasMinimumAnswers(answers) || !title.trim()) return;
 
-    const content = buildReflectionContent(
-      questions,
-      answers,
-      t(`reflectionContentHeader.${period}` as 'reflectionContentHeader.day')
-    );
-    const tagIds = resolveReflectionTagIds(
-      addJournalTag,
-      t('reflectionTag'),
-      isEditMode ? entry?.tagIds : undefined
-    );
-    const finalDate = toDateString(date);
+    try {
+      const content = buildReflectionContent(
+        questions,
+        answers,
+        t(`reflectionContentHeader.${period}` as 'reflectionContentHeader.day')
+      );
+      const tagIds = await resolveReflectionTagIds(
+        addJournalTag,
+        t('reflectionTag'),
+        isEditMode ? entry?.tagIds : undefined
+      );
+      const finalDate = toDateString(date);
 
-    if (isEditMode && entry) {
-      updateJournalEntry(entry.id, {
-        title: title.trim(),
-        content,
-        date: finalDate,
-        entryType: 'reflection',
-        reflectionPeriod: period,
-        reflectionAnswers: answers,
-        tagIds,
-      });
-    } else {
-      addJournalEntry({
-        title: title.trim(),
-        content,
-        date: finalDate,
-        tagIds,
-        entryType: 'reflection',
-        reflectionPeriod: period,
-        reflectionAnswers: answers,
-      });
+      if (isEditMode && entry) {
+        await updateJournalEntry(entry.id, {
+          title: title.trim(),
+          content,
+          date: finalDate,
+          entryType: 'reflection',
+          reflectionPeriod: period,
+          reflectionAnswers: answers,
+          tagIds,
+        });
+      } else {
+        await addJournalEntry({
+          title: title.trim(),
+          content,
+          date: finalDate,
+          tagIds,
+          entryType: 'reflection',
+          reflectionPeriod: period,
+          reflectionAnswers: answers,
+        });
+      }
+
+      onOpenChange(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('saveError'));
     }
-
-    onOpenChange(false);
   };
 
   const canSubmit = hasMinimumAnswers(answers) && Boolean(title.trim());

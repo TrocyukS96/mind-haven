@@ -35,6 +35,7 @@ model User {
   goals          Goal[]
   tasks          Task[]
   journalEntries JournalEntry[]
+  journalTags    JournalTag[]
   habits         Habit[]
   tables         CustomTable[]
   dailyTasks     DailyTask[]
@@ -178,17 +179,33 @@ model ReflectionQuestion {
   @@id([period, sortOrder])
 }
 
-model JournalEntry {
+model JournalTag {
   id        String   @id @default(cuid())
   userId    String
-  title     String
-  content   String
-  date      DateTime
+  name      String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, name])
   @@index([userId])
+}
+
+model JournalEntry {
+  id                String   @id @default(cuid())
+  userId            String
+  title             String
+  content           String   @db.Text
+  date              DateTime @db.Date
+  entryType         String   @default("free")
+  reflectionPeriod  String?
+  reflectionAnswers Json?
+  tagIds            Json     @default("[]")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, date])
 }
 
 model Habit {

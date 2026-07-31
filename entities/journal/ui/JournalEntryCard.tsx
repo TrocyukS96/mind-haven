@@ -111,7 +111,7 @@ export function JournalEntryCard({ entry }: JournalEntryCardProps) {
           <AlertDialogFooter>
             <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteJournalEntry(entry.id)}
+              onClick={() => void deleteJournalEntry(entry.id)}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
               {tCommon('delete')}

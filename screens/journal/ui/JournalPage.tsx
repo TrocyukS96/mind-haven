@@ -5,7 +5,10 @@ import { BookOpen, Plus, Search } from 'lucide-react';
 import { JournalFilterState } from '@/entities/journal/model/types';
 import { JournalEntryCard } from '@/entities/journal/ui/JournalEntryCard';
 import { JournalFilter } from '@/features/journal/filter/ui/journal-filter';
+import { useJournalSync } from '@/features/journal/hooks/use-journal-sync';
+import { useStoreHydrated } from '@/shared/hooks/use-store-hydrated';
 import { useStore } from '@/shared/store/store-config';
+import type { JournalData } from '@/shared/lib/journal/journal-entry-service';
 import { Card, CardContent } from '@/shared/ui/card';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
@@ -14,7 +17,13 @@ import { useTranslations } from 'next-intl';
 
 const defaultFilter: JournalFilterState = { tagIds: [] };
 
-export function JournalPage() {
+interface JournalPageProps {
+  initialData?: JournalData | null;
+}
+
+export function JournalPage({ initialData = null }: JournalPageProps) {
+  const hydrated = useStoreHydrated();
+  useJournalSync({ initialData });
   const { journalEntries, openJournalForm } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<JournalFilterState>(defaultFilter);
@@ -54,6 +63,16 @@ export function JournalPage() {
 
     return result;
   }, [journalEntries, searchQuery, filter]);
+
+  if (!hydrated) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="h-10 w-64 rounded bg-muted" />
+        <div className="h-24 rounded bg-muted" />
+        <div className="h-40 rounded bg-muted" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

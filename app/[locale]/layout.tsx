@@ -1,6 +1,7 @@
 import { AccessProvider } from '@/features/access';
 import { AuthSessionProvider } from '@/features/auth';
 import { DisplayModeProvider } from '@/features/display-modes';
+import { JournalApiProvider } from '@/features/journal/model/journal-api-provider';
 import { ItemTypeProvider } from '@/features/item-types';
 import { ReflectionQuestionProvider } from '@/features/reflection-questions';
 import { routing } from '@/i18n/routing';
@@ -100,15 +101,17 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           <AuthSessionProvider>
             <AccessProvider profile={profile} globalFeatureFlags={globalFeatureFlags}>
-              <DisplayModeProvider settings={displayModeSettings}>
-                <ItemTypeProvider catalog={itemTypes}>
-                  <ReflectionQuestionProvider catalog={reflectionQuestions}>
-                    <LayoutShell>{children}</LayoutShell>
-                    <ModalProvider />
-                    <ToastProvider />
-                  </ReflectionQuestionProvider>
-                </ItemTypeProvider>
-              </DisplayModeProvider>
+              <JournalApiProvider>
+                <DisplayModeProvider settings={displayModeSettings}>
+                  <ItemTypeProvider catalog={itemTypes}>
+                    <ReflectionQuestionProvider catalog={reflectionQuestions}>
+                      <LayoutShell>{children}</LayoutShell>
+                      <ModalProvider />
+                      <ToastProvider />
+                    </ReflectionQuestionProvider>
+                  </ItemTypeProvider>
+                </DisplayModeProvider>
+              </JournalApiProvider>
             </AccessProvider>
           </AuthSessionProvider>
         </NextIntlClientProvider>

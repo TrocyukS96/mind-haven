@@ -36,8 +36,30 @@ function isValidPostgresUrl(value) {
   );
 }
 
+function appendQueryParam(url, key, value) {
+  if (url.includes(`${key}=`)) {
+    return url;
+  }
+
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}${key}=${value}`;
+}
+
+function optimizeNeonDatabaseUrl(url) {
+  let result = url;
+  result = appendQueryParam(result, 'sslmode', 'require');
+  result = appendQueryParam(result, 'connect_timeout', '15');
+  result = appendQueryParam(result, 'pool_timeout', '15');
+
+  if (result.includes('-pooler') && !result.includes('pgbouncer=')) {
+    result = appendQueryParam(result, 'pgbouncer', 'true');
+  }
+
+  return result;
+}
+
 const vars = loadEnvFile(ENV_FILE);
-const databaseUrl = vars.DATABASE_URL ?? vars.POSTGRES_URL;
+const databaseUrl = optimizeNeonDatabaseUrl(vars.DATABASE_URL ?? vars.POSTGRES_URL);
 const directUrl = vars.DIRECT_URL ?? vars.POSTGRES_URL_NON_POOLING;
 
 const errors = [];

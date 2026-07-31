@@ -24,16 +24,16 @@ export function TagSelector({ entryId, tagIds }: TagSelectorProps) {
   const entryTags = journalTags.filter((tag) => tagIds.includes(tag.id));
   const availableTags = journalTags.filter((tag) => !tagIds.includes(tag.id));
 
-  const handleAddExistingTag = (tagId: string) => {
-    addTagToEntry(entryId, tagId);
+  const handleAddExistingTag = async (tagId: string) => {
+    await addTagToEntry(entryId, tagId);
   };
 
-  const handleCreateTag = () => {
+  const handleCreateTag = async () => {
     const trimmed = newTagName.trim();
     if (!trimmed) return;
 
-    const tagId = addJournalTag(trimmed);
-    addTagToEntry(entryId, tagId);
+    const tagId = await addJournalTag(trimmed);
+    await addTagToEntry(entryId, tagId);
     setNewTagName('');
   };
 
