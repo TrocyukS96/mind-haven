@@ -200,6 +200,10 @@
     "noGoal": "No goal",
     "markCompleted": "Mark as completed",
     "createTask": "Create task",
+    "taskDescription": "Description",
+    "taskDescriptionPlaceholder": "Additional details (optional)",
+    "subtasks": "Subtasks",
+    "subtaskPlaceholder": "Subtask title",
     "tasksOnDate": "Tasks for {date}",
     "taskCount": "{count, plural, =0 {No tasks} one {# task} other {# tasks}}",
     "sections": {
@@ -625,6 +629,32 @@
       "title": "Admin management",
       "description": "Assign and remove administrators. Super admin only.",
       "placeholder": "The admin list will appear here after auth is connected."
+    }
+  },
+  "voice": {
+    "voiceInput": "Voice input",
+    "startRecording": "Start voice recording",
+    "recording": "Recording",
+    "recordingDescription": "Speak clearly. Tap stop when you're done.",
+    "processing": "Processing...",
+    "processingDescription": "Transcribing speech and filling the form",
+    "pleaseWait": "Please wait",
+    "tapToStop": "Tap stop to finish",
+    "stop": "Stop",
+    "cancel": "Cancel",
+    "errors": {
+      "generic": "Voice input failed. Please try again.",
+      "MICROPHONE_DENIED": "Microphone access denied. Allow access in browser settings.",
+      "MICROPHONE_UNAVAILABLE": "Microphone is not available on this device.",
+      "NO_RECORDING": "No speech detected. Try speaking louder.",
+      "RECORDING_TOO_SHORT": "Recording is too short. Hold the button and speak longer.",
+      "NETWORK_ERROR": "Network error. Check your connection and try again.",
+      "AI_ERROR": "Speech processing failed. Try again later.",
+      "AI_QUOTA_EXHAUSTED": "Yandex Cloud quota is exhausted. Check billing in Yandex Cloud Console.",
+      "PARSE_ERROR": "Could not understand the speech. Try rephrasing.",
+      "INVALID_RESPONSE": "Unexpected server response. Try again.",
+      "CONFIG_ERROR": "Voice input is not configured on the server. Add YANDEX_API_KEY and YANDEX_FOLDER_ID.",
+      "UNAUTHORIZED": "Voice input is available to signed-in users only. Please sign in."
     }
   }
 }

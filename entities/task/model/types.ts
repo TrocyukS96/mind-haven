@@ -4,6 +4,7 @@ export type TaskType = string;
 export interface Task {
   id: string;
   title: string;
+  description?: string;
   completed: boolean;
   priority: TaskPriority;
   type: TaskType;

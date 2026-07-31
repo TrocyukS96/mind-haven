@@ -10,6 +10,7 @@ import { TasksListMode } from './TasksListMode';
 import { TasksKanbanMode } from './TasksKanbanMode';
 import { TasksSearch } from './TasksSearch';
 import { TasksFilter } from './TasksFilter';
+import { TaskVoiceButton } from '@/features/task/ui/TaskVoiceButton';
 import { TaskPriority } from '@/entities/task/model/types';
 import { useFilteredTasks } from '@/features/task/hooks/use-filtered-tasks';
 import { useTranslations } from 'next-intl';
@@ -62,10 +63,13 @@ const TasksPage = () => {
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-        <Button onClick={() => openTaskForm()} size="lg">
-          <Plus className="mr-2 h-5 w-5" />
-          {t('newTask')}
-        </Button>
+        <div className="flex items-center gap-3">
+          <TaskVoiceButton />
+          <Button onClick={() => openTaskForm()} size="lg">
+            <Plus className="mr-2 h-5 w-5" />
+            {t('newTask')}
+          </Button>
+        </div>
       </div>
 
       <PageToolbar

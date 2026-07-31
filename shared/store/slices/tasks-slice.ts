@@ -1,4 +1,5 @@
 import { Task, TaskPriority } from '@/entities/task/model/types';
+import type { TaskFormDraft } from '@/features/task/lib/map-voice-to-task-draft';
 import {
     buildGoalCompletionEvent,
     buildTaskCompletionEvent,
@@ -16,14 +17,23 @@ export interface TasksSlice {
     isTaskFormOpen: boolean;
     defaultGoalId?: string;
     defaultDeadline?: string;
+    taskFormDraft: TaskFormDraft | null;
 
-    addTask: (title: string, goalId?: string, priority?: TaskPriority, deadline?: string, type?: string) => void;
+    addTask: (
+        title: string,
+        goalId?: string,
+        priority?: TaskPriority,
+        deadline?: string,
+        type?: string,
+        description?: string,
+    ) => void;
     toggleTask: (id: string) => void;
     updateTask: (id: string, updates: Partial<Task>) => void;
     deleteTask: (task: Task) => void;
     reorderTasksKanbanColumns: (columnKeys: string[]) => void;
     moveTaskInKanban: (taskId: string, targetType: string, targetIndex: number) => void;
     openTaskForm: (task?: Task, goalId?: string, deadline?: string) => void;
+    openTaskFormFromVoice: (draft: TaskFormDraft) => void;
     closeTaskForm: () => void;
     getOverdueTasks: () => Task[];
     markOverdueTasks: () => void;
@@ -43,7 +53,8 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
     selectedTask: null,
     isTaskFormOpen: false,
     defaultGoalId: undefined,
-    addTask: (title, goalId, priority = 'medium', deadline?: string, type = 'backlog') => {
+    taskFormDraft: null,
+    addTask: (title, goalId, priority = 'medium', deadline?: string, type = 'backlog', description?: string) => {
         const columnTasks = get().tasks.filter((item) => item.type === type);
         const maxOrder = columnTasks.reduce(
             (max, item) => Math.max(max, item.kanbanOrder ?? -1),
@@ -51,8 +62,9 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
         );
 
         const newTask: Task = {
-            id: Date.now().toString(),
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
             title: title.trim(),
+            description: description?.trim() || undefined,
             completed: false,
             priority,
             type,
@@ -260,6 +272,16 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
             isTaskFormOpen: true,
             defaultGoalId: goalId,
             defaultDeadline: deadline || '',
+            taskFormDraft: null,
+        });
+    },
+    openTaskFormFromVoice: (draft) => {
+        set({
+            selectedTask: null,
+            isTaskFormOpen: true,
+            defaultGoalId: undefined,
+            defaultDeadline: draft.deadline || '',
+            taskFormDraft: draft,
         });
     },
     closeTaskForm: () =>
@@ -268,6 +290,7 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
             isTaskFormOpen: false,
             defaultGoalId: undefined,
             defaultDeadline: undefined,
+            taskFormDraft: null,
         }),
 
     getOverdueTasks: () => {

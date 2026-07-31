@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog';
 import TaskForm from './TaskForm';
+import { getTaskFormKey } from '@/features/task/lib/task-form-initial-values';
 import { useStore } from '@/shared/store/store-config';
 import { useTranslations } from 'next-intl';
 
@@ -18,8 +19,9 @@ interface Props {
 }
 
 const TaskFormModal = ({ open, onOpenChange }: Props) => {
-  const { selectedTask, isTaskFormOpen, closeTaskForm } = useStore();
+  const { selectedTask, isTaskFormOpen, closeTaskForm, taskFormDraft } = useStore();
   const t = useTranslations('tasks');
+  const formKey = getTaskFormKey(selectedTask, taskFormDraft);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -32,6 +34,7 @@ const TaskFormModal = ({ open, onOpenChange }: Props) => {
           </DialogHeader>
 
           <TaskForm
+            key={formKey}
             task={selectedTask}
             open={isTaskFormOpen}
             onOpenChange={(isOpen) => !isOpen && closeTaskForm()}

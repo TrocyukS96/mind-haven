@@ -1,0 +1,76 @@
+import type { VoiceEntityType, VoiceGoalOption, VoiceProcessResult } from '@/shared/lib/voice/types';
+import { VoiceError } from '@/shared/lib/voice/types';
+import type { ParsedTaskVoiceResult } from '@/shared/lib/voice/parsers';
+
+export type { VoiceEntityType, VoiceProcessResult, ParsedTaskVoiceResult };
+
+export interface VoiceProcessRequest {
+  audio: Blob;
+  entityType: VoiceEntityType;
+  locale?: string;
+  goals?: VoiceGoalOption[];
+}
+
+export async function processVoiceInput({
+  audio,
+  entityType,
+  locale,
+  goals,
+}: VoiceProcessRequest): Promise<VoiceProcessResult<ParsedTaskVoiceResult>> {
+  const formData = new FormData();
+  formData.append('audio', audio, 'recording.webm');
+  formData.append('entityType', entityType);
+  if (locale) {
+    formData.append('locale', locale);
+  }
+  if (goals?.length) {
+    formData.append('goals', JSON.stringify(goals));
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetch('/api/voice/process', {
+      method: 'POST',
+      body: formData,
+    });
+  } catch {
+    throw new VoiceError('NETWORK_ERROR', 'Network error while processing voice input');
+  }
+
+  const payload = (await response.json()) as {
+    transcript?: string;
+    parsed?: ParsedTaskVoiceResult;
+    error?: string;
+    code?: string;
+  };
+
+  if (!response.ok) {
+    const code =
+      response.status === 401
+        ? 'UNAUTHORIZED'
+        : ((payload.code as VoiceError['code']) ?? 'AI_ERROR');
+    throw new VoiceError(code, payload.error ?? 'Failed to process voice input');
+  }
+
+  if (!payload.transcript || !payload.parsed) {
+    throw new VoiceError('INVALID_RESPONSE', 'Server returned an incomplete response');
+  }
+
+  return {
+    transcript: payload.transcript,
+    parsed: payload.parsed,
+  };
+}
+
+export function getVoiceErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof VoiceError) {
+    return error.message;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return fallback;
+}
