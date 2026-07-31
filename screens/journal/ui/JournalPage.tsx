@@ -68,23 +68,28 @@ export function JournalPage({ initialData = null }: JournalPageProps) {
   if (!hydrated) {
     return (
       <div className="space-y-6 animate-pulse">
-        <div className="h-10 w-64 rounded bg-muted" />
-        <div className="h-24 rounded bg-muted" />
-        <div className="h-40 rounded bg-muted" />
+        <div className="h-10 w-full max-w-xs rounded bg-muted" />
+        <div className="h-14 rounded bg-muted sm:h-12" />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="h-40 rounded bg-muted" />
+          <div className="hidden h-40 rounded bg-muted lg:block" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1>{t('title')}</h1>
-          <p className="text-muted-foreground mt-2">{t('subtitle')}</p>
+    <div className="space-y-5 sm:space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('title')}</h1>
+          <p className="mt-1 text-sm text-muted-foreground sm:mt-2 sm:text-base">
+            {t('subtitle')}
+          </p>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <JournalVoiceButton />
-          <Button onClick={() => openJournalForm()}>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
+          <JournalVoiceButton className="w-full sm:w-auto" />
+          <Button className="w-full sm:w-auto" onClick={() => openJournalForm()}>
             <Plus size={20} />
             {t('newEntry')}
           </Button>
@@ -92,17 +97,17 @@ export function JournalPage({ initialData = null }: JournalPageProps) {
       </div>
 
       <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="relative min-w-0 flex-1">
               <Search
                 size={20}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
               />
               <Input
                 type="text"
                 placeholder={t('searchPlaceholder')}
-                className="pl-10"
+                className="w-full min-w-0 pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -118,7 +123,7 @@ export function JournalPage({ initialData = null }: JournalPageProps) {
       </Card>
 
       <div>
-        <h2 className="mb-4">{t('entryHistory')}</h2>
+        <h2 className="mb-3 text-lg font-semibold sm:mb-4 sm:text-xl">{t('entryHistory')}</h2>
         {filteredEntries.length === 0 ? (
           <EmptyState
             icon={BookOpen}
@@ -130,7 +135,7 @@ export function JournalPage({ initialData = null }: JournalPageProps) {
             }
           />
         ) : (
-          <div className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-2 lg:gap-5 xl:grid-cols-3">
             {filteredEntries.map((entry) => (
               <JournalEntryCard key={entry.id} entry={entry} />
             ))}

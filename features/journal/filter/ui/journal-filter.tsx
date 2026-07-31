@@ -66,8 +66,11 @@ export function JournalFilter({ filter, onApply, onReset, isActive }: JournalFil
           <Filter className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-4 space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+      <PopoverContent
+        align="end"
+        className="w-[min(20rem,calc(100vw-2rem))] space-y-4 p-4 sm:w-80"
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>{tCommon('from')}</Label>
             <Input

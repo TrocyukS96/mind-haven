@@ -12,7 +12,12 @@ import { useVoiceErrorMessage } from '@/features/voice/hooks/use-voice-error-mes
 import { useMemo } from 'react';
 import { toast } from 'react-toastify';
 
-export function JournalVoiceButton() {
+interface JournalVoiceButtonProps {
+  className?: string;
+  size?: 'default' | 'sm' | 'lg' | 'icon';
+}
+
+export function JournalVoiceButton({ className, size }: JournalVoiceButtonProps = {}) {
   const { profile } = useAccess();
   const { openJournalFormFromVoice, journalTags } = useStore();
   const resolveErrorMessage = useVoiceErrorMessage();
@@ -40,7 +45,12 @@ export function JournalVoiceButton() {
 
   return (
     <>
-      <VoiceButton onClick={voice.open} disabled={voice.isProcessing} />
+      <VoiceButton
+        onClick={voice.open}
+        disabled={voice.isProcessing}
+        className={className}
+        size={size}
+      />
 
       <VoiceRecorder
         open={voice.isOpen}

@@ -42,12 +42,12 @@ export function JournalEntryCard({ entry }: JournalEntryCardProps) {
 
   return (
     <>
-      <Card className="hover:shadow-lg transition-shadow">
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0 space-y-3">
+      <Card className="transition-shadow hover:shadow-lg">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-start justify-between gap-3 sm:gap-4">
+            <div className="min-w-0 flex-1 space-y-2 sm:space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-base font-semibold">{entry.title}</h3>
+                <h3 className="text-base font-semibold break-words">{entry.title}</h3>
                 {isReflection && entry.reflectionPeriod && (
                   <Badge variant="secondary">
                     {t(`reflectionPeriods.${entry.reflectionPeriod}` as 'reflectionPeriods.day')}
