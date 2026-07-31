@@ -9,6 +9,7 @@ import { FinanceDonutChart } from '@/features/finance/ui/FinanceDonutChart';
 import { CategoryBreakdownList } from '@/features/finance/ui/CategoryBreakdownList';
 import { DisplayCurrencySelector } from '@/features/finance/ui/DisplayCurrencySelector';
 import { FinanceVoiceButton } from '@/features/finance/ui/FinanceVoiceButton';
+import { AccountDeleteButton } from '@/features/finance/ui/AccountDeleteButton';
 import { useStoreHydrated } from '@/shared/hooks/use-store-hydrated';
 import {
   filterTransactionsByPeriod,
@@ -70,9 +71,9 @@ export function FinancePage({
     displayCurrency,
     setDisplayCurrency,
     openAccountForm,
+    openAccountFormForEdit,
     openTransactionForm,
     openTransactionFormForEdit,
-    deleteFinanceAccount,
     deleteFinanceTransaction,
   } = useStore();
 
@@ -286,17 +287,23 @@ export function FinancePage({
                     })}
                   </SelectContent>
                 </Select>
-                {selectedAccountId && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteFinanceAccount(selectedAccountId)}
-                    className="shrink-0 text-white hover:bg-white/20 hover:text-white"
-                    aria-label={t('deleteAccount')}
-                  >
-                    <Trash2 size={18} />
-                  </Button>
+                {selectedAccount && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openAccountFormForEdit(selectedAccount.id)}
+                      className="shrink-0 text-white hover:bg-white/20 hover:text-white"
+                      aria-label={t('editAccount')}
+                    >
+                      <Pencil size={18} />
+                    </Button>
+                    <AccountDeleteButton
+                      account={selectedAccount}
+                      className="text-white hover:bg-white/20 hover:text-white"
+                    />
+                  </>
                 )}
               </div>
             </div>

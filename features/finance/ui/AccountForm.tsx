@@ -1,7 +1,7 @@
 'use client';
 
 import { FINANCE_CURRENCIES } from '@/entities/finance/model/categories';
-import type { FinanceCurrency } from '@/entities/finance/model/types';
+import type { FinanceAccount, FinanceCurrency } from '@/entities/finance/model/types';
 import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
@@ -18,30 +18,44 @@ import { useState } from 'react';
 import { toast } from 'react-toastify';
 
 interface AccountFormProps {
+  account?: FinanceAccount | null;
   onSuccess?: () => void;
 }
 
-export function AccountForm({ onSuccess }: AccountFormProps) {
+export function AccountForm({ account = null, onSuccess }: AccountFormProps) {
   const t = useTranslations('finance');
-  const addFinanceAccount = useStore((state) => state.addFinanceAccount);
-  const [name, setName] = useState('');
-  const [currency, setCurrency] = useState<FinanceCurrency>('BYN');
-  const [initialBalance, setInitialBalance] = useState('');
+  const isEditing = Boolean(account);
+  const { addFinanceAccount, updateFinanceAccount, financeTransactions } = useStore();
+  const hasTransactions =
+    account != null && financeTransactions.some((tx) => tx.accountId === account.id);
+
+  const [name, setName] = useState(account?.name ?? '');
+  const [currency, setCurrency] = useState<FinanceCurrency>(account?.currency ?? 'BYN');
+  const [initialBalance, setInitialBalance] = useState(
+    account != null ? String(account.initialBalance) : ''
+  );
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    const payload = {
+      name,
+      currency,
+      initialBalance: initialBalance ? parseFloat(initialBalance) : 0,
+    };
+
     try {
-      await addFinanceAccount({
-        name,
-        currency,
-        initialBalance: initialBalance ? parseFloat(initialBalance) : 0,
-      });
-      toast.success(t('accountCreated'));
-      setName('');
-      setInitialBalance('');
+      if (isEditing && account) {
+        await updateFinanceAccount(account.id, payload);
+        toast.success(t('accountUpdated'));
+      } else {
+        await addFinanceAccount(payload);
+        toast.success(t('accountCreated'));
+        setName('');
+        setInitialBalance('');
+      }
       onSuccess?.();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('saveError'));
@@ -65,7 +79,11 @@ export function AccountForm({ onSuccess }: AccountFormProps) {
 
       <div className="space-y-2">
         <Label>{t('currency')}</Label>
-        <Select value={currency} onValueChange={(v) => setCurrency(v as FinanceCurrency)}>
+        <Select
+          value={currency}
+          onValueChange={(v) => setCurrency(v as FinanceCurrency)}
+          disabled={isEditing && hasTransactions}
+        >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
@@ -77,6 +95,9 @@ export function AccountForm({ onSuccess }: AccountFormProps) {
             ))}
           </SelectContent>
         </Select>
+        {isEditing && hasTransactions && (
+          <p className="text-xs text-muted-foreground">{t('currencyLockedHint')}</p>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -93,7 +114,7 @@ export function AccountForm({ onSuccess }: AccountFormProps) {
       </div>
 
       <Button type="submit" className="w-full" disabled={loading}>
-        {t('createAccount')}
+        {isEditing ? t('saveAccount') : t('createAccount')}
       </Button>
     </form>
   );

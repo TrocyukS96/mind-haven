@@ -11,17 +11,28 @@ interface Props {
 }
 
 export function AccountFormModal({ open, onOpenChange }: Props) {
-  const closeAccountForm = useStore((state) => state.closeAccountForm);
+  const { closeAccountForm, editingAccountId, financeAccounts } = useStore();
   const t = useTranslations('finance');
+
+  const editingAccount =
+    editingAccountId != null
+      ? (financeAccounts.find((account) => account.id === editingAccountId) ?? null)
+      : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
         <DialogHeader className="space-y-1 border-b px-6 py-5 text-left">
-          <DialogTitle className="text-xl">{t('newAccount')}</DialogTitle>
+          <DialogTitle className="text-xl">
+            {editingAccount ? t('editAccount') : t('newAccount')}
+          </DialogTitle>
         </DialogHeader>
         <div className="px-6 py-5">
-          <AccountForm onSuccess={() => closeAccountForm()} />
+          <AccountForm
+            key={editingAccount?.id ?? 'new'}
+            account={editingAccount}
+            onSuccess={() => closeAccountForm()}
+          />
         </div>
       </DialogContent>
     </Dialog>

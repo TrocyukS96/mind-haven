@@ -167,6 +167,33 @@ export async function createFinanceAccount(
   return mapAccountFromDb(row);
 }
 
+export async function updateFinanceAccount(
+  userId: string,
+  accountId: string,
+  input: FinanceAccountInput
+): Promise<FinanceAccount> {
+  const data = normalizeAccountInput(input);
+
+  const existing = await prisma.financeAccount.findFirst({
+    where: { id: accountId, userId },
+    select: { id: true },
+  });
+
+  if (!existing) throw new Error('Account not found');
+
+  const row = await prisma.financeAccount.update({
+    where: { id: accountId },
+    data: {
+      name: data.name,
+      currency: data.currency,
+      initialBalance: data.initialBalance ?? 0,
+    },
+    include: { transactions: { select: { type: true, amount: true } } },
+  });
+
+  return mapAccountFromDb(row);
+}
+
 export async function deleteFinanceAccount(userId: string, accountId: string): Promise<void> {
   const existing = await prisma.financeAccount.findFirst({
     where: { id: accountId, userId },

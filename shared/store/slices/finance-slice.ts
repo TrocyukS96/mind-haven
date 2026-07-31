@@ -15,6 +15,7 @@ import {
   createFinanceTransactionRequest,
   deleteFinanceAccountRequest,
   deleteFinanceTransactionRequest,
+  updateFinanceAccountRequest,
   updateFinanceTransactionRequest,
 } from '@/entities/finance/api/finance-client';
 import { shouldUseFinanceApi } from '@/entities/finance/lib/resolve-finance-api';
@@ -52,6 +53,7 @@ export interface FinanceSlice {
   financeViewType: TransactionType;
   displayCurrency: FinanceCurrency;
   isAccountFormOpen: boolean;
+  editingAccountId: string | null;
   isTransactionFormOpen: boolean;
   transactionFormType: TransactionType;
   editingTransactionId: string | null;
@@ -64,11 +66,13 @@ export interface FinanceSlice {
   setFinanceViewType: (type: TransactionType) => void;
   setDisplayCurrency: (currency: FinanceCurrency) => void;
   addFinanceAccount: (input: FinanceAccountInput) => Promise<void>;
+  updateFinanceAccount: (id: string, input: FinanceAccountInput) => Promise<void>;
   deleteFinanceAccount: (id: string) => Promise<void>;
   addFinanceTransaction: (input: FinanceTransactionInput) => Promise<void>;
   updateFinanceTransaction: (id: string, input: FinanceTransactionInput) => Promise<void>;
   deleteFinanceTransaction: (id: string) => Promise<void>;
   openAccountForm: () => void;
+  openAccountFormForEdit: (id: string) => void;
   closeAccountForm: () => void;
   openTransactionForm: (type: TransactionType) => void;
   openTransactionFormForEdit: (id: string) => void;
@@ -85,6 +89,7 @@ export const createFinanceSlice: StateCreator<AppStore, [], [], FinanceSlice> = 
   financeViewType: 'expense',
   displayCurrency: 'BYN',
   isAccountFormOpen: false,
+  editingAccountId: null,
   isTransactionFormOpen: false,
   transactionFormType: 'expense',
   editingTransactionId: null,
@@ -131,6 +136,35 @@ export const createFinanceSlice: StateCreator<AppStore, [], [], FinanceSlice> = 
     }));
   },
 
+  updateFinanceAccount: async (id, input) => {
+    if (await shouldUseFinanceApi()) {
+      const saved = await updateFinanceAccountRequest(id, input);
+      set((state) => {
+        const accounts = state.financeAccounts.map((a) => (a.id === id ? saved : a));
+        return {
+          financeAccounts: withUpdatedBalances(accounts, state.financeTransactions),
+        };
+      });
+      return;
+    }
+
+    set((state) => {
+      const accounts = state.financeAccounts.map((a) =>
+        a.id === id
+          ? {
+              ...a,
+              name: input.name,
+              currency: input.currency,
+              initialBalance: input.initialBalance ?? 0,
+            }
+          : a
+      );
+      return {
+        financeAccounts: withUpdatedBalances(accounts, state.financeTransactions),
+      };
+    });
+  },
+
   deleteFinanceAccount: async (id) => {
     if (await shouldUseFinanceApi()) {
       await deleteFinanceAccountRequest(id);
@@ -146,6 +180,9 @@ export const createFinanceSlice: StateCreator<AppStore, [], [], FinanceSlice> = 
         financeAccounts: withUpdatedBalances(accounts, transactions),
         financeTransactions: transactions,
         selectedAccountId,
+        editingAccountId: state.editingAccountId === id ? null : state.editingAccountId,
+        isAccountFormOpen:
+          state.editingAccountId === id ? false : state.isAccountFormOpen,
       };
     });
   },
@@ -230,8 +267,14 @@ export const createFinanceSlice: StateCreator<AppStore, [], [], FinanceSlice> = 
     });
   },
 
-  openAccountForm: () => set({ isAccountFormOpen: true }),
-  closeAccountForm: () => set({ isAccountFormOpen: false }),
+  openAccountForm: () => set({ isAccountFormOpen: true, editingAccountId: null }),
+  openAccountFormForEdit: (id) => {
+    const account = get().financeAccounts.find((a) => a.id === id);
+    if (!account) return;
+
+    set({ isAccountFormOpen: true, editingAccountId: id });
+  },
+  closeAccountForm: () => set({ isAccountFormOpen: false, editingAccountId: null }),
 
   openTransactionForm: (type) =>
     set({

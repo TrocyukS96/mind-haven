@@ -1,9 +1,32 @@
+import type { FinanceAccountInput } from '@/entities/finance/model/types';
 import { auth } from '@/shared/lib/auth/auth';
-import { deleteFinanceAccount } from '@/shared/lib/finance/finance-service';
+import {
+  deleteFinanceAccount,
+  updateFinanceAccount,
+} from '@/shared/lib/finance/finance-service';
 import { NextResponse } from 'next/server';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
+}
+
+export async function PATCH(request: Request, context: RouteContext) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id } = await context.params;
+
+  try {
+    const body = (await request.json()) as FinanceAccountInput;
+    const account = await updateFinanceAccount(session.user.id, id, body);
+    return NextResponse.json({ account });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to update account';
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {

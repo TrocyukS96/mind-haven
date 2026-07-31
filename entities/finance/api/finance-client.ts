@@ -40,6 +40,19 @@ export async function deleteFinanceAccountRequest(id: string): Promise<void> {
   await parseResponse<{ ok: true }>(response);
 }
 
+export async function updateFinanceAccountRequest(
+  id: string,
+  input: FinanceAccountInput
+): Promise<FinanceAccount> {
+  const response = await fetch(`/api/finance/accounts/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  const payload = await parseResponse<{ account: FinanceAccount }>(response);
+  return payload.account;
+}
+
 export async function fetchFinanceTransactions(): Promise<FinanceTransaction[]> {
   const response = await fetch('/api/finance/transactions');
   const payload = await parseResponse<{ transactions: FinanceTransaction[] }>(response);
