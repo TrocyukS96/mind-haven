@@ -1,21 +1,17 @@
 'use client';
 
-import type { VoiceEntityType, VoiceGoalOption, VoiceProcessResult, VoiceTagOption } from '@/entities/voice';
 import { useLocale } from 'next-intl';
 import { useCallback, useMemo, useState } from 'react';
-import { useSpeechToText } from './use-speech-to-text';
 import { useVoiceRecorder } from './use-voice-recorder';
+import { useVoiceTranscribe } from './use-voice-transcribe';
 import type { VoiceRecorderStatus } from '../model/types';
 
-interface UseVoiceInputOptions<TParsed> {
-  entityType: VoiceEntityType;
-  goals?: VoiceGoalOption[];
-  tags?: VoiceTagOption[];
-  onResult: (result: VoiceProcessResult<TParsed>) => void;
+interface UseVoiceTranscriptOptions {
+  onResult: (transcript: string) => void;
   onError?: (error: unknown) => void;
 }
 
-interface UseVoiceInputReturn {
+interface UseVoiceTranscriptReturn {
   status: VoiceRecorderStatus;
   durationMs: number;
   isOpen: boolean;
@@ -24,26 +20,15 @@ interface UseVoiceInputReturn {
   startRecording: () => Promise<void>;
   stopRecording: () => void;
   cancelRecording: () => void;
-  isRecording: boolean;
   isProcessing: boolean;
 }
 
-export function useVoiceInput<TParsed>({
-  entityType,
-  goals,
-  tags,
+export function useVoiceTranscript({
   onResult,
   onError,
-}: UseVoiceInputOptions<TParsed>): UseVoiceInputReturn {
+}: UseVoiceTranscriptOptions): UseVoiceTranscriptReturn {
   const locale = useLocale();
   const [isOpen, setIsOpen] = useState(false);
-
-  const handleRecorderError = useCallback(
-    (error: unknown) => {
-      onError?.(error);
-    },
-    [onError]
-  );
 
   const handleSpeechError = useCallback(
     (error: unknown) => {
@@ -53,26 +38,30 @@ export function useVoiceInput<TParsed>({
     [onError]
   );
 
-  const { status: speechStatus, processAudio } = useSpeechToText<TParsed>({
-    entityType,
+  const { status: transcribeStatus, transcribeAudio } = useVoiceTranscribe({
     locale,
-    goals,
-    tags,
-    onSuccess: (result) => {
+    onSuccess: (transcript) => {
       setIsOpen(false);
-      onResult(result);
+      onResult(transcript);
     },
     onError: handleSpeechError,
   });
 
-  const { status: recorderStatus, durationMs, startRecording, stopRecording, cancelRecording, isRecording } =
+  const handleRecorderError = useCallback(
+    (error: unknown) => {
+      onError?.(error);
+    },
+    [onError]
+  );
+
+  const { status: recorderStatus, durationMs, startRecording, stopRecording, cancelRecording } =
     useVoiceRecorder({
-      onRecordingComplete: processAudio,
+      onRecordingComplete: transcribeAudio,
       onError: handleRecorderError,
     });
 
   const status = useMemo<VoiceRecorderStatus>(() => {
-    if (speechStatus === 'processing') {
+    if (transcribeStatus === 'processing') {
       return 'processing';
     }
 
@@ -81,9 +70,10 @@ export function useVoiceInput<TParsed>({
     }
 
     return recorderStatus;
-  }, [recorderStatus, speechStatus]);
+  }, [recorderStatus, transcribeStatus]);
 
   const open = useCallback(() => setIsOpen(true), []);
+
   const close = useCallback(() => {
     cancelRecording();
     setIsOpen(false);
@@ -98,7 +88,6 @@ export function useVoiceInput<TParsed>({
     startRecording,
     stopRecording,
     cancelRecording,
-    isRecording,
     isProcessing: status === 'processing',
   };
 }

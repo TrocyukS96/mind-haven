@@ -5,6 +5,7 @@ import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
 import { Label } from '@/shared/ui/label';
 import { Textarea } from '@/shared/ui/textarea';
+import { ReflectionQuestionVoice } from './ReflectionQuestionVoice';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -92,26 +93,29 @@ export function ReflectionRoadmap({
       </div>
 
       <div className="space-y-4">
-        <div>
-          <Label htmlFor="reflection-current-answer">
+        <div className="flex items-start justify-between gap-3">
+          <Label htmlFor="reflection-current-answer" className="flex-1 leading-snug">
             {currentStep + 1}. {currentQuestion}
           </Label>
-          <Textarea
-            id="reflection-current-answer"
+          <ReflectionQuestionVoice
             value={answers[currentStep] ?? ''}
-            onChange={(e) => onAnswerChange(currentStep, e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey && !isLastStep) {
-                e.preventDefault();
-                handleNext();
-              }
-            }}
-            rows={4}
-            className="mt-2"
-            placeholder={t('reflectionAnswerPlaceholder')}
-            autoFocus
+            onChange={(nextValue) => onAnswerChange(currentStep, nextValue)}
           />
         </div>
+        <Textarea
+          id="reflection-current-answer"
+          value={answers[currentStep] ?? ''}
+          onChange={(e) => onAnswerChange(currentStep, e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !isLastStep) {
+              e.preventDefault();
+              handleNext();
+            }
+          }}
+          rows={4}
+          placeholder={t('reflectionAnswerPlaceholder')}
+          autoFocus
+        />
 
         <div className="flex items-center justify-between gap-2">
           <Button

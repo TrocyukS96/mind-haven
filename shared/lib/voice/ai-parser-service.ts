@@ -22,6 +22,7 @@ export interface ParseSpeechOptions {
   locale?: string;
   now?: Date;
   goals?: ParserContext['goals'];
+  tags?: ParserContext['tags'];
 }
 
 export async function parseSpeechToStructuredData<TParsed = unknown>({
@@ -30,6 +31,7 @@ export async function parseSpeechToStructuredData<TParsed = unknown>({
   locale = 'en',
   now = new Date(),
   goals,
+  tags,
 }: ParseSpeechOptions): Promise<TParsed> {
   try {
     const { systemPrompt, normalize } = getParserConfig(entityType);
@@ -43,6 +45,13 @@ export async function parseSpeechToStructuredData<TParsed = unknown>({
       userMessageParts.push(
         'Available goals:',
         ...goals.map((goal) => `- id: "${goal.id}", title: "${goal.title}"`)
+      );
+    }
+
+    if (tags?.length) {
+      userMessageParts.push(
+        'Available tags:',
+        ...tags.map((tag) => `- id: "${tag.id}", name: "${tag.name}"`)
       );
     }
 
@@ -89,7 +98,7 @@ export async function parseSpeechToStructuredData<TParsed = unknown>({
     logVoiceDebug('yandex-gpt-parsed', raw);
 
     try {
-      const normalized = normalize(raw, { goals }) as TParsed;
+      const normalized = normalize(raw, { goals, tags }) as TParsed;
       logVoiceDebug('yandex-gpt-normalized', normalized);
       return normalized;
     } catch (error) {

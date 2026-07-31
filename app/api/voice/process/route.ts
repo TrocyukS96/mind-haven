@@ -2,6 +2,7 @@ import {
   isVoiceEntitySupported,
   parseGoalsFromFormData,
   parseSpeechToStructuredData,
+  parseTagsFromFormData,
   transcribeSpeech,
 } from '@/shared/lib/voice/server';
 import type { VoiceEntityType } from '@/shared/lib/voice/types';
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
     const entityTypeRaw = formData.get('entityType');
     const locale = formData.get('locale');
     const goals = parseGoalsFromFormData(formData.get('goals'));
+    const tags = parseTagsFromFormData(formData.get('tags'));
 
     if (!(audio instanceof Blob)) {
       return NextResponse.json(
@@ -102,6 +104,7 @@ export async function POST(request: Request) {
       entityType: entityTypeRaw,
       locale: typeof locale === 'string' ? locale : 'en',
       goals,
+      tags,
     });
 
     logVoiceDebug('result', { transcript, parsed });

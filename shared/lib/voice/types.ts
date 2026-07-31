@@ -32,3 +32,8 @@ export interface VoiceGoalOption {
   id: string;
   title: string;
 }
+
+export interface VoiceTagOption {
+  id: string;
+  name: string;
+}

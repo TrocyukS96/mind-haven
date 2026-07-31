@@ -6,4 +6,4 @@ export { isVoiceEntitySupported } from './parsers';
 export type { ParsedTaskVoiceResult, ParsedVoiceResultMap } from './parsers';
 export { transcribeSpeech } from './speech-service';
 export type { TranscribeOptions } from './speech-service';
-export { parseGoalsFromFormData } from './parse-voice-form-data';
+export { parseGoalsFromFormData, parseTagsFromFormData } from './parse-voice-form-data';

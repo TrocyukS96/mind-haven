@@ -1,4 +1,4 @@
-import type { VoiceEntityType, VoiceGoalOption, VoiceProcessResult } from '@/shared/lib/voice/types';
+import type { VoiceEntityType, VoiceGoalOption, VoiceProcessResult, VoiceTagOption } from '@/shared/lib/voice/types';
 import { VoiceError } from '@/shared/lib/voice/types';
 
 export type { VoiceEntityType, VoiceProcessResult };
@@ -8,6 +8,7 @@ export interface VoiceProcessRequest {
   entityType: VoiceEntityType;
   locale?: string;
   goals?: VoiceGoalOption[];
+  tags?: VoiceTagOption[];
 }
 
 export async function processVoiceInput<TParsed = unknown>({
@@ -15,6 +16,7 @@ export async function processVoiceInput<TParsed = unknown>({
   entityType,
   locale,
   goals,
+  tags,
 }: VoiceProcessRequest): Promise<VoiceProcessResult<TParsed>> {
   const formData = new FormData();
   formData.append('audio', audio, 'recording.webm');
@@ -24,6 +26,9 @@ export async function processVoiceInput<TParsed = unknown>({
   }
   if (goals?.length) {
     formData.append('goals', JSON.stringify(goals));
+  }
+  if (tags?.length) {
+    formData.append('tags', JSON.stringify(tags));
   }
 
   let response: Response;

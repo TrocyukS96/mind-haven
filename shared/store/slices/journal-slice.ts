@@ -5,6 +5,7 @@ import {
   updateJournalEntryRequest,
 } from '@/entities/journal/api/journal-client';
 import { JournalEntry, JournalTag } from '@/entities/journal/model/types';
+import type { JournalFormDraft } from '@/features/journal/lib/map-voice-to-journal-draft';
 import { buildJournalEntryEvent } from '@/entities/points/lib/calculate-points';
 import { tryEarnPoints } from '@/entities/points/lib/process-point-event';
 import type { JournalData } from '@/shared/lib/journal/journal-entry-service';
@@ -19,6 +20,7 @@ export interface JournalSlice {
   journalApiEnabled: boolean;
   selectedJournalEntry: JournalEntry | null;
   isJournalFormOpen: boolean;
+  journalFormDraft: JournalFormDraft | null;
   setJournalApiEnabled: (enabled: boolean) => void;
   hydrateJournalData: (data: JournalData) => void;
   addJournalEntry: (
@@ -36,6 +38,7 @@ export interface JournalSlice {
   addTagToEntry: (entryId: string, tagId: string) => Promise<void>;
   removeTagFromEntry: (entryId: string, tagId: string) => Promise<void>;
   openJournalForm: (entry?: JournalEntry) => void;
+  openJournalFormFromVoice: (draft: JournalFormDraft) => void;
   closeJournalForm: () => void;
 }
 
@@ -65,6 +68,7 @@ export const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = 
   journalApiEnabled: false,
   selectedJournalEntry: null,
   isJournalFormOpen: false,
+  journalFormDraft: null,
 
   setJournalApiEnabled: (enabled) => set({ journalApiEnabled: enabled }),
 
@@ -201,11 +205,20 @@ export const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = 
     set({
       selectedJournalEntry: entry ?? null,
       isJournalFormOpen: true,
+      journalFormDraft: null,
+    }),
+
+  openJournalFormFromVoice: (draft) =>
+    set({
+      selectedJournalEntry: null,
+      isJournalFormOpen: true,
+      journalFormDraft: draft,
     }),
 
   closeJournalForm: () =>
     set({
       selectedJournalEntry: null,
       isJournalFormOpen: false,
+      journalFormDraft: null,
     }),
 });

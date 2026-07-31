@@ -5,6 +5,7 @@ import { BookOpen, Plus, Search } from 'lucide-react';
 import { JournalFilterState } from '@/entities/journal/model/types';
 import { JournalEntryCard } from '@/entities/journal/ui/JournalEntryCard';
 import { JournalFilter } from '@/features/journal/filter/ui/journal-filter';
+import { JournalVoiceButton } from '@/features/journal/ui/JournalVoiceButton';
 import { useJournalSync } from '@/features/journal/hooks/use-journal-sync';
 import { useStoreHydrated } from '@/shared/hooks/use-store-hydrated';
 import { useStore } from '@/shared/store/store-config';
@@ -81,10 +82,13 @@ export function JournalPage({ initialData = null }: JournalPageProps) {
           <h1>{t('title')}</h1>
           <p className="text-muted-foreground mt-2">{t('subtitle')}</p>
         </div>
-        <Button onClick={() => openJournalForm()}>
-          <Plus size={20} />
-          {t('newEntry')}
-        </Button>
+        <div className="flex items-center gap-3 shrink-0">
+          <JournalVoiceButton />
+          <Button onClick={() => openJournalForm()}>
+            <Plus size={20} />
+            {t('newEntry')}
+          </Button>
+        </div>
       </div>
 
       <Card>

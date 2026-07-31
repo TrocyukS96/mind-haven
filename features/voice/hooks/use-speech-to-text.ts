@@ -5,6 +5,7 @@ import {
   type VoiceEntityType,
   type VoiceGoalOption,
   type VoiceProcessResult,
+  type VoiceTagOption,
 } from '@/entities/voice';
 import { useCallback, useState } from 'react';
 import { logVoiceDebug } from '@/shared/lib/voice/log-voice-debug';
@@ -15,6 +16,7 @@ interface UseSpeechToTextOptions<TParsed> {
   entityType: VoiceEntityType;
   locale?: string;
   goals?: VoiceGoalOption[];
+  tags?: VoiceTagOption[];
   onSuccess: (result: VoiceProcessResult<TParsed>) => void;
   onError?: (error: unknown) => void;
 }
@@ -29,6 +31,7 @@ export function useSpeechToText<TParsed>({
   entityType,
   locale,
   goals,
+  tags,
   onSuccess,
   onError,
 }: UseSpeechToTextOptions<TParsed>): UseSpeechToTextReturn {
@@ -56,6 +59,7 @@ export function useSpeechToText<TParsed>({
           entityType,
           locale,
           goals,
+          tags,
         });
         logVoiceDebug('api-response', result);
         setStatus('idle');
@@ -67,7 +71,7 @@ export function useSpeechToText<TParsed>({
         setStatus('idle');
       }
     },
-    [entityType, goals, locale, onError, onSuccess]
+    [entityType, goals, tags, locale, onError, onSuccess]
   );
 
   return {
