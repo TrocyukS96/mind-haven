@@ -10,6 +10,11 @@ import {
   type ParsedJournalVoiceResult,
 } from './journal-parser';
 import {
+  normalizeParsedHabit,
+  HABIT_PARSER_SYSTEM_PROMPT,
+  type ParsedHabitVoiceResult,
+} from './habit-parser';
+import {
   normalizeParsedTask,
   TASK_PARSER_SYSTEM_PROMPT,
   type ParsedTaskVoiceResult,
@@ -19,7 +24,7 @@ export type ParsedVoiceResultMap = {
   task: ParsedTaskVoiceResult;
   goal: ParsedGoalVoiceResult;
   journal: ParsedJournalVoiceResult;
-  habit: Record<string, unknown>;
+  habit: ParsedHabitVoiceResult;
   reflection: Record<string, unknown>;
   note: Record<string, unknown>;
 };
@@ -47,6 +52,10 @@ const PARSER_REGISTRY: Partial<Record<VoiceEntityType, EntityParserConfig>> = {
     systemPrompt: JOURNAL_PARSER_SYSTEM_PROMPT,
     normalize: (raw, context) => normalizeParsedJournal(raw, context?.tags ?? []),
   },
+  habit: {
+    systemPrompt: HABIT_PARSER_SYSTEM_PROMPT,
+    normalize: (raw) => normalizeParsedHabit(raw),
+  },
 };
 
 export function getParserConfig(entityType: VoiceEntityType): EntityParserConfig {
@@ -69,5 +78,7 @@ export { normalizeParsedGoal, GOAL_PARSER_SYSTEM_PROMPT };
 export type { ParsedGoalVoiceResult };
 export { normalizeParsedJournal, JOURNAL_PARSER_SYSTEM_PROMPT };
 export type { ParsedJournalVoiceResult };
+export { normalizeParsedHabit, HABIT_PARSER_SYSTEM_PROMPT };
+export type { ParsedHabitVoiceResult };
 export { resolveTaskGoalId } from './resolve-task-goal';
 export { resolveJournalTagId } from './resolve-journal-tag';

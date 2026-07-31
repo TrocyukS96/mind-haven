@@ -28,8 +28,10 @@ export const useStore = create<AppStore>()(
         partialize: (state) => {
           const {
             journalApiEnabled: _journalApiEnabled,
+            habitsApiEnabled: _habitsApiEnabled,
             selectedJournalEntry: _selectedJournalEntry,
             isJournalFormOpen: _isJournalFormOpen,
+            isHabitFormOpen: _isHabitFormOpen,
             ...persistedState
           } = state;
 

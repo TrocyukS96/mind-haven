@@ -1,5 +1,7 @@
 'use client';
 
+import { buildHabitFormValues } from '@/features/habit/lib/habit-form-initial-values';
+import type { HabitFrequencyKey } from '@/features/habit/lib/habit-frequency';
 import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
 import { DialogFooter } from '@/shared/ui/dialog';
@@ -15,8 +17,6 @@ import {
 import { cn } from '@/shared/lib/utils';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, type ReactNode } from 'react';
-
-type FrequencyKey = 'daily' | 'threePerWeek' | 'fivePerWeek' | 'weekends';
 
 interface Props {
   open: boolean;
@@ -45,32 +45,35 @@ function FormField({
 }
 
 export function HabitForm({ open, onOpenChange }: Props) {
-  const { addHabit } = useStore();
+  const { addHabit, habitFormDraft } = useStore();
   const t = useTranslations('habits');
   const tCommon = useTranslations('common');
 
-  const [name, setName] = useState('');
-  const [frequency, setFrequency] = useState<FrequencyKey>('daily');
-
-  const frequencyLabels: Record<FrequencyKey, string> = {
+  const frequencyLabels: Record<HabitFrequencyKey, string> = {
     daily: t('frequencies.daily'),
     threePerWeek: t('frequencies.threePerWeek'),
     fivePerWeek: t('frequencies.fivePerWeek'),
     weekends: t('frequencies.weekends'),
   };
 
-  useEffect(() => {
-    if (open) {
-      setName('');
-      setFrequency('daily');
-    }
-  }, [open]);
+  const initialValues = buildHabitFormValues(habitFormDraft);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [name, setName] = useState(initialValues.name);
+  const [frequency, setFrequency] = useState<HabitFrequencyKey>(initialValues.frequency);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const nextValues = buildHabitFormValues(habitFormDraft);
+    setName(nextValues.name);
+    setFrequency(nextValues.frequency);
+  }, [open, habitFormDraft]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    addHabit({
+    await addHabit({
       name: name.trim(),
       frequency: frequencyLabels[frequency],
     });
@@ -93,12 +96,12 @@ export function HabitForm({ open, onOpenChange }: Props) {
         </FormField>
 
         <FormField label={t('frequency')}>
-          <Select value={frequency} onValueChange={(value) => setFrequency(value as FrequencyKey)}>
+          <Select value={frequency} onValueChange={(value) => setFrequency(value as HabitFrequencyKey)}>
             <SelectTrigger id="frequency" className="h-10 w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {(Object.keys(frequencyLabels) as FrequencyKey[]).map((key) => (
+              {(Object.keys(frequencyLabels) as HabitFrequencyKey[]).map((key) => (
                 <SelectItem key={key} value={key}>
                   {frequencyLabels[key]}
                 </SelectItem>

@@ -1,9 +1,16 @@
 import { Habit } from '@/entities/habit/model/types';
 import {
+  createHabitRequest,
+  deleteHabitRequest,
+  toggleHabitDayRequest,
+} from '@/entities/habit/api/habit-client';
+import { shouldUseHabitApi } from '@/entities/habit/lib/resolve-habit-api';
+import type { HabitFormDraft } from '@/features/habit/lib/map-voice-to-habit-draft';
+import {
   buildHabitDayEvent,
   buildHabitStreakEvent,
 } from '@/entities/points/lib/calculate-points';
-import { tryEarnPoints, tryEarnPointsMany } from '@/entities/points/lib/process-point-event';
+import { tryEarnPointsMany } from '@/entities/points/lib/process-point-event';
 import { StateCreator } from 'zustand';
 import type { AppStore } from '../store-config';
 
@@ -11,32 +18,68 @@ const initialHabits: Habit[] = [];
 
 export interface HabitsSlice {
   habits: Habit[];
+  habitsApiEnabled: boolean;
   isHabitFormOpen: boolean;
+  habitFormDraft: HabitFormDraft | null;
 
-  addHabit: (habit: Omit<Habit, 'id' | 'streak' | 'completedDays'>) => void;
-  toggleHabitDay: (id: string, date: string) => void;
-  deleteHabit: (id: string) => void;
+  setHabitApiEnabled: (enabled: boolean) => void;
+  hydrateHabits: (habits: Habit[]) => void;
+  addHabit: (habit: Omit<Habit, 'id' | 'streak' | 'completedDays'>) => Promise<void>;
+  toggleHabitDay: (id: string, date: string) => Promise<void>;
+  deleteHabit: (id: string) => Promise<void>;
   openHabitForm: () => void;
+  openHabitFormFromVoice: (draft: HabitFormDraft) => void;
   closeHabitForm: () => void;
 }
 
 export const createHabitsSlice: StateCreator<AppStore, [], [], HabitsSlice> = (set, get) => ({
   habits: initialHabits,
+  habitsApiEnabled: false,
   isHabitFormOpen: false,
+  habitFormDraft: null,
 
-  addHabit: (habit) =>
+  setHabitApiEnabled: (enabled) => set({ habitsApiEnabled: enabled }),
+
+  hydrateHabits: (habits) => set({ habits }),
+
+  addHabit: async (habit) => {
+    if (await shouldUseHabitApi()) {
+      const savedHabit = await createHabitRequest(habit);
+      set((state) => ({
+        habits: [...state.habits, savedHabit],
+      }));
+      return;
+    }
+
     set((state) => ({
       habits: [
         ...state.habits,
         { ...habit, id: Date.now().toString(), streak: 0, completedDays: [] },
       ],
-    })),
+    }));
+  },
 
-  toggleHabitDay: (id, date) => {
+  toggleHabitDay: async (id, date) => {
     const habit = get().habits.find((item) => item.id === id);
     if (!habit) return;
 
     const wasCompleted = habit.completedDays.includes(date);
+
+    if (await shouldUseHabitApi()) {
+      const updated = await toggleHabitDayRequest(id, date);
+      set((state) => ({
+        habits: state.habits.map((h) => (h.id === id ? updated : h)),
+      }));
+
+      if (!wasCompleted) {
+        tryEarnPointsMany(get, [
+          buildHabitDayEvent(id, date),
+          buildHabitStreakEvent(id, updated.streak),
+        ]);
+      }
+      return;
+    }
+
     const nextStreak = wasCompleted ? Math.max(0, habit.streak - 1) : habit.streak + 1;
 
     set((state) => ({
@@ -61,12 +104,31 @@ export const createHabitsSlice: StateCreator<AppStore, [], [], HabitsSlice> = (s
     }
   },
 
-  deleteHabit: (id) =>
+  deleteHabit: async (id) => {
+    if (await shouldUseHabitApi()) {
+      await deleteHabitRequest(id);
+    }
+
     set((state) => ({
       habits: state.habits.filter((h) => h.id !== id),
-    })),
+    }));
+  },
 
-  openHabitForm: () => set({ isHabitFormOpen: true }),
+  openHabitForm: () =>
+    set({
+      isHabitFormOpen: true,
+      habitFormDraft: null,
+    }),
 
-  closeHabitForm: () => set({ isHabitFormOpen: false }),
+  openHabitFormFromVoice: (draft) =>
+    set({
+      isHabitFormOpen: true,
+      habitFormDraft: draft,
+    }),
+
+  closeHabitForm: () =>
+    set({
+      isHabitFormOpen: false,
+      habitFormDraft: null,
+    }),
 });

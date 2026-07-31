@@ -30,8 +30,8 @@ export function HabitDeleteButton({ habit, className }: Props) {
   const t = useTranslations('habits');
   const tCommon = useTranslations('common');
 
-  const handleDelete = () => {
-    deleteHabit(habit.id);
+  const handleDelete = async () => {
+    await deleteHabit(habit.id);
     toast.success(t('habitDeleted'));
   };
 

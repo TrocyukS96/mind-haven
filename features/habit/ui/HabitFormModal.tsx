@@ -1,5 +1,6 @@
 'use client';
 
+import { getHabitFormKey } from '@/features/habit/lib/habit-form-initial-values';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog';
 import { HabitForm } from './HabitForm';
 import { useStore } from '@/shared/store/store-config';
@@ -11,8 +12,9 @@ interface Props {
 }
 
 const HabitFormModal = ({ open, onOpenChange }: Props) => {
-  const { isHabitFormOpen, closeHabitForm } = useStore();
+  const { isHabitFormOpen, closeHabitForm, habitFormDraft } = useStore();
   const t = useTranslations('habits');
+  const formKey = getHabitFormKey(habitFormDraft);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -23,6 +25,7 @@ const HabitFormModal = ({ open, onOpenChange }: Props) => {
 
         <div className="max-h-[calc(100vh-10rem)] overflow-y-auto px-6 py-5">
           <HabitForm
+            key={formKey}
             open={isHabitFormOpen}
             onOpenChange={(isOpen) => !isOpen && closeHabitForm()}
           />
