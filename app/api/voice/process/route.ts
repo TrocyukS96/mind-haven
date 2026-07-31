@@ -3,6 +3,7 @@ import {
   parseGoalsFromFormData,
   parseSpeechToStructuredData,
   parseTagsFromFormData,
+  parseAccountsFromFormData,
   transcribeSpeech,
 } from '@/shared/lib/voice/server';
 import type { VoiceEntityType } from '@/shared/lib/voice/types';
@@ -17,6 +18,7 @@ const SUPPORTED_ENTITY_TYPES: VoiceEntityType[] = [
   'goal',
   'journal',
   'habit',
+  'finance',
   'reflection',
   'note',
 ];
@@ -61,6 +63,7 @@ export async function POST(request: Request) {
     const locale = formData.get('locale');
     const goals = parseGoalsFromFormData(formData.get('goals'));
     const tags = parseTagsFromFormData(formData.get('tags'));
+    const accounts = parseAccountsFromFormData(formData.get('accounts'));
 
     if (!(audio instanceof Blob)) {
       return NextResponse.json(
@@ -105,6 +108,7 @@ export async function POST(request: Request) {
       locale: typeof locale === 'string' ? locale : 'en',
       goals,
       tags,
+      accounts,
     });
 
     logVoiceDebug('result', { transcript, parsed });

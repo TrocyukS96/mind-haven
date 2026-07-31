@@ -5,6 +5,7 @@ import {
   type GlobalVoiceCommandResult,
   type VoiceGoalOption,
   type VoiceTagOption,
+  type VoiceAccountOption,
 } from '@/entities/voice';
 import { useCallback, useState } from 'react';
 import { logVoiceDebug } from '@/shared/lib/voice/log-voice-debug';
@@ -15,6 +16,7 @@ interface UseGlobalSpeechToTextOptions {
   locale?: string;
   goals?: VoiceGoalOption[];
   tags?: VoiceTagOption[];
+  accounts?: VoiceAccountOption[];
   onSuccess: (result: GlobalVoiceCommandResult) => void;
   onError?: (error: unknown) => void;
 }
@@ -29,6 +31,7 @@ export function useGlobalSpeechToText({
   locale,
   goals,
   tags,
+  accounts,
   onSuccess,
   onError,
 }: UseGlobalSpeechToTextOptions): UseGlobalSpeechToTextReturn {
@@ -56,6 +59,7 @@ export function useGlobalSpeechToText({
           locale,
           goals,
           tags,
+          accounts,
         });
 
         logVoiceDebug('global-api-response', result);
@@ -68,7 +72,7 @@ export function useGlobalSpeechToText({
         setStatus('idle');
       }
     },
-    [goals, tags, locale, onError, onSuccess]
+    [accounts, goals, tags, locale, onError, onSuccess]
   );
 
   return {

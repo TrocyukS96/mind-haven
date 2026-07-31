@@ -1,9 +1,10 @@
-export type { VoiceEntityType, VoiceGoalOption, VoiceTagOption, VoiceProcessResult, VoiceErrorCode, GlobalVoiceEntityType } from '@/shared/lib/voice/types';
+export type { VoiceEntityType, VoiceGoalOption, VoiceTagOption, VoiceAccountOption, VoiceProcessResult, VoiceErrorCode, GlobalVoiceEntityType } from '@/shared/lib/voice/types';
 export type {
   ParsedTaskVoiceResult,
   ParsedGoalVoiceResult,
   ParsedJournalVoiceResult,
   ParsedHabitVoiceResult,
+  ParsedFinanceVoiceResult,
 } from '@/shared/lib/voice/parsers';
 export { VoiceError } from '@/shared/lib/voice/types';
 export {

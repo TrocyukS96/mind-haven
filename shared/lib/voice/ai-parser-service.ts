@@ -14,6 +14,7 @@ export interface ParseSpeechOptions {
   now?: Date;
   goals?: ParserContext['goals'];
   tags?: ParserContext['tags'];
+  accounts?: ParserContext['accounts'];
 }
 
 export async function parseSpeechToStructuredData<TParsed = unknown>({
@@ -23,6 +24,7 @@ export async function parseSpeechToStructuredData<TParsed = unknown>({
   now = new Date(),
   goals,
   tags,
+  accounts,
 }: ParseSpeechOptions): Promise<TParsed> {
   try {
     const { systemPrompt, normalize } = getParserConfig(entityType);
@@ -46,12 +48,22 @@ export async function parseSpeechToStructuredData<TParsed = unknown>({
       );
     }
 
+    if (accounts?.length) {
+      userMessageParts.push(
+        'Available accounts:',
+        ...accounts.map(
+          (account) =>
+            `- id: "${account.id}", name: "${account.name}", currency: "${account.currency}"`
+        )
+      );
+    }
+
     userMessageParts.push(`Transcript: ${transcript}`);
 
     const raw = await requestYandexGptJson(systemPrompt, userMessageParts.join('\n'));
 
     try {
-      const normalized = normalize(raw, { goals, tags }) as TParsed;
+      const normalized = normalize(raw, { goals, tags, accounts }) as TParsed;
       logVoiceDebug('yandex-gpt-normalized', normalized);
       return normalized;
     } catch (error) {

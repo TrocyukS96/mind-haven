@@ -1,5 +1,6 @@
 import type { GlobalVoiceCommandResult } from '@/entities/voice';
 import type {
+  ParsedFinanceVoiceResult,
   ParsedGoalVoiceResult,
   ParsedHabitVoiceResult,
   ParsedJournalVoiceResult,
@@ -9,6 +10,8 @@ import type { GoalFormDraft } from '@/features/goal/lib/map-voice-to-goal-draft'
 import { mapVoiceResultToGoalDraft } from '@/features/goal/lib/map-voice-to-goal-draft';
 import type { HabitFormDraft } from '@/features/habit/lib/map-voice-to-habit-draft';
 import { mapVoiceResultToHabitDraft } from '@/features/habit/lib/map-voice-to-habit-draft';
+import type { TransactionFormDraft } from '@/features/finance/lib/map-voice-to-finance-draft';
+import { mapVoiceResultToFinanceDraft } from '@/features/finance/lib/map-voice-to-finance-draft';
 import type { JournalFormDraft } from '@/features/journal/lib/map-voice-to-journal-draft';
 import { mapVoiceResultToJournalDraft } from '@/features/journal/lib/map-voice-to-journal-draft';
 import type { TaskFormDraft } from '@/features/task/lib/map-voice-to-task-draft';
@@ -19,6 +22,7 @@ interface RouteGlobalVoiceResultActions {
   openGoalFormFromVoice: (draft: GoalFormDraft) => void;
   openJournalFormFromVoice: (draft: JournalFormDraft) => void;
   openHabitFormFromVoice: (draft: HabitFormDraft) => void;
+  openTransactionFormFromVoice: (draft: TransactionFormDraft) => void;
 }
 
 export function routeGlobalVoiceResult(
@@ -46,6 +50,22 @@ export function routeGlobalVoiceResult(
         mapVoiceResultToHabitDraft(result.parsed as ParsedHabitVoiceResult)
       );
       break;
+    case 'finance':
+      actions.openTransactionFormFromVoice(
+        mapVoiceResultToFinanceDraft(result.parsed as ParsedFinanceVoiceResult)
+      );
+      break;
+  }
+
+  return result.entityType;
+}
+
+export function getGlobalVoiceDetectedSectionKey(
+  result: GlobalVoiceCommandResult
+): string {
+  if (result.entityType === 'finance') {
+    const parsed = result.parsed as ParsedFinanceVoiceResult;
+    return parsed.type === 'income' ? 'financeIncome' : 'financeExpense';
   }
 
   return result.entityType;

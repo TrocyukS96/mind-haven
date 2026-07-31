@@ -6,6 +6,7 @@ export const FEATURE_KEYS = [
   'tasks',
   'journal',
   'habits',
+  'finance',
   'tables',
   'gamification',
   'analytics',
@@ -68,6 +69,14 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
   },
   habits: {
     key: 'habits',
+    category: 'core',
+    minRole: 'GUEST',
+    requiresSubscription: false,
+    adminToggleable: true,
+    defaultEnabled: true,
+  },
+  finance: {
+    key: 'finance',
     category: 'core',
     minRole: 'GUEST',
     requiresSubscription: false,
@@ -146,6 +155,7 @@ export const NAV_FEATURE_KEYS: FeatureKey[] = [
   'tasks',
   'journal',
   'habits',
+  'finance',
 ];
 
 /** Features hidden from navigation and direct page access (code kept for later). */

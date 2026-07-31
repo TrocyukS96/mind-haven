@@ -26,6 +26,7 @@
     "tasks": "Tasks",
     "journal": "Journal",
     "habits": "Habits",
+    "finance": "Finance",
     "tables": "Tables",
     "rewards": "Rewards",
     "admin": "Admin",
@@ -483,6 +484,99 @@
       "weekends": "Weekends"
     }
   },
+  "finance": {
+    "title": "Finance",
+    "subtitle": "Track expenses and income",
+    "totalBalance": "Total",
+    "multipleCurrencies": "Multiple currencies",
+    "displayCurrencyLabel": "Show in",
+    "ratesButton": "Today's rates",
+    "ratesLoading": "Loading exchange rates…",
+    "ratesError": "Failed to load NBRB exchange rates",
+    "balanceConvertedHint": "Amount converted at NBRB rate",
+    "ratesModal": {
+      "title": "NBRB exchange rates",
+      "description": "Official exchange rates set by the National Bank of the Republic of Belarus for {date}",
+      "source": "Source: nbrb.by",
+      "currencyNames": {
+        "BYN": "Belarusian ruble",
+        "USD": "US dollar",
+        "RUB": "Russian ruble",
+        "CNY": "Chinese yuan"
+      }
+    },
+    "allAccounts": "All accounts",
+    "expenses": "Expenses",
+    "incomes": "Income",
+    "expense": "Expense",
+    "income": "Income",
+    "newAccount": "New account",
+    "createAccount": "Create account",
+    "accountName": "Account name",
+    "accountNamePlaceholder": "e.g. Main, Savings",
+    "currency": "Currency",
+    "initialBalance": "Initial balance",
+    "account": "Account",
+    "selectAccount": "Select account",
+    "category": "Category",
+    "amount": "Amount",
+    "date": "Date",
+    "description": "Note",
+    "descriptionPlaceholder": "Optional",
+    "addExpense": "Add expense",
+    "addIncome": "Add income",
+    "newExpense": "New expense",
+    "newIncome": "New income",
+    "noAccounts": "No accounts",
+    "noAccountsDescription": "Create your first account to start tracking finances",
+    "noDataForPeriod": "No data for the selected period",
+    "noAccountError": "Create an account first",
+    "recentTransactions": "Recent transactions",
+    "deleteAccount": "Delete account",
+    "deleteTransaction": "Delete transaction",
+    "editTransaction": "Edit transaction",
+    "editExpense": "Edit expense",
+    "editIncome": "Edit income",
+    "saveTransaction": "Save",
+    "transactionUpdated": "Transaction updated",
+    "accountCreated": "Account created",
+    "expenseAdded": "Expense added",
+    "incomeAdded": "Income added",
+    "saveError": "Failed to save",
+    "previousPeriod": "Previous period",
+    "nextPeriod": "Next period",
+    "periods": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month",
+      "year": "Year"
+    },
+    "currencies": {
+      "BYN": "Belarusian ruble (Br)",
+      "RUB": "Russian ruble (₽)",
+      "USD": "US dollar ($)",
+      "CNY": "Chinese yuan (¥)"
+    },
+    "categories": {
+      "products": "Groceries",
+      "gifts": "Gifts",
+      "home": "Home",
+      "cafe": "Cafe",
+      "purchases": "Shopping",
+      "services": "Services",
+      "transport": "Transport",
+      "health": "Health",
+      "entertainment": "Entertainment",
+      "other_expense": "Other",
+      "salary": "Salary",
+      "benefit": "Benefits",
+      "pension": "Pension",
+      "freelance": "Freelance",
+      "investment": "Investments",
+      "gift_income": "Gift",
+      "other_income": "Other income"
+    }
+  },
   "tables": {
     "title": "Tables",
     "subtitle": "Organize data with flexible tables",
@@ -573,6 +667,10 @@
           "title": "Habits",
           "description": "Habit tracker"
         },
+        "finance": {
+          "title": "Finance",
+          "description": "Expense and income tracking"
+        },
         "tables": {
           "title": "Tables",
           "description": "Custom data tables"
@@ -639,13 +737,15 @@
     "globalVoiceInput": "Voice command",
     "globalVoiceHeaderLabel": "Create with voice",
     "globalVoiceShortLabel": "Voice",
-    "globalRecordingDescription": "Say what you want to create: a task, goal, journal entry, or habit. Press Stop when finished.",
+    "globalRecordingDescription": "Say what you want to create: a task, goal, journal entry, habit, expense, or income. Press Stop when finished.",
     "globalProcessingDescription": "Detecting section and filling the form",
     "detectedSection": {
       "task": "Task form opened",
       "goal": "Goal form opened",
       "journal": "Journal entry form opened",
-      "habit": "Habit form opened"
+      "habit": "Habit form opened",
+      "financeExpense": "Expense form opened",
+      "financeIncome": "Income form opened"
     },
     "startRecording": "Start voice recording",
     "recording": "Recording",

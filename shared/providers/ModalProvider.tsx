@@ -3,6 +3,7 @@
 import { GoalFormModal } from '@/features/goal';
 import { HabitFormModal } from '@/features/habit';
 import { JournalFormModal } from '@/features/journal';
+import { AccountFormModal, TransactionFormModal } from '@/features/finance';
 import { useStore } from '@/shared/store/store-config';
 import { TaskFormModal } from '@/features/task';
 
@@ -16,6 +17,10 @@ export function ModalProvider() {
     closeJournalForm,
     isHabitFormOpen,
     closeHabitForm,
+    isAccountFormOpen,
+    closeAccountForm,
+    isTransactionFormOpen,
+    closeTransactionForm,
   } = useStore();
 
   return (
@@ -38,6 +43,16 @@ export function ModalProvider() {
       <HabitFormModal
         open={isHabitFormOpen}
         onOpenChange={(open) => !open && closeHabitForm()}
+      />
+
+      <AccountFormModal
+        open={isAccountFormOpen}
+        onOpenChange={(open) => !open && closeAccountForm()}
+      />
+
+      <TransactionFormModal
+        open={isTransactionFormOpen}
+        onOpenChange={(open) => !open && closeTransactionForm()}
       />
     </>
   );

@@ -4,7 +4,13 @@ import type { GlobalVoiceEntityType } from './types';
 import { VoiceError } from './types';
 import { requestYandexGptJson } from './yandex-gpt-complete';
 
-const GLOBAL_VOICE_ENTITY_TYPES: GlobalVoiceEntityType[] = ['task', 'goal', 'journal', 'habit'];
+const GLOBAL_VOICE_ENTITY_TYPES: GlobalVoiceEntityType[] = [
+  'task',
+  'goal',
+  'journal',
+  'habit',
+  'finance',
+];
 
 export const VOICE_INTENT_SYSTEM_PROMPT = `You classify voice commands for a productivity app into one section.
 
@@ -12,7 +18,7 @@ IMPORTANT: Reply with ONLY a raw JSON object. Do not use markdown, code blocks, 
 
 Schema:
 {
-  "entityType": "task" | "goal" | "journal" | "habit"
+  "entityType": "task" | "goal" | "journal" | "habit" | "finance"
 }
 
 Rules:
@@ -24,10 +30,13 @@ Rules:
   Keywords: journal, diary, entry, дневник, запись, заметка, мысли, сегодня был.
 - "habit" — user wants to track a recurring habit.
   Keywords: habit, привычка, каждый день, ежедневно, трекер привычек.
-- Prefer explicit section mentions ("create a task", "новая цель", "запись в дневник").
+- "finance" — user wants to record a financial transaction: expense or income.
+  Keywords: расход, доход, потратил, потратила, купил, купила, оплатил, оплатила, получил, получила, зарплата, трата, финансы, счёт, перевод, expense, income, spent, paid, earned, salary.
+  Choose "finance" when the primary intent is logging money spent or received, even without saying "финансы" explicitly.
+- Prefer explicit section mentions ("create a task", "новая цель", "запись в дневник", "добавь расход").
 - If multiple sections are mentioned, choose the primary creation intent.
 - Do not choose "journal" for structured reflection questionnaires — only free-form entries.
-- Output must be exactly one of the four values above.`;
+- Output must be exactly one of the five values above.`;
 
 export function isGlobalVoiceEntityType(value: unknown): value is GlobalVoiceEntityType {
   return typeof value === 'string' && GLOBAL_VOICE_ENTITY_TYPES.includes(value as GlobalVoiceEntityType);

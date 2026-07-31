@@ -3,6 +3,7 @@ import { parseGlobalVoiceCommand } from '@/shared/lib/voice/global-voice-service
 import {
   parseGoalsFromFormData,
   parseTagsFromFormData,
+  parseAccountsFromFormData,
   transcribeSpeech,
 } from '@/shared/lib/voice/server';
 import { VoiceError } from '@/shared/lib/voice/types';
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
     const locale = formData.get('locale');
     const goals = parseGoalsFromFormData(formData.get('goals'));
     const tags = parseTagsFromFormData(formData.get('tags'));
+    const accounts = parseAccountsFromFormData(formData.get('accounts'));
 
     if (!(audio instanceof Blob)) {
       return NextResponse.json(
@@ -75,6 +77,7 @@ export async function POST(request: Request) {
       locale: typeof locale === 'string' ? locale : 'en',
       goals,
       tags,
+      accounts,
     });
 
     logVoiceDebug('global-voice-result', result);

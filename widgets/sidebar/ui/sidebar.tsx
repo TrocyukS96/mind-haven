@@ -15,6 +15,7 @@ import {
   Shield,
   Target,
   User,
+  Wallet,
   X,
   PanelLeftClose,
 } from 'lucide-react';
@@ -27,7 +28,7 @@ const menuItems: {
   id: string;
   labelKey: string;
   icon: typeof Home;
-  href: '/' | '/goals' | '/tasks' | '/journal' | '/habits' | '/rewards';
+  href: '/' | '/goals' | '/tasks' | '/journal' | '/habits' | '/finance' | '/rewards';
   feature: FeatureKey;
 }[] = [
   { id: 'dashboard', labelKey: 'dashboard', icon: Home, href: '/', feature: 'dashboard' },
@@ -35,6 +36,7 @@ const menuItems: {
   { id: 'tasks', labelKey: 'tasks', icon: CheckSquare, href: '/tasks', feature: 'tasks' },
   { id: 'journal', labelKey: 'journal', icon: BookOpen, href: '/journal', feature: 'journal' },
   { id: 'habits', labelKey: 'habits', icon: Flame, href: '/habits', feature: 'habits' },
+  { id: 'finance', labelKey: 'finance', icon: Wallet, href: '/finance', feature: 'finance' },
   { id: 'rewards', labelKey: 'rewards', icon: Gift, href: '/rewards', feature: 'gamification' },
 ];
 

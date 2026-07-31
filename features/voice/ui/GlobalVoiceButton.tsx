@@ -9,7 +9,10 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'react-toastify';
 import { useGlobalVoiceInput } from '../hooks/use-global-voice-input';
 import { useVoiceErrorMessage } from '../hooks/use-voice-error-message';
-import { routeGlobalVoiceResult } from '../lib/route-global-voice-result';
+import {
+  getGlobalVoiceDetectedSectionKey,
+  routeGlobalVoiceResult,
+} from '../lib/route-global-voice-result';
 import { GlobalVoiceTrigger } from './GlobalVoiceTrigger';
 import { VoiceRecorder } from './VoiceRecorder';
 
@@ -27,10 +30,12 @@ export function GlobalVoiceButton({ className, variant = 'inline' }: GlobalVoice
   const {
     goals,
     journalTags,
+    financeAccounts,
     openTaskFormFromVoice,
     openGoalFormFromVoice,
     openJournalFormFromVoice,
     openHabitFormFromVoice,
+    openTransactionFormFromVoice,
   } = useStore();
 
   const voiceGoals = useMemo(
@@ -43,17 +48,29 @@ export function GlobalVoiceButton({ className, variant = 'inline' }: GlobalVoice
     [journalTags]
   );
 
+  const voiceAccounts = useMemo(
+    () =>
+      financeAccounts.map((account) => ({
+        id: account.id,
+        name: account.name,
+        currency: account.currency,
+      })),
+    [financeAccounts]
+  );
+
   const voice = useGlobalVoiceInput({
     goals: voiceGoals,
     tags: voiceTags,
+    accounts: voiceAccounts,
     onResult: (result) => {
-      const entityType = routeGlobalVoiceResult(result, {
+      routeGlobalVoiceResult(result, {
         openTaskFormFromVoice,
         openGoalFormFromVoice,
         openJournalFormFromVoice,
         openHabitFormFromVoice,
+        openTransactionFormFromVoice,
       });
-      toast.success(t(`detectedSection.${entityType}`));
+      toast.success(t(`detectedSection.${getGlobalVoiceDetectedSectionKey(result)}`));
     },
     onError: (error) => {
       toast.error(resolveErrorMessage(error));

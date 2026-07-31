@@ -2,8 +2,10 @@ import type {
   GlobalVoiceEntityType,
   VoiceGoalOption,
   VoiceTagOption,
+  VoiceAccountOption,
 } from '@/shared/lib/voice/types';
 import type {
+  ParsedFinanceVoiceResult,
   ParsedGoalVoiceResult,
   ParsedHabitVoiceResult,
   ParsedJournalVoiceResult,
@@ -20,7 +22,8 @@ export interface GlobalVoiceCommandResult {
     | ParsedTaskVoiceResult
     | ParsedGoalVoiceResult
     | ParsedJournalVoiceResult
-    | ParsedHabitVoiceResult;
+    | ParsedHabitVoiceResult
+    | ParsedFinanceVoiceResult;
 }
 
 export interface GlobalVoiceCommandRequest {
@@ -28,6 +31,7 @@ export interface GlobalVoiceCommandRequest {
   locale?: string;
   goals?: VoiceGoalOption[];
   tags?: VoiceTagOption[];
+  accounts?: VoiceAccountOption[];
 }
 
 export async function processGlobalVoiceCommand({
@@ -35,6 +39,7 @@ export async function processGlobalVoiceCommand({
   locale,
   goals,
   tags,
+  accounts,
 }: GlobalVoiceCommandRequest): Promise<GlobalVoiceCommandResult> {
   const formData = new FormData();
   formData.append('audio', audio, 'recording.webm');
@@ -46,6 +51,9 @@ export async function processGlobalVoiceCommand({
   }
   if (tags?.length) {
     formData.append('tags', JSON.stringify(tags));
+  }
+  if (accounts?.length) {
+    formData.append('accounts', JSON.stringify(accounts));
   }
 
   let response: Response;

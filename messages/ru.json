@@ -26,6 +26,7 @@
     "tasks": "Задачи",
     "journal": "Журнал",
     "habits": "Привычки",
+    "finance": "Финансы",
     "tables": "Таблицы",
     "rewards": "Призы",
     "admin": "Админ",
@@ -483,6 +484,99 @@
       "weekends": "По выходным"
     }
   },
+  "finance": {
+    "title": "Финансы",
+    "subtitle": "Учёт расходов и доходов",
+    "totalBalance": "Итого",
+    "multipleCurrencies": "Несколько валют",
+    "displayCurrencyLabel": "Показывать в",
+    "ratesButton": "Курсы на сегодня",
+    "ratesLoading": "Загрузка курсов…",
+    "ratesError": "Не удалось загрузить курсы НБРБ",
+    "balanceConvertedHint": "Сумма пересчитана по курсу НБРБ",
+    "ratesModal": {
+      "title": "По курсу НБ РБ",
+      "description": "Официальный курс, устанавливаемый Национальным банком Республики Беларусь на {date}",
+      "source": "Источник: nbrb.by",
+      "currencyNames": {
+        "BYN": "белорусский рубль",
+        "USD": "доллар США",
+        "RUB": "российский рубль",
+        "CNY": "китайский юань"
+      }
+    },
+    "allAccounts": "Все счета",
+    "expenses": "Расходы",
+    "incomes": "Доходы",
+    "expense": "Расход",
+    "income": "Доход",
+    "newAccount": "Новый счёт",
+    "createAccount": "Создать счёт",
+    "accountName": "Название счёта",
+    "accountNamePlaceholder": "Например: Основной, Накопления",
+    "currency": "Валюта",
+    "initialBalance": "Начальный баланс",
+    "account": "Счёт",
+    "selectAccount": "Выберите счёт",
+    "category": "Категория",
+    "amount": "Сумма",
+    "date": "Дата",
+    "description": "Примечание",
+    "descriptionPlaceholder": "Необязательно",
+    "addExpense": "Добавить расход",
+    "addIncome": "Добавить доход",
+    "newExpense": "Новый расход",
+    "newIncome": "Новый доход",
+    "noAccounts": "Нет счетов",
+    "noAccountsDescription": "Создайте первый счёт, чтобы начать вести учёт финансов",
+    "noDataForPeriod": "Нет данных за выбранный период",
+    "noAccountError": "Сначала создайте счёт",
+    "recentTransactions": "Последние операции",
+    "deleteAccount": "Удалить счёт",
+    "deleteTransaction": "Удалить операцию",
+    "editTransaction": "Редактировать операцию",
+    "editExpense": "Редактировать расход",
+    "editIncome": "Редактировать доход",
+    "saveTransaction": "Сохранить",
+    "transactionUpdated": "Операция обновлена",
+    "accountCreated": "Счёт создан",
+    "expenseAdded": "Расход добавлен",
+    "incomeAdded": "Доход добавлен",
+    "saveError": "Не удалось сохранить",
+    "previousPeriod": "Предыдущий период",
+    "nextPeriod": "Следующий период",
+    "periods": {
+      "day": "День",
+      "week": "Неделя",
+      "month": "Месяц",
+      "year": "Год"
+    },
+    "currencies": {
+      "BYN": "Белорусский рубль (Br)",
+      "RUB": "Российский рубль (₽)",
+      "USD": "Доллар ($)",
+      "CNY": "Юань (¥)"
+    },
+    "categories": {
+      "products": "Продукты",
+      "gifts": "Подарки",
+      "home": "Дом",
+      "cafe": "Кафе",
+      "purchases": "Покупки",
+      "services": "Услуги",
+      "transport": "Транспорт",
+      "health": "Здоровье",
+      "entertainment": "Развлечения",
+      "other_expense": "Прочее",
+      "salary": "Зарплата",
+      "benefit": "Пособие",
+      "pension": "Пенсия",
+      "freelance": "Фриланс",
+      "investment": "Инвестиции",
+      "gift_income": "Подарок",
+      "other_income": "Другие доходы"
+    }
+  },
   "tables": {
     "title": "Таблицы",
     "subtitle": "Организуй данные с гибкими таблицами",
@@ -573,6 +667,10 @@
           "title": "Привычки",
           "description": "Трекер привычек"
         },
+        "finance": {
+          "title": "Финансы",
+          "description": "Учёт расходов и доходов"
+        },
         "tables": {
           "title": "Таблицы",
           "description": "Пользовательские таблицы данных"
@@ -639,13 +737,15 @@
     "globalVoiceInput": "Голосовая команда",
     "globalVoiceHeaderLabel": "Создать голосом",
     "globalVoiceShortLabel": "Голос",
-    "globalRecordingDescription": "Скажите, что хотите создать: задачу, цель, запись в дневник или привычку. Нажмите «Стоп», когда закончите.",
+    "globalRecordingDescription": "Скажите, что хотите создать: задачу, цель, запись в дневник, привычку, расход или доход. Нажмите «Стоп», когда закончите.",
     "globalProcessingDescription": "Определяем раздел и заполняем форму",
     "detectedSection": {
       "task": "Открыта форма задачи",
       "goal": "Открыта форма цели",
       "journal": "Открыта форма записи в дневник",
-      "habit": "Открыта форма привычки"
+      "habit": "Открыта форма привычки",
+      "financeExpense": "Открыта форма расхода",
+      "financeIncome": "Открыта форма дохода"
     },
     "startRecording": "Начать голосовую запись",
     "recording": "Запись",

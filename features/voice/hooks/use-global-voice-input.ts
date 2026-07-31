@@ -10,6 +10,7 @@ import type { VoiceRecorderStatus } from '../model/types';
 interface UseGlobalVoiceInputOptions {
   goals?: Array<{ id: string; title: string }>;
   tags?: Array<{ id: string; name: string }>;
+  accounts?: Array<{ id: string; name: string; currency: string }>;
   onResult: (result: GlobalVoiceCommandResult) => void;
   onError?: (error: unknown) => void;
 }
@@ -30,6 +31,7 @@ interface UseGlobalVoiceInputReturn {
 export function useGlobalVoiceInput({
   goals,
   tags,
+  accounts,
   onResult,
   onError,
 }: UseGlobalVoiceInputOptions): UseGlobalVoiceInputReturn {
@@ -55,6 +57,7 @@ export function useGlobalVoiceInput({
     locale,
     goals,
     tags,
+    accounts,
     onSuccess: (result) => {
       setIsOpen(false);
       onResult(result);

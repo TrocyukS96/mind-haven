@@ -3,6 +3,7 @@ import { AuthSessionProvider } from '@/features/auth';
 import { DisplayModeProvider } from '@/features/display-modes';
 import { JournalApiProvider } from '@/features/journal/model/journal-api-provider';
 import { HabitApiProvider } from '@/features/habit/model/habit-api-provider';
+import { FinanceApiProvider } from '@/features/finance/model/finance-api-provider';
 import { ItemTypeProvider } from '@/features/item-types';
 import { ReflectionQuestionProvider } from '@/features/reflection-questions';
 import { routing } from '@/i18n/routing';
@@ -104,6 +105,7 @@ export default async function LocaleLayout({
             <AccessProvider profile={profile} globalFeatureFlags={globalFeatureFlags}>
               <JournalApiProvider>
                 <HabitApiProvider>
+                  <FinanceApiProvider>
                   <DisplayModeProvider settings={displayModeSettings}>
                     <ItemTypeProvider catalog={itemTypes}>
                       <ReflectionQuestionProvider catalog={reflectionQuestions}>
@@ -113,6 +115,7 @@ export default async function LocaleLayout({
                       </ReflectionQuestionProvider>
                     </ItemTypeProvider>
                   </DisplayModeProvider>
+                  </FinanceApiProvider>
                 </HabitApiProvider>
               </JournalApiProvider>
             </AccessProvider>

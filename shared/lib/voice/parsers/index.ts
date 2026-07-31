@@ -15,6 +15,11 @@ import {
   type ParsedHabitVoiceResult,
 } from './habit-parser';
 import {
+  normalizeParsedFinance,
+  FINANCE_PARSER_SYSTEM_PROMPT,
+  type ParsedFinanceVoiceResult,
+} from './finance-parser';
+import {
   normalizeParsedTask,
   TASK_PARSER_SYSTEM_PROMPT,
   type ParsedTaskVoiceResult,
@@ -25,6 +30,7 @@ export type ParsedVoiceResultMap = {
   goal: ParsedGoalVoiceResult;
   journal: ParsedJournalVoiceResult;
   habit: ParsedHabitVoiceResult;
+  finance: ParsedFinanceVoiceResult;
   reflection: Record<string, unknown>;
   note: Record<string, unknown>;
 };
@@ -32,6 +38,7 @@ export type ParsedVoiceResultMap = {
 export interface ParserContext {
   goals?: VoiceGoalOption[];
   tags?: VoiceTagOption[];
+  accounts?: import('../types').VoiceAccountOption[];
 }
 
 interface EntityParserConfig {
@@ -55,6 +62,10 @@ const PARSER_REGISTRY: Partial<Record<VoiceEntityType, EntityParserConfig>> = {
   habit: {
     systemPrompt: HABIT_PARSER_SYSTEM_PROMPT,
     normalize: (raw) => normalizeParsedHabit(raw),
+  },
+  finance: {
+    systemPrompt: FINANCE_PARSER_SYSTEM_PROMPT,
+    normalize: (raw, context) => normalizeParsedFinance(raw, context?.accounts ?? []),
   },
 };
 
@@ -80,5 +91,8 @@ export { normalizeParsedJournal, JOURNAL_PARSER_SYSTEM_PROMPT };
 export type { ParsedJournalVoiceResult };
 export { normalizeParsedHabit, HABIT_PARSER_SYSTEM_PROMPT };
 export type { ParsedHabitVoiceResult };
+export { normalizeParsedFinance, FINANCE_PARSER_SYSTEM_PROMPT };
+export type { ParsedFinanceVoiceResult };
 export { resolveTaskGoalId } from './resolve-task-goal';
 export { resolveJournalTagId } from './resolve-journal-tag';
+export { resolveFinanceAccountId } from './resolve-finance-account';

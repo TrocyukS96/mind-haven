@@ -7,6 +7,7 @@ describe('normalizeVoiceIntent', () => {
     expect(normalizeVoiceIntent({ entityType: 'goal' })).toBe('goal');
     expect(normalizeVoiceIntent({ entityType: 'journal' })).toBe('journal');
     expect(normalizeVoiceIntent({ entityType: 'habit' })).toBe('habit');
+    expect(normalizeVoiceIntent({ entityType: 'finance' })).toBe('finance');
   });
 
   it('throws for unsupported entity types', () => {

@@ -14,6 +14,7 @@ export interface ParseGlobalVoiceCommandOptions {
   now?: Date;
   goals?: ParserContext['goals'];
   tags?: ParserContext['tags'];
+  accounts?: ParserContext['accounts'];
 }
 
 export interface GlobalVoiceCommandResult {
@@ -28,6 +29,7 @@ export async function parseGlobalVoiceCommand({
   now = new Date(),
   goals,
   tags,
+  accounts,
 }: ParseGlobalVoiceCommandOptions): Promise<GlobalVoiceCommandResult> {
   const entityType = await classifyVoiceEntityType(transcript, locale);
 
@@ -42,6 +44,7 @@ export async function parseGlobalVoiceCommand({
     now,
     goals,
     tags,
+    accounts,
   });
 
   return {

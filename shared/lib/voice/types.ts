@@ -1,8 +1,8 @@
-export type VoiceEntityType = 'task' | 'goal' | 'journal' | 'habit' | 'reflection' | 'note';
+export type VoiceEntityType = 'task' | 'goal' | 'journal' | 'habit' | 'finance' | 'reflection' | 'note';
 
 export type GlobalVoiceEntityType = Extract<
   VoiceEntityType,
-  'task' | 'goal' | 'journal' | 'habit'
+  'task' | 'goal' | 'journal' | 'habit' | 'finance'
 >;
 
 export type VoiceErrorCode =
@@ -41,4 +41,10 @@ export interface VoiceGoalOption {
 export interface VoiceTagOption {
   id: string;
   name: string;
+}
+
+export interface VoiceAccountOption {
+  id: string;
+  name: string;
+  currency: string;
 }

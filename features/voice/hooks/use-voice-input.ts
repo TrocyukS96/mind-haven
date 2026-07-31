@@ -1,6 +1,6 @@
 'use client';
 
-import type { VoiceEntityType, VoiceGoalOption, VoiceProcessResult, VoiceTagOption } from '@/entities/voice';
+import type { VoiceEntityType, VoiceGoalOption, VoiceProcessResult, VoiceTagOption, VoiceAccountOption } from '@/entities/voice';
 import { useLocale } from 'next-intl';
 import { useCallback, useMemo, useState } from 'react';
 import { useSpeechToText } from './use-speech-to-text';
@@ -11,6 +11,7 @@ interface UseVoiceInputOptions<TParsed> {
   entityType: VoiceEntityType;
   goals?: VoiceGoalOption[];
   tags?: VoiceTagOption[];
+  accounts?: VoiceAccountOption[];
   onResult: (result: VoiceProcessResult<TParsed>) => void;
   onError?: (error: unknown) => void;
 }
@@ -32,6 +33,7 @@ export function useVoiceInput<TParsed>({
   entityType,
   goals,
   tags,
+  accounts,
   onResult,
   onError,
 }: UseVoiceInputOptions<TParsed>): UseVoiceInputReturn {
@@ -58,6 +60,7 @@ export function useVoiceInput<TParsed>({
     locale,
     goals,
     tags,
+    accounts,
     onSuccess: (result) => {
       setIsOpen(false);
       onResult(result);
