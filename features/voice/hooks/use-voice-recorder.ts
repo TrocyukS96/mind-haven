@@ -1,6 +1,6 @@
 'use client';
 
-import { VoiceError } from '@/shared/lib/voice/types';
+import { VoiceError } from '@/entities/voice';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   MIN_RECORDING_MS,
@@ -139,7 +139,7 @@ export function useVoiceRecorder({
         onRecordingComplete(blob);
       };
 
-      // Single blob on stop — concatenated timeslice chunks break WebM for ffmpeg.
+      // Single blob on stop — concatenated timeslice chunks produce invalid WebM.
       recorder.start();
 
       timerRef.current = window.setInterval(() => {

@@ -1,11 +1,14 @@
-import { parseSpeechToStructuredData } from '@/shared/lib/voice/ai-parser-service';
-import { isVoiceEntitySupported } from '@/shared/lib/voice/parsers';
-import { transcribeSpeech } from '@/shared/lib/voice/speech-service';
-import type { VoiceEntityType, VoiceGoalOption } from '@/shared/lib/voice/types';
+import {
+  isVoiceEntitySupported,
+  parseGoalsFromFormData,
+  parseSpeechToStructuredData,
+  transcribeSpeech,
+} from '@/shared/lib/voice/server';
+import type { VoiceEntityType } from '@/shared/lib/voice/types';
 import { VoiceError } from '@/shared/lib/voice/types';
-import { logVoiceDebug } from '@/shared/lib/voice/voice-debug';
-import { auth } from '@/shared/lib/auth/auth';
+import { logVoiceDebug } from '@/shared/lib/voice/log-voice-debug';
 import { NextResponse } from 'next/server';
+import { auth } from '@/shared/lib/auth/auth';
 
 const MIN_AUDIO_BYTES = 1000;
 const SUPPORTED_ENTITY_TYPES: VoiceEntityType[] = [
@@ -19,36 +22,6 @@ const SUPPORTED_ENTITY_TYPES: VoiceEntityType[] = [
 
 function isVoiceEntityType(value: string): value is VoiceEntityType {
   return SUPPORTED_ENTITY_TYPES.includes(value as VoiceEntityType);
-}
-
-function parseGoalsFromFormData(value: FormDataEntryValue | null): VoiceGoalOption[] {
-  if (typeof value !== 'string' || !value.trim()) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(value) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed
-      .filter(
-        (item): item is VoiceGoalOption =>
-          !!item &&
-          typeof item === 'object' &&
-          typeof (item as VoiceGoalOption).id === 'string' &&
-          typeof (item as VoiceGoalOption).title === 'string'
-      )
-      .map((goal) => ({
-        id: goal.id.trim(),
-        title: goal.title.trim(),
-      }))
-      .filter((goal) => goal.id && goal.title);
-  } catch {
-    return [];
-  }
 }
 
 function voiceErrorResponse(error: unknown) {

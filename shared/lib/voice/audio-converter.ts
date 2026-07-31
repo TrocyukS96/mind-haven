@@ -1,14 +1,6 @@
 import 'server-only';
 
-import { execFile } from 'node:child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { promisify } from 'node:util';
-import ffmpegPath from 'ffmpeg-static';
 import { VoiceError } from './types';
-
-const execFileAsync = promisify(execFile);
 
 export type PreparedSpeechAudio = {
   data: Buffer;
@@ -22,26 +14,10 @@ function getMimeType(audio: Blob | Buffer, explicitMimeType?: string): string {
   }
 
   if (audio instanceof Blob) {
-    return audio.type || 'audio/webm';
+    return audio.type || 'application/octet-stream';
   }
 
-  return 'audio/webm';
-}
-
-function extensionForMimeType(mimeType: string): string {
-  if (mimeType.includes('ogg')) {
-    return 'ogg';
-  }
-
-  if (mimeType.includes('wav')) {
-    return 'wav';
-  }
-
-  if (mimeType.includes('mp4') || mimeType.includes('m4a')) {
-    return 'm4a';
-  }
-
-  return 'webm';
+  return 'application/octet-stream';
 }
 
 async function toBuffer(audio: Blob | Buffer): Promise<Buffer> {
@@ -90,47 +66,6 @@ function extractLpcmFromWav(buffer: Buffer): PreparedSpeechAudio {
   throw new VoiceError('AI_ERROR', 'WAV data chunk not found');
 }
 
-async function convertToLpcm(input: Buffer, inputExtension: string): Promise<Buffer> {
-  if (!ffmpegPath) {
-    throw new VoiceError(
-      'AI_ERROR',
-      'Audio conversion is unavailable. ffmpeg-static is not installed.'
-    );
-  }
-
-  const tempDir = await mkdtemp(join(tmpdir(), 'mind-haven-voice-'));
-  const inputPath = join(tempDir, `input.${inputExtension}`);
-  const outputPath = join(tempDir, 'output.pcm');
-
-  try {
-    await writeFile(inputPath, input);
-
-    await execFileAsync(ffmpegPath, [
-      '-y',
-      '-i',
-      inputPath,
-      '-f',
-      's16le',
-      '-acodec',
-      'pcm_s16le',
-      '-ac',
-      '1',
-      '-ar',
-      '16000',
-      outputPath,
-    ]);
-
-    return await readFile(outputPath);
-  } catch {
-    throw new VoiceError(
-      'AI_ERROR',
-      'Failed to convert audio for speech recognition. Try recording again.'
-    );
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
-  }
-}
-
 export async function prepareSpeechAudio(
   audio: Blob | Buffer,
   mimeType?: string
@@ -149,12 +84,8 @@ export async function prepareSpeechAudio(
     return extractLpcmFromWav(buffer);
   }
 
-  const extension = extensionForMimeType(resolvedMimeType);
-  const pcm = await convertToLpcm(buffer, extension);
-
-  return {
-    data: pcm,
-    format: 'lpcm',
-    sampleRateHertz: 16000,
-  };
+  throw new VoiceError(
+    'AI_ERROR',
+    'Unsupported audio format. The client must send WAV or OGG audio.'
+  );
 }

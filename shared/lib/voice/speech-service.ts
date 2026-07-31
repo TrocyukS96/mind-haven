@@ -10,7 +10,7 @@ import {
   YANDEX_STT_URL,
 } from './yandex-client';
 import { assertYandexOk, mapYandexError } from './yandex-error';
-import { logVoiceDebug } from './voice-debug';
+import { logVoiceDebug } from './log-voice-debug';
 
 export interface TranscribeOptions {
   audio: Buffer | Blob;

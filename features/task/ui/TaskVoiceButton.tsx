@@ -8,7 +8,7 @@ import { useStore } from '@/shared/store/store-config';
 import { VoiceButton } from '@/features/voice/ui/VoiceButton';
 import { VoiceRecorder } from '@/features/voice/ui/VoiceRecorder';
 import { useVoiceInput } from '@/features/voice/hooks/use-voice-input';
-import { VoiceError, type VoiceErrorCode } from '@/shared/lib/voice/types';
+import { VoiceError, type VoiceErrorCode } from '@/entities/voice';
 import { useTranslations } from 'next-intl';
 import { toast } from 'react-toastify';
 

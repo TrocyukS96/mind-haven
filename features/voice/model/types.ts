@@ -2,12 +2,6 @@ export type VoiceRecorderStatus = 'idle' | 'recording' | 'processing' | 'error';
 
 export type { VoiceEntityType } from '@/entities/voice';
 
-export interface VoiceInputState {
-  status: VoiceRecorderStatus;
-  durationMs: number;
-  error: string | null;
-}
-
 export const MIN_RECORDING_MS = 800;
 
 export const VOICE_MIME_TYPES = [

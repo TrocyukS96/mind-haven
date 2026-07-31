@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { getParserConfig, type ParserContext } from './parsers';
-import type { VoiceEntityType, VoiceProcessResult } from './types';
+import type { VoiceEntityType } from './types';
 import { VoiceError } from './types';
 import {
   getYandexAuthHeaders,
@@ -10,7 +10,7 @@ import {
 } from './yandex-client';
 import { assertYandexOk, mapYandexError } from './yandex-error';
 import { parseModelJson } from './parse-model-json';
-import { logVoiceDebug } from './voice-debug';
+import { logVoiceDebug } from './log-voice-debug';
 import {
   extractYandexCompletionText,
   type YandexGptCompletionResponse,
@@ -109,15 +109,4 @@ export async function parseSpeechToStructuredData<TParsed = unknown>({
 
     throw mapYandexError(error, 'Failed to parse speech');
   }
-}
-
-export async function processTranscript<TParsed = unknown>(
-  options: ParseSpeechOptions
-): Promise<VoiceProcessResult<TParsed>> {
-  const parsed = await parseSpeechToStructuredData<TParsed>(options);
-
-  return {
-    transcript: options.transcript,
-    parsed,
-  };
 }

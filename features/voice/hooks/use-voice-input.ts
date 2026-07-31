@@ -1,7 +1,6 @@
 'use client';
 
-import type { VoiceEntityType, VoiceGoalOption, VoiceProcessResult } from '@/entities/voice';
-import type { ParsedTaskVoiceResult } from '@/shared/lib/voice/parsers';
+import type { VoiceEntityType, VoiceGoalOption, VoiceProcessResult, ParsedTaskVoiceResult } from '@/entities/voice';
 import { useLocale } from 'next-intl';
 import { useCallback, useMemo, useState } from 'react';
 import { useSpeechToText } from './use-speech-to-text';

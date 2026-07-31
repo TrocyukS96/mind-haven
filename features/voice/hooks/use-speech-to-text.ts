@@ -2,13 +2,13 @@
 
 import {
   processVoiceInput,
+  type ParsedTaskVoiceResult,
   type VoiceEntityType,
   type VoiceGoalOption,
   type VoiceProcessResult,
 } from '@/entities/voice';
-import type { ParsedTaskVoiceResult } from '@/shared/lib/voice/parsers';
 import { useCallback, useState } from 'react';
-import { logVoiceDebug } from '../lib/voice-debug-log';
+import { logVoiceDebug } from '@/shared/lib/voice/log-voice-debug';
 import { prepareRecordingForUpload } from '../lib/prepare-recording-audio';
 import type { VoiceRecorderStatus } from '../model/types';
 
@@ -44,13 +44,7 @@ export function useSpeechToText({
       setStatus('processing');
 
       try {
-        let preparedAudio = audio;
-
-        try {
-          preparedAudio = await prepareRecordingForUpload(audio);
-        } catch (prepareError) {
-          logVoiceDebug('audio-prepare-failed', prepareError);
-        }
+        const preparedAudio = await prepareRecordingForUpload(audio);
 
         logVoiceDebug('prepared-audio', {
           originalType: audio.type,
