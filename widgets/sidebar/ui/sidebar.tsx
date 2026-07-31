@@ -3,6 +3,7 @@
 import { Link, usePathname } from '@/i18n/routing';
 import { useAccess } from '@/features/access';
 import { SignInButton, SignOutButton } from '@/features/auth';
+import { LocaleSwitcher } from '@/widgets/header/ui/locale-switcher';
 import { cn } from '@/shared/lib/utils';
 import {
   BookOpen,
@@ -15,6 +16,7 @@ import {
   Target,
   User,
   X,
+  PanelLeftClose,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
@@ -39,9 +41,16 @@ const menuItems: {
 interface SidebarProps {
   mobileMenuOpen: boolean;
   onMobileMenuClose: () => void;
+  desktopCollapsed?: boolean;
+  onDesktopCollapse?: () => void;
 }
 
-export function Sidebar({ mobileMenuOpen, onMobileMenuClose }: SidebarProps) {
+export function Sidebar({
+  mobileMenuOpen,
+  onMobileMenuClose,
+  desktopCollapsed = false,
+  onDesktopCollapse,
+}: SidebarProps) {
   const pathname = usePathname();
   const t = useTranslations('sidebar');
   const tHeader = useTranslations('header');
@@ -66,7 +75,8 @@ export function Sidebar({ mobileMenuOpen, onMobileMenuClose }: SidebarProps) {
           'border-r border-border bg-muted text-foreground dark:bg-[var(--sidebar)]',
           'transform transition-transform duration-200 ease-in-out',
           'sm:w-72',
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full',
+          desktopCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'
         )}
       >
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -80,7 +90,17 @@ export function Sidebar({ mobileMenuOpen, onMobileMenuClose }: SidebarProps) {
               <X size={20} />
             </button>
 
-            <div className="flex items-center gap-3 pr-10 lg:pr-0">
+            <button
+              type="button"
+              onClick={onDesktopCollapse}
+              className="absolute right-3 top-3 hidden rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground lg:inline-flex"
+              aria-label={t('collapseSidebar')}
+              title={t('collapseSidebar')}
+            >
+              <PanelLeftClose size={20} />
+            </button>
+
+            <div className="flex items-center gap-3 pr-10 lg:pr-12">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                 <Brain size={22} className="text-primary" />
               </div>
@@ -152,6 +172,11 @@ export function Sidebar({ mobileMenuOpen, onMobileMenuClose }: SidebarProps) {
           </div>
 
           <div className="shrink-0 space-y-3 border-t border-border bg-muted p-4 dark:bg-[var(--sidebar)] sm:space-y-4 sm:p-5">
+            <div className="lg:hidden">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">{t('language')}</p>
+              <LocaleSwitcher showIcon={false} triggerClassName="w-full" />
+            </div>
+
             {isGuest ? (
               <>
                 <SignInButton />

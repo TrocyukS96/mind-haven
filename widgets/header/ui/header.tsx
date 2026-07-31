@@ -2,64 +2,65 @@
 
 import { PointsBadge } from '@/features/points';
 import { GlobalVoiceButton } from '@/features/voice/ui/GlobalVoiceButton';
-import { usePathname, useRouter } from '@/i18n/routing';
+import { LocaleSwitcher } from '@/widgets/header/ui/locale-switcher';
 import { cn } from '@/shared/lib/utils';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select';
-import { Globe } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
-import { useTransition } from 'react';
+import { Menu, PanelLeftOpen } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
-export function Header() {
+interface HeaderProps {
+  onMobileMenuOpen?: () => void;
+  onDesktopSidebarOpen?: () => void;
+  showDesktopSidebarOpen?: boolean;
+}
+
+export function Header({
+  onMobileMenuOpen,
+  onDesktopSidebarOpen,
+  showDesktopSidebarOpen = false,
+}: HeaderProps) {
   const t = useTranslations('header');
-  const locale = useLocale();
-  const pathname = usePathname();
-  const router = useRouter();
-  const [, startTransition] = useTransition();
-
-  const handleLocaleChange = (newLocale: string) => {
-    startTransition(() => {
-      router.replace(pathname, { locale: newLocale });
-    });
-  };
+  const tSidebar = useTranslations('sidebar');
 
   return (
     <header
       className={cn(
-        'sticky top-0 z-30 relative flex min-h-14 shrink-0 items-center py-2',
-        'border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80',
-        'sm:min-h-16 sm:px-6'
+        'sticky top-0 z-30 grid shrink-0 items-center gap-2 py-2',
+        'grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]',
+        'border-b border-border bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80',
+        'min-h-14 sm:min-h-16 sm:gap-3 sm:px-6'
       )}
     >
-      <div className="relative z-10 flex flex-1 items-center justify-start">
-        <PointsBadge compact className="voice-header-points shrink-0" />
+      <div className="flex min-w-0 items-center justify-start gap-2 sm:gap-3">
+        <button
+          type="button"
+          onClick={onMobileMenuOpen}
+          className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-foreground shadow-sm hover:bg-accent lg:hidden"
+          aria-label={t('openMenu')}
+        >
+          <Menu size={20} />
+        </button>
+
+        {showDesktopSidebarOpen && (
+          <button
+            type="button"
+            onClick={onDesktopSidebarOpen}
+            className="hidden size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-foreground shadow-sm hover:bg-accent lg:flex"
+            aria-label={tSidebar('expandSidebar')}
+            title={tSidebar('expandSidebar')}
+          >
+            <PanelLeftOpen size={20} />
+          </button>
+        )}
+
+        <PointsBadge variant="header" className="shrink-0" />
       </div>
 
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <GlobalVoiceButton variant="header" className="pointer-events-auto" />
+      <div className="flex justify-end lg:justify-center">
+        <GlobalVoiceButton variant="header" />
       </div>
 
-      <div className="relative z-10 flex flex-1 items-center justify-end">
-        <div className="flex items-center gap-2">
-          <Globe size={16} className="hidden text-muted-foreground sm:block" aria-hidden />
-          <Select value={locale} onValueChange={handleLocaleChange}>
-            <SelectTrigger
-              className="h-9 w-[7.25rem] text-xs sm:h-10 sm:w-32"
-              aria-label={t('language')}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent align="end">
-              <SelectItem value="ru">{t('ru')}</SelectItem>
-              <SelectItem value="en">{t('en')}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="hidden items-center justify-end lg:flex">
+        <LocaleSwitcher triggerClassName="w-32" />
       </div>
     </header>
   );

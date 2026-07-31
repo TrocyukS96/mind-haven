@@ -297,19 +297,4 @@
       0 4px 16px color-mix(in oklch, var(--voice-accent) 24%, transparent),
       0 0 0 1px color-mix(in oklch, var(--voice-accent) 28%, transparent);
   }
-
-  .voice-header-points {
-    border-color: var(--voice-accent-border);
-    background: var(--voice-accent-soft);
-    color: var(--voice-accent);
-    min-height: 2.25rem;
-    padding-inline: 0.75rem;
-  }
-
-  @media (min-width: 640px) {
-    .voice-header-points {
-      min-height: 2.5rem;
-      padding-inline: 0.875rem;
-    }
-  }
 }

@@ -36,6 +36,8 @@
     "darkTheme": "Dark theme",
     "lightTheme": "Light theme",
     "language": "Language",
+    "collapseSidebar": "Hide sidebar",
+    "expandSidebar": "Show sidebar",
     "ru": "Русский",
     "en": "English"
   },

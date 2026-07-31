@@ -4,9 +4,9 @@ import { RewardUnlockListener } from '@/features/points';
 import { Header } from '@/widgets/header';
 import { Sidebar } from '@/widgets/sidebar';
 import { cn } from '@/shared/lib/utils';
-import { Menu } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+const SIDEBAR_COLLAPSED_KEY = 'mindhaven-sidebar-collapsed';
 
 interface LayoutShellProps {
   children: React.ReactNode;
@@ -14,7 +14,27 @@ interface LayoutShellProps {
 
 export function LayoutShell({ children }: LayoutShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const t = useTranslations('header');
+  const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+      if (stored === 'true') {
+        setDesktopSidebarCollapsed(true);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
+  const setDesktopCollapsed = (collapsed: boolean) => {
+    setDesktopSidebarCollapsed(collapsed);
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
+    } catch {
+      // ignore storage errors
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -22,28 +42,24 @@ export function LayoutShell({ children }: LayoutShellProps) {
       <Sidebar
         mobileMenuOpen={mobileMenuOpen}
         onMobileMenuClose={() => setMobileMenuOpen(false)}
+        desktopCollapsed={desktopSidebarCollapsed}
+        onDesktopCollapse={() => setDesktopCollapsed(true)}
       />
-      <div className="flex min-h-screen flex-col lg:pl-72">
-        <Header />
+      <div
+        className={cn(
+          'flex min-h-screen flex-col transition-[padding] duration-200 ease-in-out',
+          !desktopSidebarCollapsed && 'lg:pl-72'
+        )}
+      >
+        <Header
+          onMobileMenuOpen={() => setMobileMenuOpen(true)}
+          onDesktopSidebarOpen={() => setDesktopCollapsed(false)}
+          showDesktopSidebarOpen={desktopSidebarCollapsed}
+        />
         <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
           <div className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>
-
-      <button
-        type="button"
-        onClick={() => setMobileMenuOpen(true)}
-        className={cn(
-          'fixed bottom-5 left-5 z-40 flex size-14 items-center justify-center rounded-full',
-          'border border-border bg-background text-foreground shadow-lg',
-          'transition-transform hover:scale-105 active:scale-95 lg:hidden',
-          mobileMenuOpen && 'pointer-events-none scale-0 opacity-0'
-        )}
-        aria-label={t('openMenu')}
-        aria-expanded={mobileMenuOpen}
-      >
-        <Menu size={22} />
-      </button>
     </div>
   );
 }
