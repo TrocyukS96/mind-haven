@@ -1,8 +1,7 @@
 'use client';
 
 import { PointsBadge } from '@/features/points';
-import { useAccess } from '@/features/access';
-import { SignInButton, SignOutButton } from '@/features/auth';
+import { GlobalVoiceButton } from '@/features/voice/ui/GlobalVoiceButton';
 import { usePathname, useRouter } from '@/i18n/routing';
 import { cn } from '@/shared/lib/utils';
 import {
@@ -12,22 +11,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select';
-import { Globe, Menu, X } from 'lucide-react';
+import { Globe } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useTransition } from 'react';
 
-interface HeaderProps {
-  mobileMenuOpen: boolean;
-  onMobileMenuToggle: () => void;
-}
-
-export function Header({ mobileMenuOpen, onMobileMenuToggle }: HeaderProps) {
+export function Header() {
   const t = useTranslations('header');
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const { profile } = useAccess();
 
   const handleLocaleChange = (newLocale: string) => {
     startTransition(() => {
@@ -38,40 +31,35 @@ export function Header({ mobileMenuOpen, onMobileMenuToggle }: HeaderProps) {
   return (
     <header
       className={cn(
-        'sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-4',
+        'sticky top-0 z-30 relative flex min-h-14 shrink-0 items-center py-2',
         'border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80',
-        'lg:px-6'
+        'sm:min-h-16 sm:px-6'
       )}
     >
-      <button
-        type="button"
-        onClick={onMobileMenuToggle}
-        className="rounded-lg p-2 text-foreground hover:bg-accent lg:hidden"
-        aria-label={mobileMenuOpen ? t('closeMenu') : t('openMenu')}
-      >
-        {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
+      <div className="relative z-10 flex flex-1 items-center justify-start">
+        <PointsBadge compact className="voice-header-points shrink-0" />
+      </div>
 
-      <div className="ml-auto flex items-center gap-2 sm:gap-3">
-        <PointsBadge compact />
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <GlobalVoiceButton variant="header" className="pointer-events-auto" />
+      </div>
+
+      <div className="relative z-10 flex flex-1 items-center justify-end">
         <div className="flex items-center gap-2">
-          <Globe size={16} className="hidden text-muted-foreground sm:block" />
+          <Globe size={16} className="hidden text-muted-foreground sm:block" aria-hidden />
           <Select value={locale} onValueChange={handleLocaleChange}>
-            <SelectTrigger className="h-9 w-[7.5rem] text-xs sm:w-28">
+            <SelectTrigger
+              className="h-9 w-[7.25rem] text-xs sm:h-10 sm:w-32"
+              aria-label={t('language')}
+            >
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent align="end">
               <SelectItem value="ru">{t('ru')}</SelectItem>
               <SelectItem value="en">{t('en')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
-
-        {profile.role === 'GUEST' ? (
-          <SignInButton className="w-auto px-3 py-2 text-xs sm:px-4 sm:text-sm" />
-        ) : (
-          <SignOutButton className="w-auto px-3 py-2 text-xs sm:px-4 sm:text-sm" />
-        )}
       </div>
     </header>
   );

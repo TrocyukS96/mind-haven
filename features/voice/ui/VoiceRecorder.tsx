@@ -23,6 +23,9 @@ interface VoiceRecorderProps {
   onStart: () => Promise<void>;
   onStop: () => void;
   onCancel: () => void;
+  title?: string;
+  description?: string;
+  processingDescription?: string;
 }
 
 export function VoiceRecorder({
@@ -33,10 +36,23 @@ export function VoiceRecorder({
   onStart,
   onStop,
   onCancel,
+  title,
+  description,
+  processingDescription,
 }: VoiceRecorderProps) {
   const t = useTranslations('voice');
   const isRecording = status === 'recording';
   const isProcessing = status === 'processing';
+
+  const dialogTitle = isProcessing
+    ? t('processing')
+    : isRecording
+      ? t('recording')
+      : (title ?? t('voiceInput'));
+
+  const dialogDescription = isProcessing
+    ? (processingDescription ?? t('processingDescription'))
+    : (description ?? t('recordingDescription'));
 
   useEffect(() => {
     if (open && status === 'idle') {
@@ -55,12 +71,8 @@ export function VoiceRecorder({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md" showCloseButton={!isProcessing}>
         <DialogHeader>
-          <DialogTitle>
-            {isProcessing ? t('processing') : isRecording ? t('recording') : t('voiceInput')}
-          </DialogTitle>
-          <DialogDescription>
-            {isProcessing ? t('processingDescription') : t('recordingDescription')}
-          </DialogDescription>
+          <DialogTitle>{dialogTitle}</DialogTitle>
+          <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-6 py-4">

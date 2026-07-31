@@ -634,6 +634,17 @@
   },
   "voice": {
     "voiceInput": "Голосовой ввод",
+    "globalVoiceInput": "Голосовая команда",
+    "globalVoiceHeaderLabel": "Создать голосом",
+    "globalVoiceShortLabel": "Голос",
+    "globalRecordingDescription": "Скажите, что хотите создать: задачу, цель, запись в дневник или привычку. Нажмите «Стоп», когда закончите.",
+    "globalProcessingDescription": "Определяем раздел и заполняем форму",
+    "detectedSection": {
+      "task": "Открыта форма задачи",
+      "goal": "Открыта форма цели",
+      "journal": "Открыта форма записи в дневник",
+      "habit": "Открыта форма привычки"
+    },
     "startRecording": "Начать голосовую запись",
     "recording": "Запись",
     "recordingDescription": "Говорите чётко. Нажмите «Стоп», когда закончите.",

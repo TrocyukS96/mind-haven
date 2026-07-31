@@ -2,6 +2,7 @@
 
 import { Link, usePathname } from '@/i18n/routing';
 import { useAccess } from '@/features/access';
+import { SignInButton, SignOutButton } from '@/features/auth';
 import { cn } from '@/shared/lib/utils';
 import {
   BookOpen,
@@ -13,6 +14,7 @@ import {
   Shield,
   Target,
   User,
+  X,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
@@ -44,6 +46,7 @@ export function Sidebar({ mobileMenuOpen, onMobileMenuClose }: SidebarProps) {
   const t = useTranslations('sidebar');
   const tHeader = useTranslations('header');
   const { profile, getAccessibleFeatures, canAccessFeature } = useAccess();
+  const isGuest = profile.role === 'GUEST';
 
   const visibleMenuItems = useMemo(
     () =>
@@ -59,24 +62,37 @@ export function Sidebar({ mobileMenuOpen, onMobileMenuClose }: SidebarProps) {
     <>
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 w-64',
+          'fixed inset-y-0 left-0 z-40 flex w-[min(100vw-1.5rem,18rem)] flex-col',
           'border-r border-border bg-muted text-foreground dark:bg-[var(--sidebar)]',
           'transform transition-transform duration-200 ease-in-out',
+          'sm:w-72',
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
-        <div className="flex h-full flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="mb-8 flex items-center gap-3">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="relative shrink-0 border-b border-border p-4 sm:p-6">
+            <button
+              type="button"
+              onClick={onMobileMenuClose}
+              className="absolute right-3 top-3 rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground lg:hidden"
+              aria-label={tHeader('closeMenu')}
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-3 pr-10 lg:pr-0">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                 <Brain size={22} className="text-primary" />
               </div>
-              <div>
-                <h2 className="text-lg font-semibold leading-tight">Mind Haven</h2>
+              <div className="min-w-0">
+                <h2 className="truncate text-lg font-semibold leading-tight">Mind Haven</h2>
                 <p className="mt-0.5 text-xs text-muted-foreground">{t('tagline')}</p>
               </div>
             </div>
-            <nav className="space-y-2">
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-4 sm:py-5">
+            <nav className="space-y-1">
               {visibleMenuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
@@ -86,15 +102,15 @@ export function Sidebar({ mobileMenuOpen, onMobileMenuClose }: SidebarProps) {
                     href={item.href}
                     onClick={onMobileMenuClose}
                     className={cn(
-                      'flex w-full items-center gap-3 rounded-lg px-4 py-3',
-                      'transition-all duration-200',
+                      'flex w-full items-center gap-3 rounded-lg px-3 py-3.5 text-sm',
+                      'transition-all duration-200 sm:px-4',
                       isActive
                         ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-accent'
+                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                     )}
                   >
-                    <Icon size={20} />
-                    <span>{t(item.labelKey)}</span>
+                    <Icon size={20} className="shrink-0" />
+                    <span className="truncate">{t(item.labelKey)}</span>
                   </Link>
                 );
               })}
@@ -104,14 +120,14 @@ export function Sidebar({ mobileMenuOpen, onMobileMenuClose }: SidebarProps) {
                   href="/profile"
                   onClick={onMobileMenuClose}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-lg px-4 py-3',
-                    'transition-all duration-200',
+                    'flex w-full items-center gap-3 rounded-lg px-3 py-3.5 text-sm',
+                    'transition-all duration-200 sm:px-4',
                     pathname === '/profile'
                       ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-accent'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                   )}
                 >
-                  <User size={20} />
+                  <User size={20} className="shrink-0" />
                   <span>{t('profile')}</span>
                 </Link>
               )}
@@ -121,21 +137,32 @@ export function Sidebar({ mobileMenuOpen, onMobileMenuClose }: SidebarProps) {
                   href="/admin"
                   onClick={onMobileMenuClose}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-lg px-4 py-3',
-                    'transition-all duration-200',
+                    'flex w-full items-center gap-3 rounded-lg px-3 py-3.5 text-sm',
+                    'transition-all duration-200 sm:px-4',
                     pathname === '/admin'
                       ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-accent'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                   )}
                 >
-                  <Shield size={20} />
+                  <Shield size={20} className="shrink-0" />
                   <span>{tHeader('adminPanel')}</span>
                 </Link>
               )}
             </nav>
           </div>
 
-          <div className="shrink-0 border-t border-border bg-muted p-4 dark:bg-[var(--sidebar)]">
+          <div className="shrink-0 space-y-3 border-t border-border bg-muted p-4 dark:bg-[var(--sidebar)] sm:space-y-4 sm:p-5">
+            {isGuest ? (
+              <>
+                <SignInButton />
+                <p className="text-center text-xs leading-relaxed text-muted-foreground">
+                  {t('guestStorageHint')}
+                </p>
+              </>
+            ) : (
+              <SignOutButton className="rounded-lg border border-border bg-background/40 text-center hover:bg-accent" />
+            )}
+
             <ThemeToggle />
           </div>
         </div>
@@ -143,8 +170,9 @@ export function Sidebar({ mobileMenuOpen, onMobileMenuClose }: SidebarProps) {
 
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-[1px] lg:hidden"
           onClick={onMobileMenuClose}
+          aria-hidden
         />
       )}
     </>

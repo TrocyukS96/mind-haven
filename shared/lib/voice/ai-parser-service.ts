@@ -3,18 +3,9 @@ import 'server-only';
 import { getParserConfig, type ParserContext } from './parsers';
 import type { VoiceEntityType } from './types';
 import { VoiceError } from './types';
-import {
-  getYandexAuthHeaders,
-  getYandexGptModelUri,
-  YANDEX_GPT_COMPLETION_URL,
-} from './yandex-client';
-import { assertYandexOk, mapYandexError } from './yandex-error';
-import { parseModelJson } from './parse-model-json';
 import { logVoiceDebug } from './log-voice-debug';
-import {
-  extractYandexCompletionText,
-  type YandexGptCompletionResponse,
-} from './yandex-gpt-response';
+import { mapYandexError } from './yandex-error';
+import { requestYandexGptJson } from './yandex-gpt-complete';
 
 export interface ParseSpeechOptions {
   transcript: string;
@@ -57,45 +48,7 @@ export async function parseSpeechToStructuredData<TParsed = unknown>({
 
     userMessageParts.push(`Transcript: ${transcript}`);
 
-    const userMessage = userMessageParts.join('\n');
-
-    const response = await fetch(YANDEX_GPT_COMPLETION_URL, {
-      method: 'POST',
-      headers: {
-        ...getYandexAuthHeaders(),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        modelUri: getYandexGptModelUri(),
-        completionOptions: {
-          stream: false,
-          temperature: 0.2,
-          maxTokens: 2000,
-        },
-        messages: [
-          { role: 'system', text: systemPrompt },
-          { role: 'user', text: userMessage },
-        ],
-      }),
-    });
-
-    await assertYandexOk(response);
-
-    const payload = (await response.json()) as YandexGptCompletionResponse;
-    const content = extractYandexCompletionText(payload);
-
-    logVoiceDebug('yandex-gpt-raw', payload);
-    logVoiceDebug('yandex-gpt-text', content);
-
-    let raw: unknown;
-    try {
-      raw = parseModelJson(content);
-    } catch {
-      logVoiceDebug('yandex-gpt-parse-failed', content);
-      throw new VoiceError('PARSE_ERROR', 'AI returned invalid JSON');
-    }
-
-    logVoiceDebug('yandex-gpt-parsed', raw);
+    const raw = await requestYandexGptJson(systemPrompt, userMessageParts.join('\n'));
 
     try {
       const normalized = normalize(raw, { goals, tags }) as TParsed;

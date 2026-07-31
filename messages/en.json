@@ -634,6 +634,17 @@
   },
   "voice": {
     "voiceInput": "Voice input",
+    "globalVoiceInput": "Voice command",
+    "globalVoiceHeaderLabel": "Create with voice",
+    "globalVoiceShortLabel": "Voice",
+    "globalRecordingDescription": "Say what you want to create: a task, goal, journal entry, or habit. Press Stop when finished.",
+    "globalProcessingDescription": "Detecting section and filling the form",
+    "detectedSection": {
+      "task": "Task form opened",
+      "goal": "Goal form opened",
+      "journal": "Journal entry form opened",
+      "habit": "Habit form opened"
+    },
     "startRecording": "Start voice recording",
     "recording": "Recording",
     "recordingDescription": "Speak clearly. Tap stop when you're done.",

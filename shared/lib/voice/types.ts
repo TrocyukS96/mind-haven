@@ -1,5 +1,10 @@
 export type VoiceEntityType = 'task' | 'goal' | 'journal' | 'habit' | 'reflection' | 'note';
 
+export type GlobalVoiceEntityType = Extract<
+  VoiceEntityType,
+  'task' | 'goal' | 'journal' | 'habit'
+>;
+
 export type VoiceErrorCode =
   | 'MICROPHONE_DENIED'
   | 'MICROPHONE_UNAVAILABLE'
