@@ -26,8 +26,11 @@ model User {
   email          String              @unique
   name           String?
   image          String?
+  passwordHash   String?
   emailVerified  DateTime?
   role           UserRole            @default(USER)
+  bannedUntil    DateTime?
+  banReason      String?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
   accounts       Account[]
@@ -43,6 +46,8 @@ model User {
   dailyTasks     DailyTask[]
   subscription   Subscription?
   featureGrants  UserFeatureGrant[]
+  energyCheckIns EnergyCheckIn[]
+  activityEvents ActivityEvent[]
 }
 
 model Account {
@@ -80,6 +85,19 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model PendingRegistration {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  tokenHash    String   @unique
+  locale       String   @default("ru")
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([expiresAt])
 }
 
 model Subscription {
@@ -280,4 +298,101 @@ model DailyTask {
 
   @@unique([userId, date, taskId])
   @@index([userId, date])
+}
+
+model EnergyTestVersion {
+  id        String   @id
+  version   Int      @unique
+  name      String
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  questions EnergyTestVersionQuestion[]
+  checkIns  EnergyCheckIn[]
+}
+
+model EnergyQuestion {
+  id             String   @id
+  key            String
+  version        Int      @default(1)
+  textRu         String   @db.Text
+  textEn         String   @db.Text
+  minValue       Int      @default(0)
+  maxValue       Int      @default(10)
+  minLabelRu     String
+  minLabelEn     String
+  midLabelRu     String   @default("")
+  midLabelEn     String   @default("")
+  maxLabelRu     String
+  maxLabelEn     String
+  reverseScoring Boolean  @default(false)
+  defaultWeight  Float    @default(1)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  testVersions   EnergyTestVersionQuestion[]
+  answers        EnergyCheckInAnswer[]
+
+  @@unique([key, version])
+  @@index([key])
+}
+
+model EnergyTestVersionQuestion {
+  id            String            @id @default(cuid())
+  testVersionId String
+  questionId    String
+  sortOrder     Int
+  weight        Float             @default(1)
+  testVersion   EnergyTestVersion @relation(fields: [testVersionId], references: [id], onDelete: Restrict)
+  question      EnergyQuestion    @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@unique([testVersionId, questionId])
+  @@unique([testVersionId, sortOrder])
+  @@index([testVersionId])
+}
+
+model EnergyCheckIn {
+  id            String                 @id @default(cuid())
+  userId        String
+  testVersionId String
+  score         Float
+  createdAt     DateTime               @default(now())
+  user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testVersion   EnergyTestVersion      @relation(fields: [testVersionId], references: [id], onDelete: Restrict)
+  answers       EnergyCheckInAnswer[]
+
+  @@index([userId, createdAt])
+  @@index([testVersionId])
+}
+
+model ActivityEvent {
+  id             String   @id @default(cuid())
+  userId         String
+  type           String
+  entityType     String
+  entityId       String?
+  title          String   @default("")
+  metadata       Json     @default("{}")
+  idempotencyKey String
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt])
+  @@index([userId, type])
+  @@index([userId, entityType])
+}
+
+model EnergyCheckInAnswer {
+  id              String          @id @default(cuid())
+  checkInId       String
+  questionId      String
+  questionVersion Int
+  rawValue        Int
+  effectiveValue  Float
+  weight          Float
+  checkIn         EnergyCheckIn   @relation(fields: [checkInId], references: [id], onDelete: Cascade)
+  question        EnergyQuestion  @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@index([checkInId])
+  @@index([questionId])
 }

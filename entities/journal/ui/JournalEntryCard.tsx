@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Clock, Edit, MoreVertical, Trash2 } from 'lucide-react';
 import { JournalEntry } from '@/entities/journal/model/types';
 import { TagSelector } from '@/features/journal/tag-selector/ui/tag-selector';
@@ -33,12 +33,24 @@ interface JournalEntryCardProps {
 export function JournalEntryCard({ entry }: JournalEntryCardProps) {
   const { deleteJournalEntry, openJournalForm } = useStore();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [canExpand, setCanExpand] = useState(false);
+  const contentRef = useRef<HTMLParagraphElement>(null);
   const t = useTranslations('journal');
   const tCommon = useTranslations('common');
   const locale = useLocale();
 
   const tagIds = entry.tagIds ?? [];
   const isReflection = entry.entryType === 'reflection';
+
+  useLayoutEffect(() => {
+    const node = contentRef.current;
+    if (!node || isExpanded) {
+      return;
+    }
+
+    setCanExpand(node.scrollHeight > node.clientHeight + 1);
+  }, [entry.content, isExpanded]);
 
   return (
     <>
@@ -54,7 +66,29 @@ export function JournalEntryCard({ entry }: JournalEntryCardProps) {
                   </Badge>
                 )}
               </div>
-              <p className="text-muted-foreground line-clamp-2">{entry.content}</p>
+              <div className="space-y-1">
+                <p
+                  ref={contentRef}
+                  className={
+                    isExpanded
+                      ? 'whitespace-pre-wrap break-words text-muted-foreground'
+                      : 'line-clamp-2 whitespace-pre-wrap break-words text-muted-foreground'
+                  }
+                >
+                  {entry.content}
+                </p>
+                {canExpand && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="h-auto px-0"
+                    onClick={() => setIsExpanded((current) => !current)}
+                  >
+                    {isExpanded ? t('showLess') : t('showAll')}
+                  </Button>
+                )}
+              </div>
 
               <TagSelector entryId={entry.id} tagIds={tagIds} />
 

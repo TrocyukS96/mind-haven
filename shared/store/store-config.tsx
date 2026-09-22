@@ -10,7 +10,9 @@ import { createAppSlice, AppSlice } from './slices/app-slice';
 import { createTasksSlice, TasksSlice } from './slices/tasks-slice';
 import { createPointsSlice, PointsSlice } from './slices/points-slice';
 import { createFinanceSlice, FinanceSlice } from './slices/finance-slice';
-export type AppStore = HabitsSlice & GoalsSlice & JournalSlice & TablesSlice & AppSlice & TasksSlice & PointsSlice & FinanceSlice;
+import { createEnergySlice, EnergySlice } from './slices/energy-slice';
+import { createActivitySlice, ActivitySlice } from './slices/activity-slice';
+export type AppStore = HabitsSlice & GoalsSlice & JournalSlice & TablesSlice & AppSlice & TasksSlice & PointsSlice & FinanceSlice & EnergySlice & ActivitySlice;
 
 export const useStore = create<AppStore>()(
   devtools(
@@ -24,6 +26,8 @@ export const useStore = create<AppStore>()(
         ...createTasksSlice(...args),
         ...createPointsSlice(...args),
         ...createFinanceSlice(...args),
+        ...createEnergySlice(...args),
+        ...createActivitySlice(...args),
       }),
       {
         name: 'mindhaven-storage',
@@ -31,6 +35,15 @@ export const useStore = create<AppStore>()(
           const {
             journalApiEnabled: _journalApiEnabled,
             habitsApiEnabled: _habitsApiEnabled,
+            energyApiEnabled: _energyApiEnabled,
+            activityApiEnabled: _activityApiEnabled,
+            isEnergyCheckInOpen: _isEnergyCheckInOpen,
+            viewedEnergyCheckIn: _viewedEnergyCheckIn,
+            isActivityLoading: _isActivityLoading,
+            isActivityLoadingMore: _isActivityLoadingMore,
+            activityNextCursor: _activityNextCursor,
+            hasLoadedActivity: _hasLoadedActivity,
+            energyTest: _energyTest,
             selectedJournalEntry: _selectedJournalEntry,
             isJournalFormOpen: _isJournalFormOpen,
             isHabitFormOpen: _isHabitFormOpen,

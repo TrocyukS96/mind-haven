@@ -14,6 +14,7 @@ import {
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent } from '@/shared/ui/card';
 import { Brain, Calendar, ChevronRight, Edit, MoreVertical, Plus, Trash2 } from 'lucide-react';
+import { KanbanItemDragHandle, useKanbanItemSortable } from '@/shared/ui/kanban-item-sortable';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +25,7 @@ import { TaskCard } from '@/entities/task';
 import { getTaskPriorityStyle } from '@/entities/task/lib/get-task-priority-style';
 import { TaskPriority } from '@/entities/task/model/types';
 import { useStore } from '@/shared/store/store-config';
-import { useState } from 'react';
+import { useState, type PointerEvent } from 'react';
 import { toast } from 'react-toastify';
 import { getGoalStatus } from '@/shared/lib/goal-heplers';
 import { ItemTypeBadge } from '@/shared/ui/item-type-badge';
@@ -41,6 +42,11 @@ const GoalCard = ({ goal, showType = true }: Props) => {
   const { openTaskForm, deleteGoal, openGoalForm } = useStore();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [stepsExpanded, setStepsExpanded] = useState(false);
+  const sortable = useKanbanItemSortable();
+
+  const stopCardDrag = (event: PointerEvent) => {
+    event.stopPropagation();
+  };
   const status = getGoalStatus(goal.progress);
   const statusStyle = getGoalStatusCardStyle(status);
   const t = useTranslations('goals');
@@ -64,26 +70,44 @@ const GoalCard = ({ goal, showType = true }: Props) => {
     'not-started': t('status.notStarted'),
   };
 
+  const deadlineDate = new Date(goal.deadline);
+  const dateLocale = locale === 'ru' ? 'ru-RU' : 'en-US';
+  const formattedDeadline = deadlineDate.toLocaleDateString(dateLocale, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+  const fullDeadline = deadlineDate.toLocaleDateString(dateLocale, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
   return (
     <>
       <Card
         className={cn(
           'overflow-hidden transition-all duration-300 hover:shadow-md',
-          statusStyle.card
+          statusStyle.card,
+          sortable && 'cursor-grab active:cursor-grabbing'
         )}
+        {...(sortable?.listeners ?? {})}
       >
         <div className={statusStyle.cornerGlow} aria-hidden />
         <CardContent className="relative z-[1] px-3 py-2.5">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <span
-              className={cn(
-                'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium',
-                priorityStyle.badge,
-                status === 'completed' && 'opacity-60'
-              )}
-            >
-              {priorityLabels[goalPriority]}
-            </span>
+            <div className="flex min-w-0 items-center gap-1.5">
+              <KanbanItemDragHandle className="-ml-1" />
+              <span
+                className={cn(
+                  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                  priorityStyle.badge,
+                  status === 'completed' && 'opacity-60'
+                )}
+              >
+                {priorityLabels[goalPriority]}
+              </span>
+            </div>
 
             {status !== 'not-started' && (
               <span
@@ -100,7 +124,10 @@ const GoalCard = ({ goal, showType = true }: Props) => {
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-base font-semibold text-foreground break-words leading-snug">
+                <h3
+                  title={goal.title}
+                  className="line-clamp-2 break-words text-sm font-semibold leading-5 text-foreground"
+                >
                   {goal.title}
                 </h3>
                 {showType && (
@@ -113,29 +140,28 @@ const GoalCard = ({ goal, showType = true }: Props) => {
               </div>
 
               {goal.description && (
-                <p className="text-muted-foreground text-sm line-clamp-2">
+                <p
+                  title={goal.description}
+                  className="line-clamp-2 text-sm text-muted-foreground"
+                >
                   {goal.description}
                 </p>
               )}
 
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Calendar size={14} className="text-primary shrink-0" />
-                <span>
-                  {new Date(goal.deadline).toLocaleDateString(
-                    locale === 'ru' ? 'ru-RU' : 'en-US',
-                    {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    }
-                  )}
-                </span>
+                <span title={fullDeadline}>{formattedDeadline}</span>
               </div>
             </div>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onPointerDown={stopCardDrag}
+                >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -171,6 +197,7 @@ const GoalCard = ({ goal, showType = true }: Props) => {
               <button
                 type="button"
                 onClick={() => setStepsExpanded((expanded) => !expanded)}
+                onPointerDown={stopCardDrag}
                 className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary transition-colors"
                 aria-expanded={stepsExpanded}
               >
@@ -188,6 +215,7 @@ const GoalCard = ({ goal, showType = true }: Props) => {
                 size="icon"
                 variant="outline"
                 onClick={() => openTaskForm(undefined, goal.id)}
+                onPointerDown={stopCardDrag}
                 className="h-8 w-8 shrink-0 bg-background/60 backdrop-blur-sm"
                 aria-label={tCommon('add')}
               >

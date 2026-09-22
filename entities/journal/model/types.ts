@@ -1,3 +1,5 @@
+import type { DatePreset } from '@/entities/activity/model/types';
+
 export interface JournalTag {
   id: string;
   name: string;
@@ -22,10 +24,33 @@ export interface JournalEntry {
   entryType?: JournalEntryType;
   reflectionPeriod?: ReflectionPeriod;
   reflectionAnswers?: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
+export type JournalEntriesView = 'list' | 'table';
+export type JournalTab = 'entries' | 'activity';
+export type JournalEntriesSortField = 'date' | 'updatedAt' | 'title';
+export type SortDirection = 'asc' | 'desc';
+
+export interface JournalEntriesSort {
+  field: JournalEntriesSortField;
+  direction: SortDirection;
+}
+
+export const DEFAULT_JOURNAL_ENTRIES_SORT: JournalEntriesSort = {
+  field: 'date',
+  direction: 'desc',
+};
+
 export interface JournalFilterState {
+  datePreset: DatePreset;
   dateFrom?: string;
   dateTo?: string;
   tagIds: string[];
 }
+
+export const DEFAULT_JOURNAL_FILTER: JournalFilterState = {
+  datePreset: 'all',
+  tagIds: [],
+};

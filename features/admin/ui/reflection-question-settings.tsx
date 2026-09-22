@@ -10,13 +10,16 @@ import { Label } from '@/shared/ui/label';
 import { cn } from '@/shared/lib/utils';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { AdminTabs } from './admin-tabs';
 
 interface ReflectionQuestionSettingsPanelProps {
   initialCatalog: ReflectionQuestionCatalog;
+  hideHeader?: boolean;
 }
 
 export function ReflectionQuestionSettingsPanel({
   initialCatalog,
+  hideHeader = false,
 }: ReflectionQuestionSettingsPanelProps) {
   const t = useTranslations('admin.reflectionQuestions');
   const tJournal = useTranslations('journal.reflectionPeriods');
@@ -73,32 +76,33 @@ export function ReflectionQuestionSettingsPanel({
 
   return (
     <section className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">{t('title')}</h2>
-        <p className="text-sm text-muted-foreground mt-1">{t('description')}</p>
-      </div>
+      {hideHeader ? (
+        <p className="text-sm text-muted-foreground">{t('description')}</p>
+      ) : (
+        <div>
+          <h2 className="text-lg font-semibold">{t('title')}</h2>
+          <p className="text-sm text-muted-foreground mt-1">{t('description')}</p>
+        </div>
+      )}
 
-      <div className="flex flex-wrap gap-2">
-        {REFLECTION_PERIODS.map((period) => (
-          <Button
-            key={period}
-            type="button"
-            variant={activePeriod === period ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setActivePeriod(period)}
-          >
-            {tJournal(period)}
-          </Button>
-        ))}
-      </div>
+      <AdminTabs
+        tabs={REFLECTION_PERIODS.map((period) => ({
+          value: period,
+          label: tJournal(period),
+        }))}
+        value={activePeriod}
+        onChange={setActivePeriod}
+        ariaLabel={t('title')}
+        size="sm"
+      />
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {catalog[activePeriod]
           .sort((a, b) => a.sortOrder - b.sortOrder)
           .map((question) => (
             <div
               key={`${activePeriod}-${question.sortOrder}`}
-              className="rounded-lg border border-border p-4 space-y-3"
+              className="rounded-lg border border-border p-3 space-y-3"
             >
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">

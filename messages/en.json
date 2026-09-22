@@ -17,7 +17,9 @@
     "noTasks": "No tasks",
     "enterValue": "Enter {field}",
     "days": "{count} days",
-    "daysShort": "days"
+    "daysShort": "days",
+    "reorderItem": "Drag to reorder",
+    "reorderColumn": "Reorder column"
   },
   "sidebar": {
     "tagline": "Your room for growth",
@@ -31,7 +33,7 @@
     "rewards": "Rewards",
     "admin": "Admin",
     "profile": "Profile",
-    "signInWithGoogle": "Sign in with Google",
+    "signIn": "Sign in",
     "signOut": "Sign out",
     "guestStorageHint": "Your data is stored only in this browser. Sign in to sync it with your account.",
     "darkTheme": "Dark theme",
@@ -42,6 +44,51 @@
     "ru": "Русский",
     "en": "English"
   },
+  "auth": {
+    "titleSignIn": "Sign in",
+    "titleSignUp": "Create account",
+    "descriptionSignIn": "Sign in to sync your data with your account.",
+    "descriptionSignUp": "Create an account to keep your data in the cloud.",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithYandex": "Continue with Yandex",
+    "or": "or",
+    "name": "Name",
+    "namePlaceholder": "What should we call you",
+    "email": "Email",
+    "emailPlaceholder": "you@example.com",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "submitSignIn": "Sign in",
+    "submitSignUp": "Create account",
+    "submitting": "Please wait...",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "switchToSignUp": "Sign up",
+    "switchToSignIn": "Sign in",
+    "invalidCredentials": "Invalid email or password",
+    "oauthOnly": "This account was created with Google or Yandex. Sign in that way.",
+    "emailTaken": "An account with this email already exists",
+    "weakPassword": "Password must be at least 8 characters",
+    "invalidEmail": "Enter a valid email",
+    "passwordMismatch": "Passwords do not match",
+    "genericError": "Something went wrong. Please try again.",
+    "emailNotVerified": "Confirm your email using the link we sent to finish registration.",
+    "accountBanned": "This account is temporarily banned. Try again later.",
+    "emailNotConfigured": "Email sending is not configured. Add SMTP or RESEND_API_KEY.",
+    "emailSendFailed": "Could not send the email. Please try again.",
+    "checkEmailTitle": "Check your email",
+    "checkEmailDescription": "We sent a message to {email}. Click the link in the email to finish registration.",
+    "resendEmail": "Resend email",
+    "verifySuccessTitle": "Email confirmed",
+    "verifySuccessDescription": "Your account is ready. You can sign in now.",
+    "verifyInvalidTitle": "Link is invalid",
+    "verifyInvalidDescription": "This link was already used or is incorrect. Please register again.",
+    "verifyExpiredTitle": "Link expired",
+    "verifyExpiredDescription": "This confirmation link has expired. Register again to get a new email.",
+    "verifyTakenTitle": "Email already in use",
+    "verifyTakenDescription": "An account with this email already exists. Please sign in.",
+    "backToHome": "Back to home"
+  },
   "header": {
     "adminPanel": "Admin panel",
     "profile": "Profile",
@@ -50,6 +97,32 @@
     "en": "English",
     "openMenu": "Open menu",
     "closeMenu": "Close menu"
+  },
+  "energy": {
+    "checkIn": "Energy",
+    "title": "Energy check-in",
+    "description": "A short subjective snapshot of your energy right now. This is not a diagnosis.",
+    "startHint": "Check your current energy",
+    "retakeHint": "Update your current energy",
+    "progress": "Question {current} of {total}",
+    "next": "Next",
+    "back": "Back",
+    "finish": "See result",
+    "saving": "Saving...",
+    "saveError": "Could not save the check-in. Please try again.",
+    "resultLabel": "Your energy now",
+    "resultHint": "This result is saved in your history. You can repeat the check-in at any time — previous results stay as they are.",
+    "lastScore": "Last result: {score} · {level}",
+    "retake": "Check again",
+    "done": "Done",
+    "emptyTest": "The energy test is not available right now.",
+    "levels": {
+      "VERY_LOW": "Very low",
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "GOOD": "Good",
+      "HIGH": "High"
+    }
   },
   "dashboard": {
     "title": "Your room for growth",
@@ -341,9 +414,33 @@
   },
   "journal": {
     "title": "Reflection journal",
-    "subtitle": "Record your thoughts, feelings, and observations",
+    "subtitle": "Record your thoughts and review your activity",
     "newEntry": "New entry",
     "editEntry": "Edit entry",
+    "tabsLabel": "Journal sections",
+    "tabs": {
+      "entries": "My entries",
+      "activity": "Activity"
+    },
+    "views": {
+      "list": "List",
+      "table": "Table"
+    },
+    "table": {
+      "title": "Title",
+      "date": "Date",
+      "tags": "Tags",
+      "updated": "Updated"
+    },
+    "filterByDate": "Date",
+    "datePresets": {
+      "all": "All time",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "last7": "Last 7 days",
+      "last30": "Last 30 days",
+      "custom": "Custom range"
+    },
     "searchPlaceholder": "Search entries...",
     "entryHistory": "Entry history",
     "entryTitle": "Entry title",
@@ -365,8 +462,12 @@
     "filterByTags": "Filter by tags",
     "deleteEntryTitle": "Delete entry?",
     "deleteEntryDescription": "Are you sure you want to delete \"{title}\"? This action cannot be undone.",
-    "noEntriesYet": "No entries yet",
+    "noEntriesYet": "No journal entries yet.",
     "noEntriesFound": "No entries found",
+    "emptyFiltered": "No entries match your filters.",
+    "emptyFilteredDescription": "Try adjusting your search or filter settings",
+    "showAll": "Show all",
+    "showLess": "Show less",
     "createFirstEntry": "Create your first entry to start your reflection journal",
     "adjustFilters": "Try adjusting your search or filter settings",
     "entryType": "Entry type",
@@ -453,6 +554,47 @@
         "8": "What intention am I taking into the next cycle?",
         "9": "What word or image describes my year?"
       }
+    }
+  },
+  "activity": {
+    "searchPlaceholder": "Search activity...",
+    "filterType": "Activity type",
+    "empty": "No activity yet.",
+    "emptyDescription": "Significant actions in MindHaven will appear here",
+    "emptyFiltered": "No entries match your filters.",
+    "emptyFilteredDescription": "Try a different date or activity type",
+    "loadMore": "Load more",
+    "loadingMore": "Loading...",
+    "energyScore": "Energy: {score} / 10",
+    "dateGroups": {
+      "today": "Today",
+      "yesterday": "Yesterday"
+    },
+    "types": {
+      "all": "All",
+      "TASK": "Tasks",
+      "GOAL": "Goals",
+      "HABIT": "Habits",
+      "JOURNAL": "Journal",
+      "ENERGY": "Energy",
+      "REFLECTION": "Reflection",
+      "DECISION": "Decisions"
+    },
+    "events": {
+      "TASK_CREATED": "Task created",
+      "TASK_COMPLETED": "Task completed",
+      "TASK_OVERDUE": "Task overdue",
+      "GOAL_CREATED": "Goal created",
+      "GOAL_COMPLETED": "Goal completed",
+      "GOAL_STATUS_CHANGED": "Goal status changed",
+      "HABIT_CREATED": "Habit created",
+      "HABIT_COMPLETED": "Habit completed",
+      "JOURNAL_ENTRY_CREATED": "Journal entry created",
+      "JOURNAL_ENTRY_UPDATED": "Journal entry updated",
+      "ENERGY_CHECK_IN_COMPLETED": "Energy check-in",
+      "REFLECTION_CREATED": "Reflection created",
+      "DECISION_CREATED": "Decision created",
+      "DECISION_UPDATED": "Decision updated"
     }
   },
   "habits": {
@@ -647,6 +789,12 @@
     "subtitle": "Manage feature visibility and roles",
     "accessDeniedTitle": "Access denied",
     "accessDeniedDescription": "This page is available to administrators only.",
+    "tabs": {
+      "visibility": "Feature visibility",
+      "reflection": "Reflection questions",
+      "users": "Users",
+      "admins": "Admin management"
+    },
     "features": {
       "title": "Feature settings",
       "description": "Hide or enable sections for regular users and guests.",
@@ -698,6 +846,7 @@
     },
     "displayModes": {
       "title": "Display modes",
+      "compactTitle": "Display modes",
       "description": "Choose which card display modes are available in Tasks and Goals.",
       "saved": "Display settings saved",
       "saveError": "Failed to save display settings",
@@ -708,6 +857,7 @@
     },
     "itemTypes": {
       "title": "Task and goal types",
+      "compactTitle": "Types",
       "description": "Manage kanban columns: enable built-in types or add custom ones.",
       "saved": "Type settings saved",
       "saveError": "Failed to save type settings",
@@ -737,6 +887,51 @@
       "title": "Admin management",
       "description": "Assign and remove administrators. Super admin only.",
       "placeholder": "The admin list will appear here after auth is connected."
+    },
+    "appUsers": {
+      "description": "Registered accounts, roles, temporary bans, and deletion.",
+      "searchPlaceholder": "Search by name or email",
+      "empty": "No users yet",
+      "emptySearch": "No users match your search",
+      "count": "{count} users",
+      "bannedCount": "{count} banned",
+      "you": "You",
+      "joined": "Joined {date}",
+      "statusActive": "Active",
+      "statusBanned": "Banned until {date}",
+      "reason": "Reason: {reason}",
+      "filters": {
+        "all": "All",
+        "active": "Active",
+        "banned": "Banned"
+      },
+      "ban": "Ban",
+      "unban": "Unban",
+      "banTitle": "Temporarily ban user",
+      "banDescription": "{name} will not be able to sign in until the ban expires.",
+      "banDuration": "Duration",
+      "banReason": "Reason (optional)",
+      "banReasonPlaceholder": "Why is this account being banned?",
+      "confirmBan": "Ban user",
+      "bannedToast": "User banned",
+      "unbannedToast": "Ban lifted",
+      "deletedToast": "User deleted",
+      "deleteTitle": "Delete user",
+      "deleteDescription": "This will permanently delete {name} and all their data. This cannot be undone.",
+      "changeRole": "Role",
+      "changeRoleTitle": "Change role",
+      "changeRoleDescription": "Change {name} from {from} to {to}.",
+      "confirmRoleChange": "Change role",
+      "roleChangedToast": "Role updated",
+      "actionError": "Could not complete this action",
+      "loadError": "Failed to load users",
+      "durations": {
+        "1": "1 day",
+        "3": "3 days",
+        "7": "7 days",
+        "30": "30 days",
+        "90": "90 days"
+      }
     }
   },
   "voice": {

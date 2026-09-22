@@ -1,4 +1,6 @@
 import type { Habit } from '@/entities/habit/model/types';
+import { buildActivityInput } from '@/entities/activity/lib/build-activity-input';
+import { recordActivityEvent } from '@/shared/lib/activity/activity-service';
 import { prisma } from '@/shared/lib/db';
 
 export interface HabitInput {
@@ -65,14 +67,29 @@ export async function getHabits(userId: string): Promise<Habit[]> {
 export async function createHabit(userId: string, input: HabitInput): Promise<Habit> {
   const data = normalizeHabitInput(input);
 
-  const row = await prisma.habit.create({
-    data: {
+  const row = await prisma.$transaction(async (tx) => {
+    const created = await tx.habit.create({
+      data: {
+        userId,
+        name: data.name,
+        frequency: data.frequency,
+        streak: 0,
+        completedDays: [],
+      },
+    });
+
+    await recordActivityEvent(
       userId,
-      name: data.name,
-      frequency: data.frequency,
-      streak: 0,
-      completedDays: [],
-    },
+      buildActivityInput({
+        type: 'HABIT_CREATED',
+        entityId: created.id,
+        title: created.name,
+        idempotencyKey: `habit:${created.id}:created`,
+      }),
+      tx
+    );
+
+    return created;
   });
 
   return mapHabitFromDb(row);
@@ -113,12 +130,30 @@ export async function toggleHabitDay(
     ? habit.completedDays.filter((d) => d !== date)
     : [...habit.completedDays, date];
 
-  const row = await prisma.habit.update({
-    where: { id: habitId },
-    data: {
-      streak: nextStreak,
-      completedDays,
-    },
+  const row = await prisma.$transaction(async (tx) => {
+    const updated = await tx.habit.update({
+      where: { id: habitId },
+      data: {
+        streak: nextStreak,
+        completedDays,
+      },
+    });
+
+    if (!wasCompleted) {
+      await recordActivityEvent(
+        userId,
+        buildActivityInput({
+          type: 'HABIT_COMPLETED',
+          entityId: habitId,
+          title: habit.name,
+          metadata: { date },
+          idempotencyKey: `habit:${habitId}:completed:${date}`,
+        }),
+        tx
+      );
+    }
+
+    return updated;
   });
 
   return mapHabitFromDb(row);

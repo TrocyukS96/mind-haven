@@ -33,6 +33,8 @@ describe('journal-entry-service mappers', () => {
       entryType: 'free',
       reflectionPeriod: undefined,
       reflectionAnswers: undefined,
+      createdAt: '2026-07-31T10:00:00.000Z',
+      updatedAt: '2026-07-31T10:00:00.000Z',
     });
   });
 

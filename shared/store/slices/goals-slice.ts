@@ -1,8 +1,10 @@
+import { buildActivityInput } from '@/entities/activity/lib/build-activity-input';
 import { Goal } from '@/entities/goal/model/types';
 import { getGoalCategoryFromDeadline } from '@/entities/goal/lib/get-goal-category-from-deadline';
 import type { GoalFormDraft } from '@/features/goal/lib/map-voice-to-goal-draft';
 import { sortByKanbanOrder } from '@/shared/lib/kanban-utils';
 import { StateCreator } from 'zustand';
+import type { AppStore } from '../store-config';
 
 const initialGoals: Goal[] = [];
 
@@ -25,7 +27,7 @@ export interface GoalsSlice {
   closeGoalForm: () => void;
 }
 
-export const createGoalsSlice: StateCreator<GoalsSlice> = (set) => ({
+export const createGoalsSlice: StateCreator<AppStore, [], [], GoalsSlice> = (set, get) => ({
   goals: initialGoals,
   goalsKanbanColumnOrder: [],
   selectedGoal: null,
@@ -55,6 +57,15 @@ export const createGoalsSlice: StateCreator<GoalsSlice> = (set) => ({
         ],
       };
     });
+
+    void get().recordActivity(
+      buildActivityInput({
+        type: 'GOAL_CREATED',
+        entityId: id,
+        title: goal.title,
+        idempotencyKey: `goal:${id}:created`,
+      })
+    );
 
     return id;
   },

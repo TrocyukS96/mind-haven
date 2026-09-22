@@ -1,3 +1,5 @@
+import { buildActivityInput } from '@/entities/activity/lib/build-activity-input';
+import { getGoalStatus } from '@/shared/lib/goal-heplers';
 import { Task, TaskPriority } from '@/entities/task/model/types';
 import type { TaskFormDraft } from '@/features/task/lib/map-voice-to-task-draft';
 import {
@@ -103,6 +105,16 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
                 };
             });
         }
+
+        void get().recordActivity(
+            buildActivityInput({
+                type: 'TASK_CREATED',
+                entityId: newTask.id,
+                title: newTask.title,
+                metadata: { goalId },
+                idempotencyKey: `task:${newTask.id}:created`,
+            })
+        );
     },
 
     toggleTask: (id) => {
@@ -137,11 +149,45 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
 
         if (toggledTask.completed) {
             tryEarnPoints(get, buildTaskCompletionEvent(toggledTask));
+            void get().recordActivity(
+                buildActivityInput({
+                    type: 'TASK_COMPLETED',
+                    entityId: toggledTask.id,
+                    title: toggledTask.title,
+                    metadata: { goalId: task.goalId },
+                    idempotencyKey: `task:${toggledTask.id}:completed:${toggledTask.completedAt}`,
+                })
+            );
 
             if (task.goalId) {
                 const goal = get().goals.find((g) => g.id === task.goalId);
                 if (goal) {
                     tryEarnPoints(get, buildGoalCompletionEvent(goal));
+                    const previousStatus = getGoalStatus(
+                        calculateProgress(goal.tasks.map((item) => (item.id === id ? task : item)))
+                    );
+                    const nextStatus = getGoalStatus(goal.progress);
+
+                    if (nextStatus === 'completed' && previousStatus !== 'completed') {
+                        void get().recordActivity(
+                            buildActivityInput({
+                                type: 'GOAL_COMPLETED',
+                                entityId: goal.id,
+                                title: goal.title,
+                                idempotencyKey: `goal:${goal.id}:completed`,
+                            })
+                        );
+                    } else if (nextStatus !== previousStatus) {
+                        void get().recordActivity(
+                            buildActivityInput({
+                                type: 'GOAL_STATUS_CHANGED',
+                                entityId: goal.id,
+                                title: goal.title,
+                                metadata: { fromStatus: previousStatus, toStatus: nextStatus },
+                                idempotencyKey: `goal:${goal.id}:status:${previousStatus}:${nextStatus}:${new Date().toISOString().slice(0, 10)}`,
+                            })
+                        );
+                    }
                 }
             }
         }
@@ -321,7 +367,24 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
         });
 
         if (hasChanges) {
+            const previousTasks = get().tasks;
             set({ tasks: nextTasks });
+
+            nextTasks.forEach((task) => {
+                const wasOverdue = Boolean(
+                    previousTasks.find((item) => item.id === task.id)?.overdue
+                );
+                if (task.overdue && !wasOverdue) {
+                    void get().recordActivity(
+                        buildActivityInput({
+                            type: 'TASK_OVERDUE',
+                            entityId: task.id,
+                            title: task.title,
+                            idempotencyKey: `task:${task.id}:overdue:${task.deadline ?? now}`,
+                        })
+                    );
+                }
+            });
         }
 
         get().recalculateRating(hasChanges ? nextTasks : get().tasks);

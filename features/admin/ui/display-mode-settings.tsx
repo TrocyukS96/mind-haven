@@ -13,6 +13,8 @@ import { useState } from 'react';
 
 interface DisplayModeSettingsPanelProps {
   initialSettings: DisplayModeSettings;
+  section?: DisplaySection;
+  hideHeader?: boolean;
 }
 
 const MODE_LABEL_KEYS: Record<DisplayMode, 'kanban' | 'list' | 'byDay' | 'calendar'> = {
@@ -24,6 +26,8 @@ const MODE_LABEL_KEYS: Record<DisplayMode, 'kanban' | 'list' | 'byDay' | 'calend
 
 export function DisplayModeSettingsPanel({
   initialSettings,
+  section,
+  hideHeader = false,
 }: DisplayModeSettingsPanelProps) {
   const t = useTranslations('admin.displayModes');
   const tTasks = useTranslations('tasks');
@@ -31,21 +35,22 @@ export function DisplayModeSettingsPanel({
   const [settings, setSettings] = useState(initialSettings);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const sections = section ? [section] : DISPLAY_SECTIONS;
 
-  const getModeLabel = (section: DisplaySection, mode: DisplayMode) => {
-    const translator = section === 'tasks' ? tTasks : tGoals;
+  const getModeLabel = (currentSection: DisplaySection, mode: DisplayMode) => {
+    const translator = currentSection === 'tasks' ? tTasks : tGoals;
     return translator(MODE_LABEL_KEYS[mode]);
   };
 
   const handleToggle = async (
-    section: DisplaySection,
+    currentSection: DisplaySection,
     mode: DisplayMode,
     enabled: boolean
   ) => {
     const nextSettings: DisplayModeSettings = {
       ...settings,
-      [section]: {
-        ...settings[section],
+      [currentSection]: {
+        ...settings[currentSection],
         [mode]: enabled,
       },
     };
@@ -62,7 +67,7 @@ export function DisplayModeSettingsPanel({
         },
         body: JSON.stringify({
           settings: {
-            [section]: { [mode]: enabled },
+            [currentSection]: { [mode]: enabled },
           },
         }),
       });
@@ -83,30 +88,34 @@ export function DisplayModeSettingsPanel({
   };
 
   return (
-    <section className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">{t('title')}</h2>
-        <p className="text-sm text-muted-foreground mt-1">{t('description')}</p>
-      </div>
+    <section className="space-y-3">
+      {hideHeader ? (
+        <h3 className="text-sm font-medium">{t('compactTitle')}</h3>
+      ) : (
+        <div>
+          <h2 className="text-lg font-semibold">{t('title')}</h2>
+          <p className="text-sm text-muted-foreground mt-1">{t('description')}</p>
+        </div>
+      )}
 
       <div className="rounded-xl border border-border divide-y divide-border">
-        {DISPLAY_SECTIONS.map((section) => (
-          <div key={section} className="p-4 space-y-3">
-            <h3 className="font-medium">{t(`sections.${section}`)}</h3>
-            <div className="space-y-2">
+        {sections.map((currentSection) => (
+          <div key={currentSection} className="p-3 space-y-2">
+            {!section && <h3 className="font-medium">{t(`sections.${currentSection}`)}</h3>}
+            <div className="space-y-1">
               {DISPLAY_MODES.map((mode) => (
                 <label
-                  key={`${section}-${mode}`}
-                  className="flex items-center gap-3 cursor-pointer hover:bg-accent/40 rounded-lg p-2 -mx-2"
+                  key={`${currentSection}-${mode}`}
+                  className="flex items-center gap-3 cursor-pointer hover:bg-accent/40 rounded-lg p-1.5 -mx-1.5"
                 >
                   <Checkbox
-                    checked={settings[section][mode]}
+                    checked={settings[currentSection][mode]}
                     disabled={isSaving}
                     onCheckedChange={(checked) =>
-                      handleToggle(section, mode, checked === true)
+                      handleToggle(currentSection, mode, checked === true)
                     }
                   />
-                  <span className="text-sm">{getModeLabel(section, mode)}</span>
+                  <span className="text-sm">{getModeLabel(currentSection, mode)}</span>
                 </label>
               ))}
             </div>

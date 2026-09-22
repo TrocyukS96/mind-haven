@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Filter } from 'lucide-react';
-import { JournalFilterState } from '@/entities/journal/model/types';
+import { DATE_PRESETS, type DatePreset } from '@/entities/activity/model/types';
+import { DEFAULT_JOURNAL_FILTER, JournalFilterState } from '@/entities/journal/model/types';
 import { useStore } from '@/shared/store/store-config';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
@@ -10,6 +11,13 @@ import { Checkbox } from '@/shared/ui/checkbox';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select';
 import { cn } from '@/shared/lib/utils';
 import { useTranslations } from 'next-intl';
 
@@ -29,7 +37,12 @@ export function JournalFilter({ filter, onApply, onReset, isActive }: JournalFil
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (nextOpen) {
-      setTemp(filter);
+      setTemp({
+        ...DEFAULT_JOURNAL_FILTER,
+        ...filter,
+        datePreset: filter.datePreset ?? 'all',
+        tagIds: filter.tagIds ?? [],
+      });
     }
     setOpen(nextOpen);
   };
@@ -40,8 +53,7 @@ export function JournalFilter({ filter, onApply, onReset, isActive }: JournalFil
   };
 
   const handleReset = () => {
-    const empty: JournalFilterState = { tagIds: [] };
-    setTemp(empty);
+    setTemp(DEFAULT_JOURNAL_FILTER);
     onReset();
     setOpen(false);
   };
@@ -52,6 +64,14 @@ export function JournalFilter({ filter, onApply, onReset, isActive }: JournalFil
       tagIds: prev.tagIds.includes(tagId)
         ? prev.tagIds.filter((id) => id !== tagId)
         : [...prev.tagIds, tagId],
+    }));
+  };
+
+  const handlePresetChange = (preset: DatePreset) => {
+    setTemp((prev) => ({
+      ...prev,
+      datePreset: preset,
+      ...(preset !== 'custom' ? { dateFrom: undefined, dateTo: undefined } : {}),
     }));
   };
 
@@ -70,24 +90,42 @@ export function JournalFilter({ filter, onApply, onReset, isActive }: JournalFil
         align="end"
         className="w-[min(20rem,calc(100vw-2rem))] space-y-4 p-4 sm:w-80"
       >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label>{tCommon('from')}</Label>
-            <Input
-              type="date"
-              value={temp.dateFrom || ''}
-              onChange={(e) => setTemp({ ...temp, dateFrom: e.target.value || undefined })}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>{tCommon('to')}</Label>
-            <Input
-              type="date"
-              value={temp.dateTo || ''}
-              onChange={(e) => setTemp({ ...temp, dateTo: e.target.value || undefined })}
-            />
-          </div>
+        <div className="space-y-2">
+          <Label>{t('filterByDate')}</Label>
+          <Select value={temp.datePreset ?? 'all'} onValueChange={handlePresetChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {DATE_PRESETS.map((preset) => (
+                <SelectItem key={preset} value={preset}>
+                  {t(`datePresets.${preset}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+
+        {temp.datePreset === 'custom' && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{tCommon('from')}</Label>
+              <Input
+                type="date"
+                value={temp.dateFrom || ''}
+                onChange={(e) => setTemp({ ...temp, dateFrom: e.target.value || undefined })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{tCommon('to')}</Label>
+              <Input
+                type="date"
+                value={temp.dateTo || ''}
+                onChange={(e) => setTemp({ ...temp, dateTo: e.target.value || undefined })}
+              />
+            </div>
+          </div>
+        )}
 
         {journalTags.length > 0 && (
           <div className="space-y-2">

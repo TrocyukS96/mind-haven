@@ -8,6 +8,7 @@ export const FEATURE_KEYS = [
   'habits',
   'finance',
   'tables',
+  'energy',
   'gamification',
   'analytics',
   'ai_assistant',
@@ -91,6 +92,14 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     adminToggleable: true,
     defaultEnabled: false,
   },
+  energy: {
+    key: 'energy',
+    category: 'core',
+    minRole: 'GUEST',
+    requiresSubscription: false,
+    adminToggleable: false,
+    defaultEnabled: true,
+  },
   gamification: {
     key: 'gamification',
     category: 'core',
@@ -159,7 +168,10 @@ export const NAV_FEATURE_KEYS: FeatureKey[] = [
 ];
 
 /** Features hidden from navigation and direct page access (code kept for later). */
-export const UI_HIDDEN_FEATURES: ReadonlySet<FeatureKey> = new Set(['tables']);
+export const UI_HIDDEN_FEATURES: ReadonlySet<FeatureKey> = new Set([
+  'tables',
+  'gamification',
+]);
 
 export function getDefaultFeatureFlags(): Record<FeatureKey, boolean> {
   return Object.fromEntries(
@@ -170,5 +182,11 @@ export function getDefaultFeatureFlags(): Record<FeatureKey, boolean> {
 export function getFeatureListByCategory(category: FeatureCategory): FeatureDefinition[] {
   return FEATURE_KEYS.map((key) => FEATURES[key]).filter(
     (feature) => feature.category === category
+  );
+}
+
+export function getAdminToggleableFeatures(): FeatureDefinition[] {
+  return FEATURE_KEYS.map((key) => FEATURES[key]).filter(
+    (feature) => feature.adminToggleable
   );
 }

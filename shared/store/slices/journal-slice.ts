@@ -1,10 +1,20 @@
+import { buildActivityInput } from '@/entities/activity/lib/build-activity-input';
 import {
   createJournalEntryRequest,
   createJournalTagRequest,
   deleteJournalEntryRequest,
   updateJournalEntryRequest,
 } from '@/entities/journal/api/journal-client';
-import { JournalEntry, JournalTag } from '@/entities/journal/model/types';
+import {
+  DEFAULT_JOURNAL_ENTRIES_SORT,
+  DEFAULT_JOURNAL_FILTER,
+  JournalEntry,
+  JournalEntriesSort,
+  JournalEntriesView,
+  JournalFilterState,
+  JournalTab,
+  JournalTag,
+} from '@/entities/journal/model/types';
 import type { JournalFormDraft } from '@/features/journal/lib/map-voice-to-journal-draft';
 import { buildJournalEntryEvent } from '@/entities/points/lib/calculate-points';
 import { tryEarnPoints } from '@/entities/points/lib/process-point-event';
@@ -18,10 +28,20 @@ export interface JournalSlice {
   journalTags: JournalTag[];
   journalTitles: string[];
   journalApiEnabled: boolean;
+  journalTab: JournalTab;
+  journalEntriesView: JournalEntriesView;
+  journalEntriesSearch: string;
+  journalEntriesFilter: JournalFilterState;
+  journalEntriesSort: JournalEntriesSort;
   selectedJournalEntry: JournalEntry | null;
   isJournalFormOpen: boolean;
   journalFormDraft: JournalFormDraft | null;
   setJournalApiEnabled: (enabled: boolean) => void;
+  setJournalTab: (tab: JournalTab) => void;
+  setJournalEntriesView: (view: JournalEntriesView) => void;
+  setJournalEntriesSearch: (search: string) => void;
+  setJournalEntriesFilter: (filter: JournalFilterState) => void;
+  setJournalEntriesSort: (sort: JournalEntriesSort) => void;
   hydrateJournalData: (data: JournalData) => void;
   addJournalEntry: (
     entry: Pick<JournalEntry, 'title' | 'content'> &
@@ -66,11 +86,26 @@ export const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = 
   journalTags: [],
   journalTitles: [],
   journalApiEnabled: false,
+  journalTab: 'entries',
+  journalEntriesView: 'list',
+  journalEntriesSearch: '',
+  journalEntriesFilter: DEFAULT_JOURNAL_FILTER,
+  journalEntriesSort: DEFAULT_JOURNAL_ENTRIES_SORT,
   selectedJournalEntry: null,
   isJournalFormOpen: false,
   journalFormDraft: null,
 
   setJournalApiEnabled: (enabled) => set({ journalApiEnabled: enabled }),
+
+  setJournalTab: (tab) => set({ journalTab: tab }),
+
+  setJournalEntriesView: (view) => set({ journalEntriesView: view }),
+
+  setJournalEntriesSearch: (search) => set({ journalEntriesSearch: search }),
+
+  setJournalEntriesFilter: (filter) => set({ journalEntriesFilter: filter }),
+
+  setJournalEntriesSort: (sort) => set({ journalEntriesSort: sort }),
 
   hydrateJournalData: (data) =>
     set({
@@ -100,9 +135,12 @@ export const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = 
       return;
     }
 
+    const now = new Date().toISOString();
     const newEntry: JournalEntry = {
       id: Date.now().toString(),
       ...payload,
+      createdAt: now,
+      updatedAt: now,
     };
 
     set((state) => ({
@@ -111,6 +149,14 @@ export const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = 
     }));
 
     tryEarnPoints(get, buildJournalEntryEvent(newEntry));
+    void get().recordActivity(
+      buildActivityInput({
+        type: payload.entryType === 'reflection' ? 'REFLECTION_CREATED' : 'JOURNAL_ENTRY_CREATED',
+        entityId: newEntry.id,
+        title: newEntry.title,
+        idempotencyKey: `journal:${newEntry.id}:created`,
+      })
+    );
   },
 
   updateJournalEntry: async (id, data) => {
@@ -129,14 +175,32 @@ export const createJournalSlice: StateCreator<AppStore, [], [], JournalSlice> = 
       return;
     }
 
+    const updatedAt = new Date().toISOString();
+    const nextEntry = {
+      ...get().journalEntries.find((entry) => entry.id === id),
+      ...data,
+      updatedAt,
+    };
+
     set((state) => ({
       journalTitles: data.title
         ? ensureTitle(state.journalTitles, data.title)
         : state.journalTitles,
       journalEntries: state.journalEntries.map((entry) =>
-        entry.id === id ? { ...entry, ...data } : entry
+        entry.id === id ? { ...entry, ...data, updatedAt } : entry
       ),
     }));
+
+    if (nextEntry?.title) {
+      void get().recordActivity(
+        buildActivityInput({
+          type: 'JOURNAL_ENTRY_UPDATED',
+          entityId: id,
+          title: nextEntry.title,
+          idempotencyKey: `journal:${id}:updated:${updatedAt}`,
+        })
+      );
+    }
   },
 
   deleteJournalEntry: async (id) => {

@@ -1,37 +1,12 @@
 'use client';
 
+import { applyTheme, getResolvedTheme, type Theme } from '@/shared/lib/theme';
 import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
 import { cn } from '@/shared/lib/utils';
 import { Moon, Sun } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
-
-type Theme = 'light' | 'dark';
-
-function applyTheme(theme: Theme) {
-  if (theme === 'dark') {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
-
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('theme', theme);
-}
-
-function getInitialTheme(): Theme {
-  if (typeof window === 'undefined') {
-    return 'light';
-  }
-
-  const stored = localStorage.getItem('theme');
-  if (stored === 'light' || stored === 'dark') {
-    return stored;
-  }
-
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
+import { useLayoutEffect, useState } from 'react';
 
 export function ThemeToggle({ className }: { className?: string }) {
   const t = useTranslations('sidebar');
@@ -39,10 +14,11 @@ export function ThemeToggle({ className }: { className?: string }) {
   const [theme, setLocalTheme] = useState<Theme>('light');
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    const resolved = getInitialTheme();
+  useLayoutEffect(() => {
+    const resolved = getResolvedTheme();
     setLocalTheme(resolved);
     setTheme(resolved);
+    applyTheme(resolved);
     setMounted(true);
   }, [setTheme]);
 

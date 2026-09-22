@@ -20,7 +20,7 @@ import { GoalVoiceButton } from '@/features/goal/ui/GoalVoiceButton';
 import { useDisplayModeSettings, resolveDisplayMode } from '@/features/display-modes';
 
 const GoalsPage = () => {
-  const { goals } = useStore();
+  const goals = useStore((state) => state.goals);
   const openGoalForm = useStore((state) => state.openGoalForm);
   const { settings, getDefaultMode } = useDisplayModeSettings();
   const t = useTranslations('goals');
@@ -34,7 +34,7 @@ const GoalsPage = () => {
   }, [settings]);
 
   const filteredGoals = useMemo(() => {
-    let result = goals;
+    let result = (goals ?? []).filter((goal): goal is NonNullable<typeof goal> => Boolean(goal?.id));
 
     if (filter !== 'all') {
       result = result.filter((g) => g.category === filter);

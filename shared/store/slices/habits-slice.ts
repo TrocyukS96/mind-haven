@@ -1,3 +1,4 @@
+import { buildActivityInput } from '@/entities/activity/lib/build-activity-input';
 import { Habit } from '@/entities/habit/model/types';
 import {
   createHabitRequest,
@@ -51,12 +52,22 @@ export const createHabitsSlice: StateCreator<AppStore, [], [], HabitsSlice> = (s
       return;
     }
 
+    const id = Date.now().toString();
     set((state) => ({
       habits: [
         ...state.habits,
-        { ...habit, id: Date.now().toString(), streak: 0, completedDays: [] },
+        { ...habit, id, streak: 0, completedDays: [] },
       ],
     }));
+
+    void get().recordActivity(
+      buildActivityInput({
+        type: 'HABIT_CREATED',
+        entityId: id,
+        title: habit.name,
+        idempotencyKey: `habit:${id}:created`,
+      })
+    );
   },
 
   toggleHabitDay: async (id, date) => {
@@ -101,6 +112,15 @@ export const createHabitsSlice: StateCreator<AppStore, [], [], HabitsSlice> = (s
         buildHabitDayEvent(id, date),
         buildHabitStreakEvent(id, nextStreak),
       ]);
+      void get().recordActivity(
+        buildActivityInput({
+          type: 'HABIT_COMPLETED',
+          entityId: id,
+          title: habit.name,
+          metadata: { date },
+          idempotencyKey: `habit:${id}:completed:${date}`,
+        })
+      );
     }
   },
 

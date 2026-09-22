@@ -14,9 +14,15 @@ import { useState } from 'react';
 
 interface ItemTypeSettingsPanelProps {
   initialCatalog: ItemTypeCatalog;
+  section?: ItemTypeSection;
+  hideHeader?: boolean;
 }
 
-export function ItemTypeSettingsPanel({ initialCatalog }: ItemTypeSettingsPanelProps) {
+export function ItemTypeSettingsPanel({
+  initialCatalog,
+  section,
+  hideHeader = false,
+}: ItemTypeSettingsPanelProps) {
   const t = useTranslations('admin.itemTypes');
   const tTasks = useTranslations('tasks');
   const tGoals = useTranslations('goals');
@@ -27,13 +33,14 @@ export function ItemTypeSettingsPanel({ initialCatalog }: ItemTypeSettingsPanelP
     tasks: { key: '', label: '' },
     goals: { key: '', label: '' },
   });
+  const sections = section ? [section] : ITEM_TYPE_SECTIONS;
 
-  const getTypeLabel = (section: ItemTypeSection, type: ItemTypeDefinition) => {
+  const getTypeLabel = (currentSection: ItemTypeSection, type: ItemTypeDefinition) => {
     if (type.label) {
       return type.label;
     }
 
-    const translator = section === 'tasks' ? tTasks : tGoals;
+    const translator = currentSection === 'tasks' ? tTasks : tGoals;
     if (
       type.key === 'short' ||
       type.key === 'medium' ||
@@ -47,7 +54,7 @@ export function ItemTypeSettingsPanel({ initialCatalog }: ItemTypeSettingsPanelP
   };
 
   const handleToggle = async (
-    section: ItemTypeSection,
+    currentSection: ItemTypeSection,
     key: string,
     enabled: boolean
   ) => {
@@ -58,7 +65,7 @@ export function ItemTypeSettingsPanel({ initialCatalog }: ItemTypeSettingsPanelP
       const response = await fetch('/api/admin/item-types', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ section, key, enabled }),
+        body: JSON.stringify({ section: currentSection, key, enabled }),
       });
 
       if (!response.ok) {
@@ -75,8 +82,8 @@ export function ItemTypeSettingsPanel({ initialCatalog }: ItemTypeSettingsPanelP
     }
   };
 
-  const handleAddType = async (section: ItemTypeSection) => {
-    const payload = newType[section];
+  const handleAddType = async (currentSection: ItemTypeSection) => {
+    const payload = newType[currentSection];
 
     if (!payload.key.trim() || !payload.label.trim()) {
       setMessage(t('fillAllFields'));
@@ -91,7 +98,7 @@ export function ItemTypeSettingsPanel({ initialCatalog }: ItemTypeSettingsPanelP
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          section,
+          section: currentSection,
           key: payload.key,
           label: payload.label,
         }),
@@ -103,7 +110,7 @@ export function ItemTypeSettingsPanel({ initialCatalog }: ItemTypeSettingsPanelP
 
       const data = (await response.json()) as { types: ItemTypeCatalog };
       setCatalog(data.types);
-      setNewType((prev) => ({ ...prev, [section]: { key: '', label: '' } }));
+      setNewType((prev) => ({ ...prev, [currentSection]: { key: '', label: '' } }));
       setMessage(t('added'));
     } catch {
       setMessage(t('addError'));
@@ -113,31 +120,35 @@ export function ItemTypeSettingsPanel({ initialCatalog }: ItemTypeSettingsPanelP
   };
 
   return (
-    <section className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">{t('title')}</h2>
-        <p className="text-sm text-muted-foreground mt-1">{t('description')}</p>
-      </div>
+    <section className="space-y-3">
+      {hideHeader ? (
+        <h3 className="text-sm font-medium">{t('compactTitle')}</h3>
+      ) : (
+        <div>
+          <h2 className="text-lg font-semibold">{t('title')}</h2>
+          <p className="text-sm text-muted-foreground mt-1">{t('description')}</p>
+        </div>
+      )}
 
       <div className="rounded-xl border border-border divide-y divide-border">
-        {ITEM_TYPE_SECTIONS.map((section) => (
-          <div key={section} className="p-4 space-y-4">
-            <h3 className="font-medium">{t(`sections.${section}`)}</h3>
+        {sections.map((currentSection) => (
+          <div key={currentSection} className="p-3 space-y-3">
+            {!section && <h3 className="font-medium">{t(`sections.${currentSection}`)}</h3>}
 
-            <div className="space-y-2">
-              {catalog[section].map((type) => (
+            <div className="space-y-1">
+              {catalog[currentSection].map((type) => (
                 <label
-                  key={`${section}-${type.key}`}
-                  className="flex items-center gap-3 cursor-pointer hover:bg-accent/40 rounded-lg p-2 -mx-2"
+                  key={`${currentSection}-${type.key}`}
+                  className="flex items-center gap-3 cursor-pointer hover:bg-accent/40 rounded-lg p-1.5 -mx-1.5"
                 >
                   <Checkbox
                     checked={type.enabled}
                     disabled={isSaving}
                     onCheckedChange={(checked) =>
-                      handleToggle(section, type.key, checked === true)
+                      handleToggle(currentSection, type.key, checked === true)
                     }
                   />
-                  <span className="text-sm">{getTypeLabel(section, type)}</span>
+                  <span className="text-sm">{getTypeLabel(currentSection, type)}</span>
                   {!type.isSystem && (
                     <span className="text-xs text-muted-foreground">{type.key}</span>
                   )}
@@ -148,30 +159,30 @@ export function ItemTypeSettingsPanel({ initialCatalog }: ItemTypeSettingsPanelP
             <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-border/60">
               <Input
                 placeholder={t('keyPlaceholder')}
-                value={newType[section].key}
+                value={newType[currentSection].key}
                 disabled={isSaving}
                 onChange={(e) =>
                   setNewType((prev) => ({
                     ...prev,
-                    [section]: { ...prev[section], key: e.target.value },
+                    [currentSection]: { ...prev[currentSection], key: e.target.value },
                   }))
                 }
               />
               <Input
                 placeholder={t('labelPlaceholder')}
-                value={newType[section].label}
+                value={newType[currentSection].label}
                 disabled={isSaving}
                 onChange={(e) =>
                   setNewType((prev) => ({
                     ...prev,
-                    [section]: { ...prev[section], label: e.target.value },
+                    [currentSection]: { ...prev[currentSection], label: e.target.value },
                   }))
                 }
               />
               <Button
                 type="button"
                 disabled={isSaving}
-                onClick={() => handleAddType(section)}
+                onClick={() => handleAddType(currentSection)}
               >
                 {t('addType')}
               </Button>

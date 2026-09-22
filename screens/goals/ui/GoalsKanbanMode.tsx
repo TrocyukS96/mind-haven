@@ -21,7 +21,9 @@ export function GoalsKanbanMode({ goals }: GoalsKanbanModeProps) {
       section="goals"
       items={goals}
       getItemType={(goal) => goal.type}
-      renderItem={(goal) => <GoalCard key={goal.id} goal={goal} showType={false} />}
+      renderItem={(goal) =>
+        goal ? <GoalCard key={goal.id} goal={goal} showType={false} /> : null
+      }
       emptyMessage={t('noGoals')}
       draggable
       columnOrder={goalsKanbanColumnOrder}

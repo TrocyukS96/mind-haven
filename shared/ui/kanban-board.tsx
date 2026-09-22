@@ -34,6 +34,7 @@ import {
   sortByKanbanOrder,
 } from '@/shared/lib/kanban-utils';
 import { cn } from '@/shared/lib/utils';
+import { KanbanItemSortableProvider } from '@/shared/ui/kanban-item-sortable';
 import { useTranslations } from 'next-intl';
 
 interface KanbanBoardProps<T extends { id: string; kanbanOrder?: number }> {
@@ -59,7 +60,9 @@ function buildColumnItemsMap<T extends { id: string; kanbanOrder?: number }>(
 ): ColumnItemsMap {
   return columnKeys.reduce<ColumnItemsMap>((acc, columnKey) => {
     acc[columnKey] = sortByKanbanOrder(
-      items.filter((item) => resolveType(section, getItemType(item)) === columnKey)
+      items.filter(
+        (item) => item?.id && resolveType(section, getItemType(item)) === columnKey
+      )
     ).map((item) => item.id);
     return acc;
   }, {});
@@ -155,7 +158,7 @@ function StaticKanbanBoard<T extends { id: string; kanbanOrder?: number }>({
         {columns.map((column) => {
           const columnItems = sortByKanbanOrder(
             items.filter(
-              (item) => resolveType(section, getItemType(item)) === column.key
+              (item) => item?.id && resolveType(section, getItemType(item)) === column.key
             )
           );
 
@@ -217,6 +220,7 @@ function SortableKanbanColumn({
     id: getColumnId(columnKey),
     data: { type: 'column', columnKey },
   });
+  const tCommon = useTranslations('common');
 
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -238,7 +242,7 @@ function SortableKanbanColumn({
           <button
             type="button"
             className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
-            aria-label="Reorder column"
+            aria-label={tCommon('reorderColumn')}
             {...attributes}
             {...listeners}
           >
@@ -296,22 +300,15 @@ function SortableKanbanItem({
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn('flex gap-2 touch-none', isDragging && 'opacity-40')}
-    >
-      <button
-        type="button"
-        className="mt-3 h-7 w-5 shrink-0 cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
-        aria-label="Reorder item"
-        {...attributes}
-        {...listeners}
+    <KanbanItemSortableProvider value={{ attributes, listeners, isDragging }}>
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={cn('min-w-0', isDragging && 'opacity-40')}
       >
-        <GripVertical className="h-4 w-4" />
-      </button>
-      <div className="min-w-0 flex-1">{children}</div>
-    </div>
+        {children}
+      </div>
+    </KanbanItemSortableProvider>
   );
 }
 
@@ -338,7 +335,15 @@ function DraggableKanbanBoard<T extends { id: string; kanbanOrder?: number }>({
 }) {
   const { resolveType } = useItemTypes();
   const t = useTranslations(section);
-  const itemsById = useMemo(() => new Map(items.map((item) => [item.id, item])), [items]);
+  const itemsById = useMemo(() => {
+    const map = new Map<string, T>();
+    for (const item of items) {
+      if (item?.id) {
+        map.set(item.id, item);
+      }
+    }
+    return map;
+  }, [items]);
 
   const [columnItems, setColumnItems] = useState<ColumnItemsMap>(() =>
     buildColumnItemsMap(items, columnKeys, getItemType, resolveType, section)
@@ -525,9 +530,12 @@ function DraggableKanbanBoard<T extends { id: string; kanbanOrder?: number }>({
                 columnKey={column.key}
                 label={getColumnLabel(section, column.key, column.label, t)}
                 count={columnItems[column.key]?.length ?? 0}
-                itemIds={columnItems[column.key] ?? []}
+                itemIds={(columnItems[column.key] ?? []).filter((itemId) => itemsById.has(itemId))}
                 emptyLabel={t('kanbanEmptyColumn')}
-                renderItem={(itemId) => renderItem(itemsById.get(itemId) as T)}
+                renderItem={(itemId) => {
+                  const item = itemsById.get(itemId);
+                  return item ? renderItem(item) : null;
+                }}
               />
             ))}
           </div>

@@ -1,16 +1,15 @@
 'use client';
 
-import { PointsDashboardWidget } from '@/features/points';
 import { Link } from '@/i18n/routing';
 import { useStore } from '@/shared/store/store-config';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import {
   BookOpen,
-  Brain,
   Calendar,
   Sparkles,
   Target,
 } from 'lucide-react';
+import { AppLogo } from '@/shared/ui/app-logo';
 import { useTranslations } from 'next-intl';
 import { useEffect } from 'react';
 import { RotatingDescription } from './rotating-description';
@@ -56,9 +55,7 @@ export function DashboardWidget() {
         <div className="pointer-events-none absolute -bottom-20 -left-10 size-40 rounded-full bg-chart-2/10 blur-3xl" />
         <CardContent className="relative p-6 md:p-8 space-y-6">
           <div className="flex items-start gap-4">
-            <div className="shrink-0 rounded-xl bg-primary/10 p-3">
-              <Brain size={28} className="text-primary" />
-            </div>
+            <AppLogo size={52} />
             <RotatingDescription sentences={descriptionSentences} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -103,9 +100,7 @@ export function DashboardWidget() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <PointsDashboardWidget />
-
+      <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">

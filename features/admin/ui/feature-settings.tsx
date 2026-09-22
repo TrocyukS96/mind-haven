@@ -1,28 +1,34 @@
 'use client';
 
-import {
-  FEATURES,
-  getFeatureListByCategory,
-  type FeatureKey,
-} from '@/shared/config/features';
+import { getAdminToggleableFeatures, type FeatureKey } from '@/shared/config/features';
 import { Checkbox } from '@/shared/ui/checkbox';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface FeatureSettingsProps {
   initialFlags: Record<FeatureKey, boolean>;
+  featureKey?: FeatureKey;
+  hideHeader?: boolean;
 }
 
-export function FeatureSettings({ initialFlags }: FeatureSettingsProps) {
+export function FeatureSettings({
+  initialFlags,
+  featureKey,
+  hideHeader = false,
+}: FeatureSettingsProps) {
   const t = useTranslations('admin.features');
   const [flags, setFlags] = useState(initialFlags);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const toggleableFeatures = [
-    ...getFeatureListByCategory('core'),
-    ...getFeatureListByCategory('premium'),
-  ].filter((feature) => feature.adminToggleable);
+  const toggleableFeatures = useMemo(() => {
+    const features = getAdminToggleableFeatures();
+    return featureKey ? features.filter((feature) => feature.key === featureKey) : features;
+  }, [featureKey]);
+
+  useEffect(() => {
+    setMessage(null);
+  }, [featureKey]);
 
   const handleToggle = async (key: FeatureKey, enabled: boolean) => {
     const nextFlags = { ...flags, [key]: enabled };
@@ -55,26 +61,26 @@ export function FeatureSettings({ initialFlags }: FeatureSettingsProps) {
   };
 
   return (
-    <section className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">{t('title')}</h2>
-        <p className="text-sm text-muted-foreground mt-1">{t('description')}</p>
-      </div>
+    <section className="space-y-3">
+      {!hideHeader && (
+        <div>
+          <h2 className="text-lg font-semibold">{t('title')}</h2>
+          <p className="text-sm text-muted-foreground mt-1">{t('description')}</p>
+        </div>
+      )}
 
       <div className="rounded-xl border border-border divide-y divide-border">
         {toggleableFeatures.map((feature) => (
           <label
             key={feature.key}
-            className="flex items-start gap-3 p-4 cursor-pointer hover:bg-accent/40"
+            className="flex items-start gap-3 p-3 cursor-pointer hover:bg-accent/40"
           >
             <Checkbox
               checked={flags[feature.key]}
               disabled={isSaving}
-              onCheckedChange={(checked) =>
-                handleToggle(feature.key, checked === true)
-              }
+              onCheckedChange={(checked) => handleToggle(feature.key, checked === true)}
             />
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <div className="font-medium">{t(`items.${feature.key}.title`)}</div>
               <div className="text-sm text-muted-foreground">
                 {t(`items.${feature.key}.description`)}

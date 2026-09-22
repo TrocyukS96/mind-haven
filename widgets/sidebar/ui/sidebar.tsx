@@ -7,7 +7,6 @@ import { LocaleSwitcher } from '@/widgets/header/ui/locale-switcher';
 import { cn } from '@/shared/lib/utils';
 import {
   BookOpen,
-  Brain,
   CheckSquare,
   Flame,
   Gift,
@@ -19,6 +18,7 @@ import {
   X,
   PanelLeftClose,
 } from 'lucide-react';
+import { AppLogo } from '@/shared/ui/app-logo';
 import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { UI_HIDDEN_FEATURES, type FeatureKey } from '@/shared/config/features';
@@ -103,9 +103,7 @@ export function Sidebar({
             </button>
 
             <div className="flex items-center gap-3 pr-10 lg:pr-12">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <Brain size={22} className="text-primary" />
-              </div>
+              <AppLogo size={40} />
               <div className="min-w-0">
                 <h2 className="truncate text-lg font-semibold leading-tight">Mind Haven</h2>
                 <p className="mt-0.5 text-xs text-muted-foreground">{t('tagline')}</p>

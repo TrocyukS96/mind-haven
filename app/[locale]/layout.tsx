@@ -3,6 +3,8 @@ import { AuthSessionProvider } from '@/features/auth';
 import { DisplayModeProvider } from '@/features/display-modes';
 import { JournalApiProvider } from '@/features/journal/model/journal-api-provider';
 import { HabitApiProvider } from '@/features/habit/model/habit-api-provider';
+import { EnergyApiProvider } from '@/features/energy/model/energy-api-provider';
+import { ActivityApiProvider } from '@/features/activity';
 import { FinanceApiProvider } from '@/features/finance/model/finance-api-provider';
 import { ItemTypeProvider } from '@/features/item-types';
 import { ReflectionQuestionProvider } from '@/features/reflection-questions';
@@ -19,6 +21,7 @@ import { getFeatureFlags } from '@/shared/lib/features/feature-service';
 import { getDisplayModeSettings } from '@/shared/lib/display-modes/display-mode-service';
 import { getItemTypes } from '@/shared/lib/item-types/item-type-service';
 import { getReflectionQuestions } from '@/shared/lib/reflection-questions/reflection-question-service';
+import { ThemeSync } from '@/shared/providers/theme-sync';
 import { LayoutShell } from '@/widgets/layout-shell';
 import '../globals.css';
 
@@ -33,7 +36,11 @@ export const metadata: Metadata = {
   description:
     'Mind Haven is a platform for creating and sharing your own mind maps.',
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/favicon.ico', sizes: '48x48' },
+      { url: '/icon.png', type: 'image/png', sizes: '192x192' },
+    ],
+    apple: [{ url: '/apple-icon.png', sizes: '180x180' }],
   },
   openGraph: {
     title: 'Mind Haven',
@@ -41,7 +48,7 @@ export const metadata: Metadata = {
       'Mind Haven is a platform for creating and sharing your own mind maps.',
     url: 'https://mindhaven.com',
     siteName: 'Mind Haven',
-    images: ['/favicon.ico'],
+    images: ['/og.jpg'],
   },
 };
 
@@ -101,11 +108,14 @@ export default async function LocaleLayout({
       </head>
       <body className={geistSans.className}>
         <NextIntlClientProvider messages={messages}>
+          <ThemeSync />
           <AuthSessionProvider>
             <AccessProvider profile={profile} globalFeatureFlags={globalFeatureFlags}>
               <JournalApiProvider>
                 <HabitApiProvider>
                   <FinanceApiProvider>
+                  <EnergyApiProvider>
+                  <ActivityApiProvider>
                   <DisplayModeProvider settings={displayModeSettings}>
                     <ItemTypeProvider catalog={itemTypes}>
                       <ReflectionQuestionProvider catalog={reflectionQuestions}>
@@ -115,6 +125,8 @@ export default async function LocaleLayout({
                       </ReflectionQuestionProvider>
                     </ItemTypeProvider>
                   </DisplayModeProvider>
+                  </ActivityApiProvider>
+                  </EnergyApiProvider>
                   </FinanceApiProvider>
                 </HabitApiProvider>
               </JournalApiProvider>

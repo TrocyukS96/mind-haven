@@ -1,6 +1,6 @@
 'use client';
 
-import { PointsBadge } from '@/features/points';
+import { EnergyBadge } from '@/features/energy/ui/energy-badge';
 import { GlobalVoiceButton } from '@/features/voice/ui/GlobalVoiceButton';
 import { LocaleSwitcher } from '@/widgets/header/ui/locale-switcher';
 import { cn } from '@/shared/lib/utils';
@@ -52,7 +52,7 @@ export function Header({
           </button>
         )}
 
-        <PointsBadge variant="header" className="shrink-0" />
+        <EnergyBadge className="shrink-0" />
       </div>
 
       <div className="flex justify-end lg:justify-center">

@@ -8,6 +8,7 @@ import {
 } from '@/features/points/lib/show-points-toast';
 import type { PointReason } from '@/entities/points/model/types';
 import { useAccess } from '@/features/access';
+import { UI_HIDDEN_FEATURES } from '@/shared/config/features';
 import { useStore } from '@/shared/store/store-config';
 import {
   Dialog,
@@ -43,7 +44,7 @@ export function RewardUnlockListener() {
   };
 
   useEffect(() => {
-    if (!canAccessFeature('gamification')) return;
+    if (!canAccessFeature('gamification') || UI_HIDDEN_FEATURES.has('gamification')) return;
 
     setPointsEarnedListener((amount, reason: PointReason) => {
       showPointsToast(amount, t(`reasons.${reason}`));
@@ -64,14 +65,20 @@ export function RewardUnlockListener() {
   }, [canAccessFeature, t, tRewards]);
 
   useEffect(() => {
-    if (!canAccessFeature('gamification')) return;
+    if (!canAccessFeature('gamification') || UI_HIDDEN_FEATURES.has('gamification')) return;
     if (activeRewardId) return;
     if (pendingRewardIds.length > 0) {
       setActiveRewardId(pendingRewardIds[0]);
     }
   }, [pendingRewardIds, activeRewardId, canAccessFeature]);
 
-  if (!canAccessFeature('gamification') || !activeReward) return null;
+  if (
+    !canAccessFeature('gamification') ||
+    UI_HIDDEN_FEATURES.has('gamification') ||
+    !activeReward
+  ) {
+    return null;
+  }
 
   const handleClose = () => {
     dismissRewardNotification(activeReward.id);

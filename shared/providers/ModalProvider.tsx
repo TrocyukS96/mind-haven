@@ -5,6 +5,8 @@ import { HabitFormModal } from '@/features/habit';
 import { JournalFormModal } from '@/features/journal';
 import { AccountFormModal, TransactionFormModal } from '@/features/finance';
 import { useStore } from '@/shared/store/store-config';
+import { EnergyCheckInModal } from '@/features/energy/ui/energy-check-in-modal';
+import { EnergyResultDialog } from '@/features/energy/ui/energy-result-dialog';
 import { TaskFormModal } from '@/features/task';
 
 export function ModalProvider() {
@@ -21,6 +23,8 @@ export function ModalProvider() {
     closeAccountForm,
     isTransactionFormOpen,
     closeTransactionForm,
+    isEnergyCheckInOpen,
+    closeEnergyCheckIn,
   } = useStore();
 
   return (
@@ -54,6 +58,13 @@ export function ModalProvider() {
         open={isTransactionFormOpen}
         onOpenChange={(open) => !open && closeTransactionForm()}
       />
+
+      <EnergyCheckInModal
+        open={isEnergyCheckInOpen}
+        onOpenChange={(open) => !open && closeEnergyCheckIn()}
+      />
+
+      <EnergyResultDialog />
     </>
   );
 }

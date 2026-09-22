@@ -1,4 +1,4 @@
-import type { AuthProfile } from '@/entities/user';
+import { isUserBanned, type AuthProfile } from '@/entities/user';
 import type { FeatureKey } from '@/shared/config/features';
 import { auth } from '@/shared/lib/auth/auth';
 import { prisma } from '@/shared/lib/db';
@@ -10,6 +10,9 @@ function isFeatureKey(value: string): value is FeatureKey {
     'tasks',
     'journal',
     'habits',
+    'finance',
+    'energy',
+    'gamification',
     'tables',
     'analytics',
     'ai_assistant',
@@ -30,13 +33,14 @@ export async function getSessionProfile(): Promise<AuthProfile> {
   try {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
+      omit: { passwordHash: true },
       include: {
         subscription: true,
         featureGrants: true,
       },
     });
 
-    if (!user) {
+    if (!user || isUserBanned(user.bannedUntil)) {
       return { role: 'GUEST' };
     }
 

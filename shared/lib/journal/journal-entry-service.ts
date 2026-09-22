@@ -5,6 +5,8 @@ import type {
   ReflectionPeriod,
 } from '@/entities/journal/model/types';
 import { REFLECTION_PERIODS } from '@/entities/journal/model/types';
+import { buildActivityInput } from '@/entities/activity/lib/build-activity-input';
+import { recordActivityEvent } from '@/shared/lib/activity/activity-service';
 import { prisma } from '@/shared/lib/db';
 import { Prisma } from '@prisma/client';
 
@@ -85,6 +87,8 @@ export function mapJournalEntryFromDb(row: JournalEntryDbRow): JournalEntry {
       ? row.reflectionPeriod
       : undefined,
     reflectionAnswers: parseReflectionAnswers(row.reflectionAnswers),
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 
@@ -162,18 +166,34 @@ export async function createJournalEntry(
   input: JournalEntryInput
 ): Promise<JournalEntry> {
   const data = normalizeEntryInput(input);
+  const isReflection = data.entryType === 'reflection';
 
-  const row = await prisma.journalEntry.create({
-    data: {
+  const row = await prisma.$transaction(async (tx) => {
+    const created = await tx.journalEntry.create({
+      data: {
+        userId,
+        title: data.title,
+        content: data.content,
+        date: data.date,
+        tagIds: data.tagIds,
+        entryType: data.entryType,
+        reflectionPeriod: data.reflectionPeriod,
+        reflectionAnswers: data.reflectionAnswers,
+      },
+    });
+
+    await recordActivityEvent(
       userId,
-      title: data.title,
-      content: data.content,
-      date: data.date,
-      tagIds: data.tagIds,
-      entryType: data.entryType,
-      reflectionPeriod: data.reflectionPeriod,
-      reflectionAnswers: data.reflectionAnswers,
-    },
+      buildActivityInput({
+        type: isReflection ? 'REFLECTION_CREATED' : 'JOURNAL_ENTRY_CREATED',
+        entityId: created.id,
+        title: created.title,
+        idempotencyKey: `journal:${created.id}:created`,
+      }),
+      tx
+    );
+
+    return created;
   });
 
   return mapJournalEntryFromDb(row);
@@ -207,17 +227,32 @@ export async function updateJournalEntry(
 
   const data = normalizeEntryInput(merged);
 
-  const row = await prisma.journalEntry.update({
-    where: { id: entryId },
-    data: {
-      title: data.title,
-      content: data.content,
-      date: data.date,
-      tagIds: data.tagIds,
-      entryType: data.entryType,
-      reflectionPeriod: data.reflectionPeriod,
-      reflectionAnswers: data.reflectionAnswers,
-    },
+  const row = await prisma.$transaction(async (tx) => {
+    const updated = await tx.journalEntry.update({
+      where: { id: entryId },
+      data: {
+        title: data.title,
+        content: data.content,
+        date: data.date,
+        tagIds: data.tagIds,
+        entryType: data.entryType,
+        reflectionPeriod: data.reflectionPeriod,
+        reflectionAnswers: data.reflectionAnswers,
+      },
+    });
+
+    await recordActivityEvent(
+      userId,
+      buildActivityInput({
+        type: 'JOURNAL_ENTRY_UPDATED',
+        entityId: updated.id,
+        title: updated.title,
+        idempotencyKey: `journal:${updated.id}:updated:${updated.updatedAt.toISOString()}`,
+      }),
+      tx
+    );
+
+    return updated;
   });
 
   return mapJournalEntryFromDb(row);
