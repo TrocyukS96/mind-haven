@@ -614,6 +614,8 @@
     "streakColumn": "Серия",
     "completedTodayBtn": "Выполнено сегодня",
     "markCompletion": "Отметить выполнение",
+    "markDay": "Отметить {date}",
+    "unmarkDay": "Снять отметку за {date}",
     "noHabits": "Нет привычек",
     "createFirstHabit": "Создай первую привычку и начни отслеживать прогресс каждый день",
     "deleteHabitTitle": "Удалить привычку?",

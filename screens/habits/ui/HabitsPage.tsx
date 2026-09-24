@@ -9,6 +9,11 @@ import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { EmptyState } from '@/shared/ui/empty-state';
+import {
+  getHabitToday,
+  getHabitWeekDates,
+  parseHabitDate,
+} from '@/shared/lib/habit/habit-date';
 import { cn } from '@/shared/lib/utils';
 import { Check, CheckSquare, Flame, Plus, TrendingUp } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
@@ -25,19 +30,8 @@ export function HabitsPage({ initialHabits = null }: HabitsPageProps) {
   const tCommon = useTranslations('common');
   const locale = useLocale();
 
-  const getDaysOfWeek = () => {
-    const days = [];
-    const today = new Date();
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      days.push(date);
-    }
-    return days;
-  };
-
-  const daysOfWeek = getDaysOfWeek();
-  const today = new Date().toISOString().split('T')[0];
+  const today = getHabitToday();
+  const daysOfWeek = getHabitWeekDates(today);
   const bestStreak = habits.length ? Math.max(...habits.map((h) => h.streak)) : 0;
   const completedTodayCount = habits.filter((h) => h.completedDays.includes(today)).length;
 
@@ -144,12 +138,12 @@ export function HabitsPage({ initialHabits = null }: HabitsPageProps) {
                       <th className="min-w-[72px] px-3 py-3 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">
                         {t('streakColumn')}
                       </th>
-                      {daysOfWeek.map((date, index) => {
-                        const dateStr = date.toISOString().split('T')[0];
+                      {daysOfWeek.map((dateStr) => {
+                        const date = parseHabitDate(dateStr);
                         const isToday = dateStr === today;
                         return (
                           <th
-                            key={index}
+                            key={dateStr}
                             className={cn(
                               'min-w-[56px] px-2 py-3 text-center text-xs font-medium uppercase tracking-wide',
                               isToday ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
@@ -197,30 +191,37 @@ export function HabitsPage({ initialHabits = null }: HabitsPageProps) {
                             <span className="text-sm font-semibold tabular-nums">{habit.streak}</span>
                           </div>
                         </td>
-                        {daysOfWeek.map((date, index) => {
-                          const dateStr = date.toISOString().split('T')[0];
+                        {daysOfWeek.map((dateStr) => {
+                          const date = parseHabitDate(dateStr);
                           const isCompleted = habit.completedDays.includes(dateStr);
                           const isToday = dateStr === today;
+                          const isFuture = dateStr > today;
+                          const formattedDate = date.toLocaleDateString(
+                            locale === 'ru' ? 'ru-RU' : 'en-US',
+                            { day: 'numeric', month: 'long' }
+                          );
                           return (
                             <td
-                              key={index}
+                              key={dateStr}
                               className={cn('px-2 py-3 text-center', isToday && 'bg-primary/5')}
                             >
                               <button
                                 type="button"
-                                onClick={() => isToday && void toggleHabitDay(habit.id, dateStr)}
-                                disabled={!isToday}
+                                onClick={() => !isFuture && void toggleHabitDay(habit.id, dateStr)}
+                                disabled={isFuture}
                                 aria-label={
-                                  isCompleted ? t('completedTodayBtn') : t('markCompletion')
+                                  isCompleted
+                                    ? t('unmarkDay', { date: formattedDate })
+                                    : t('markDay', { date: formattedDate })
                                 }
                                 className={cn(
                                   'mx-auto flex size-8 items-center justify-center rounded-md border-2 transition-all',
                                   isCompleted
                                     ? 'border-secondary bg-secondary text-secondary-foreground shadow-sm'
                                     : 'border-border bg-background',
-                                  isToday
-                                    ? 'cursor-pointer hover:border-primary hover:bg-primary/5'
-                                    : 'cursor-default opacity-40'
+                                  isFuture
+                                    ? 'cursor-not-allowed opacity-40'
+                                    : 'cursor-pointer hover:border-primary hover:bg-primary/5'
                                 )}
                               >
                                 {isCompleted && <Check size={16} strokeWidth={3} />}
@@ -238,7 +239,6 @@ export function HabitsPage({ initialHabits = null }: HabitsPageProps) {
 
           <div className="space-y-4 lg:hidden">
             {habits.map((habit) => {
-              const isCompletedToday = habit.completedDays.includes(today);
               return (
                 <Card key={habit.id}>
                   <CardContent className="p-5">
@@ -256,23 +256,60 @@ export function HabitsPage({ initialHabits = null }: HabitsPageProps) {
                           <HabitDeleteButton habit={habit} />
                         </div>
                       </div>
-                      <Button
-                        variant={isCompletedToday ? 'outline' : 'default'}
-                        className="w-full"
-                        onClick={() => void toggleHabitDay(habit.id, today)}
-                      >
-                        {isCompletedToday ? (
-                          <>
-                            <CheckSquare size={20} />
-                            {t('completedTodayBtn')}
-                          </>
-                        ) : (
-                          <>
-                            <Plus size={20} />
-                            {t('markCompletion')}
-                          </>
-                        )}
-                      </Button>
+                      <div className="grid grid-cols-7 gap-1.5">
+                        {daysOfWeek.map((dateStr) => {
+                          const date = parseHabitDate(dateStr);
+                          const isCompleted = habit.completedDays.includes(dateStr);
+                          const isToday = dateStr === today;
+                          const isFuture = dateStr > today;
+                          const formattedDate = date.toLocaleDateString(
+                            locale === 'ru' ? 'ru-RU' : 'en-US',
+                            { day: 'numeric', month: 'long' }
+                          );
+
+                          return (
+                            <div key={dateStr} className="text-center">
+                              <div
+                                className={cn(
+                                  'mb-1 text-[10px] font-medium uppercase tracking-wide',
+                                  isToday ? 'text-primary' : 'text-muted-foreground'
+                                )}
+                              >
+                                {date.toLocaleDateString(locale === 'ru' ? 'ru-RU' : 'en-US', {
+                                  weekday: 'short',
+                                })}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => !isFuture && void toggleHabitDay(habit.id, dateStr)}
+                                disabled={isFuture}
+                                aria-label={
+                                  isCompleted
+                                    ? t('unmarkDay', { date: formattedDate })
+                                    : t('markDay', { date: formattedDate })
+                                }
+                                className={cn(
+                                  'mx-auto flex size-8 items-center justify-center rounded-md border-2 transition-all',
+                                  isCompleted
+                                    ? 'border-secondary bg-secondary text-secondary-foreground shadow-sm'
+                                    : 'border-border bg-background',
+                                  isFuture
+                                    ? 'cursor-not-allowed opacity-40'
+                                    : 'cursor-pointer hover:border-primary hover:bg-primary/5'
+                                )}
+                              >
+                                {isCompleted ? (
+                                  <Check size={16} strokeWidth={3} />
+                                ) : (
+                                  <span className="text-[11px] tabular-nums text-muted-foreground">
+                                    {date.getDate()}
+                                  </span>
+                                )}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

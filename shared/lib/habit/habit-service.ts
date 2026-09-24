@@ -2,6 +2,7 @@ import type { Habit } from '@/entities/habit/model/types';
 import { buildActivityInput } from '@/entities/activity/lib/build-activity-input';
 import { recordActivityEvent } from '@/shared/lib/activity/activity-service';
 import { prisma } from '@/shared/lib/db';
+import { calculateHabitStreak, getHabitToday, shiftHabitDate } from '@/shared/lib/habit/habit-date';
 
 export interface HabitInput {
   name: string;
@@ -52,6 +53,15 @@ function normalizeHabitInput(input: HabitInput): HabitInput {
 function validateDateString(value: string): void {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     throw new Error('Invalid date format');
+  }
+}
+
+function assertHabitDateAllowed(value: string): void {
+  validateDateString(value);
+
+  const maxDate = shiftHabitDate(getHabitToday(), 1);
+  if (value > maxDate) {
+    throw new Error('Cannot mark a future day');
   }
 }
 
@@ -113,7 +123,7 @@ export async function toggleHabitDay(
   habitId: string,
   date: string
 ): Promise<Habit> {
-  validateDateString(date);
+  assertHabitDateAllowed(date);
 
   const existing = await prisma.habit.findFirst({
     where: { id: habitId, userId },
@@ -125,10 +135,10 @@ export async function toggleHabitDay(
 
   const habit = mapHabitFromDb(existing);
   const wasCompleted = habit.completedDays.includes(date);
-  const nextStreak = wasCompleted ? Math.max(0, habit.streak - 1) : habit.streak + 1;
   const completedDays = wasCompleted
     ? habit.completedDays.filter((d) => d !== date)
     : [...habit.completedDays, date];
+  const nextStreak = calculateHabitStreak(completedDays);
 
   const row = await prisma.$transaction(async (tx) => {
     const updated = await tx.habit.update({

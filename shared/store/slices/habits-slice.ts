@@ -12,6 +12,7 @@ import {
   buildHabitStreakEvent,
 } from '@/entities/points/lib/calculate-points';
 import { tryEarnPointsMany } from '@/entities/points/lib/process-point-event';
+import { calculateHabitStreak } from '@/shared/lib/habit/habit-date';
 import { StateCreator } from 'zustand';
 import type { AppStore } from '../store-config';
 
@@ -91,20 +92,21 @@ export const createHabitsSlice: StateCreator<AppStore, [], [], HabitsSlice> = (s
       return;
     }
 
-    const nextStreak = wasCompleted ? Math.max(0, habit.streak - 1) : habit.streak + 1;
+    const completedDays = wasCompleted
+      ? habit.completedDays.filter((day) => day !== date)
+      : [...habit.completedDays, date];
+    const nextStreak = calculateHabitStreak(completedDays);
 
     set((state) => ({
-      habits: state.habits.map((h) => {
-        if (h.id !== id) return h;
-        const completedDays = wasCompleted
-          ? h.completedDays.filter((d) => d !== date)
-          : [...h.completedDays, date];
-        return {
-          ...h,
-          completedDays,
-          streak: nextStreak,
-        };
-      }),
+      habits: state.habits.map((h) =>
+        h.id === id
+          ? {
+              ...h,
+              completedDays,
+              streak: nextStreak,
+            }
+          : h
+      ),
     }));
 
     if (!wasCompleted) {

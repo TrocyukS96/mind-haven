@@ -614,6 +614,8 @@
     "streakColumn": "Streak",
     "completedTodayBtn": "Completed today",
     "markCompletion": "Mark as done",
+    "markDay": "Mark {date}",
+    "unmarkDay": "Unmark {date}",
     "noHabits": "No habits yet",
     "createFirstHabit": "Create your first habit and start tracking your progress every day",
     "deleteHabitTitle": "Delete habit?",
