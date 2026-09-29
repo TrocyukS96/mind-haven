@@ -37,6 +37,7 @@ export interface FinanceAccountDbRow {
   name: string;
   currency: string;
   initialBalance: Decimal;
+  isDefault: boolean;
   createdAt: Date;
   updatedAt: Date;
   transactions?: { type: string; amount: Decimal }[];
@@ -68,6 +69,7 @@ export function mapAccountFromDb(row: FinanceAccountDbRow): FinanceAccount {
     currency: row.currency as FinanceAccount['currency'],
     initialBalance,
     balance: computeBalance(initialBalance, txs),
+    isDefault: row.isDefault,
   };
 }
 
@@ -154,12 +156,15 @@ export async function createFinanceAccount(
 ): Promise<FinanceAccount> {
   const data = normalizeAccountInput(input);
 
+  const existingCount = await prisma.financeAccount.count({ where: { userId } });
+
   const row = await prisma.financeAccount.create({
     data: {
       userId,
       name: data.name,
       currency: data.currency,
       initialBalance: data.initialBalance ?? 0,
+      isDefault: existingCount === 0,
     },
     include: { transactions: { select: { type: true, amount: true } } },
   });
@@ -192,6 +197,35 @@ export async function updateFinanceAccount(
   });
 
   return mapAccountFromDb(row);
+}
+
+export async function setDefaultFinanceAccount(
+  userId: string,
+  accountId: string | null
+): Promise<void> {
+  if (accountId) {
+    const existing = await prisma.financeAccount.findFirst({
+      where: { id: accountId, userId },
+      select: { id: true },
+    });
+
+    if (!existing) throw new Error('Account not found');
+  }
+
+  await prisma.$transaction([
+    prisma.financeAccount.updateMany({
+      where: { userId },
+      data: { isDefault: false },
+    }),
+    ...(accountId
+      ? [
+          prisma.financeAccount.update({
+            where: { id: accountId },
+            data: { isDefault: true },
+          }),
+        ]
+      : []),
+  ]);
 }
 
 export async function deleteFinanceAccount(userId: string, accountId: string): Promise<void> {

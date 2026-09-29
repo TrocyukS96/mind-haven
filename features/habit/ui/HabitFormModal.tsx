@@ -12,15 +12,15 @@ interface Props {
 }
 
 const HabitFormModal = ({ open, onOpenChange }: Props) => {
-  const { isHabitFormOpen, closeHabitForm, habitFormDraft } = useStore();
+  const { isHabitFormOpen, closeHabitForm, habitFormDraft, editingHabit } = useStore();
   const t = useTranslations('habits');
-  const formKey = getHabitFormKey(habitFormDraft);
+  const formKey = getHabitFormKey(habitFormDraft, editingHabit);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
         <DialogHeader className="space-y-1 border-b px-6 py-5 text-left">
-          <DialogTitle className="text-xl">{t('newHabit')}</DialogTitle>
+          <DialogTitle className="text-xl">{editingHabit ? t('editHabit') : t('newHabit')}</DialogTitle>
         </DialogHeader>
 
         <div className="max-h-[calc(100vh-10rem)] overflow-y-auto px-6 py-5">

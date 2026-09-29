@@ -602,14 +602,21 @@
     "subtitle": "Build healthy habits every day",
     "addHabit": "Add habit",
     "newHabit": "New habit",
+    "editHabit": "Edit habit",
     "habitName": "Habit name",
     "habitNamePlaceholder": "e.g. Meditation, Reading, Exercise",
     "frequency": "Frequency",
+    "weekdaysLabel": "Days of the week",
     "createHabit": "Create habit",
     "activeHabits": "Active habits",
     "bestStreak": "Best streak",
     "completedToday": "Completed today",
     "habitTracker": "Habit tracker",
+    "ranges": {
+      "week": "This week",
+      "month": "Full month",
+      "year": "Year"
+    },
     "habitColumn": "Habit",
     "streakColumn": "Streak",
     "completedTodayBtn": "Completed today",
@@ -621,11 +628,50 @@
     "deleteHabitTitle": "Delete habit?",
     "deleteHabitDescription": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
     "habitDeleted": "Habit deleted",
+    "trackingType": "Type",
+    "goal": "Goal",
+    "trackingTypes": {
+      "check": "Checkmark",
+      "count": "Count",
+      "minutes": "Minutes",
+      "pages": "Pages",
+      "kilometers": "Kilometers"
+    },
+    "trackingUnits": {
+      "count": "times",
+      "minutes": "min",
+      "pages": "pages",
+      "kilometers": "km"
+    },
+    "goalPlaceholders": {
+      "count": "e.g. 50",
+      "minutes": "e.g. 10",
+      "pages": "e.g. 20",
+      "kilometers": "e.g. 5"
+    },
+    "frequencyWithGoal": "{frequency} · {count} {unit}",
+    "logCountTitle": "How much did you do",
+    "logCountHint": "Goal: {count} {unit}",
+    "saveCount": "Save",
+    "clearCount": "Clear",
+    "countForDay": "{date}: {count} of {target}",
+    "logCountForDay": "Enter the result for {date}, goal {target}",
+    "weekdays": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
     "frequencies": {
       "daily": "Daily",
-      "threePerWeek": "3 times a week",
-      "fivePerWeek": "5 times a week",
-      "weekends": "Weekends"
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "weekends": "Weekends",
+      "custom": "Selected days"
     }
   },
   "finance": {
@@ -650,6 +696,19 @@
       }
     },
     "allAccounts": "All accounts",
+    "accountSettings": "Account settings",
+    "accountSettingsTitle": "Account settings",
+    "accountSettingsDescription": "Choose the default account and manage your accounts.",
+    "defaultAccount": "Default account",
+    "defaultAccountHint": "It opens in this section and is preselected for a new transaction when all accounts are shown.",
+    "defaultAccountUpdated": "Default account updated",
+    "defaultBadge": "Default",
+    "accountsSection": "Accounts",
+    "expensesOnOtherAccounts": "This period has expenses on other accounts.",
+    "incomesOnOtherAccounts": "This period has income on other accounts.",
+    "showAllAccounts": "Show all accounts",
+    "recentExpenses": "Recent expenses",
+    "recentIncomes": "Recent income",
     "expenses": "Expenses",
     "incomes": "Income",
     "expense": "Expense",

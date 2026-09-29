@@ -602,14 +602,21 @@
     "subtitle": "Формируй полезные привычки каждый день",
     "addHabit": "Добавить привычку",
     "newHabit": "Новая привычка",
+    "editHabit": "Редактировать привычку",
     "habitName": "Название привычки",
     "habitNamePlaceholder": "Например: Медитация, Чтение, Спорт",
     "frequency": "Частота",
+    "weekdaysLabel": "Дни недели",
     "createHabit": "Создать привычку",
     "activeHabits": "Активных привычек",
     "bestStreak": "Лучшая серия",
     "completedToday": "Выполнено сегодня",
     "habitTracker": "Трекер привычек",
+    "ranges": {
+      "week": "Текущая неделя",
+      "month": "Весь месяц",
+      "year": "Год"
+    },
     "habitColumn": "Привычка",
     "streakColumn": "Серия",
     "completedTodayBtn": "Выполнено сегодня",
@@ -621,11 +628,50 @@
     "deleteHabitTitle": "Удалить привычку?",
     "deleteHabitDescription": "Ты уверен, что хочешь удалить привычку \"{name}\"? Это действие нельзя отменить.",
     "habitDeleted": "Привычка удалена",
+    "trackingType": "Тип",
+    "goal": "Цель",
+    "trackingTypes": {
+      "check": "Галочка",
+      "count": "Количество",
+      "minutes": "Минуты",
+      "pages": "Страницы",
+      "kilometers": "Километры"
+    },
+    "trackingUnits": {
+      "count": "раз",
+      "minutes": "мин",
+      "pages": "стр.",
+      "kilometers": "км"
+    },
+    "goalPlaceholders": {
+      "count": "Например: 50",
+      "minutes": "Например: 10",
+      "pages": "Например: 20",
+      "kilometers": "Например: 5"
+    },
+    "frequencyWithGoal": "{frequency} · {count} {unit}",
+    "logCountTitle": "Сколько сделано",
+    "logCountHint": "Цель: {count} {unit}",
+    "saveCount": "Сохранить",
+    "clearCount": "Сбросить",
+    "countForDay": "{date}: {count} из {target}",
+    "logCountForDay": "Ввести результат за {date}, цель {target}",
+    "weekdays": {
+      "mon": "Пн",
+      "tue": "Вт",
+      "wed": "Ср",
+      "thu": "Чт",
+      "fri": "Пт",
+      "sat": "Сб",
+      "sun": "Вс"
+    },
     "frequencies": {
       "daily": "Ежедневно",
-      "threePerWeek": "3 раза в неделю",
-      "fivePerWeek": "5 раз в неделю",
-      "weekends": "По выходным"
+      "weekly": "Еженедельно",
+      "monthly": "Ежемесячно",
+      "yearly": "Ежегодно",
+      "weekends": "По выходным",
+      "custom": "По дням недели"
     }
   },
   "finance": {
@@ -650,6 +696,19 @@
       }
     },
     "allAccounts": "Все счета",
+    "accountSettings": "Настройки счетов",
+    "accountSettingsTitle": "Настройки счетов",
+    "accountSettingsDescription": "Выберите счёт по умолчанию и управляйте счетами.",
+    "defaultAccount": "Счёт по умолчанию",
+    "defaultAccountHint": "Он открывается в разделе и подставляется в новую операцию, когда выбраны все счета.",
+    "defaultAccountUpdated": "Счёт по умолчанию обновлён",
+    "defaultBadge": "По умолчанию",
+    "accountsSection": "Счета",
+    "expensesOnOtherAccounts": "За этот период расходы есть на других счетах.",
+    "incomesOnOtherAccounts": "За этот период доходы есть на других счетах.",
+    "showAllAccounts": "Показать все счета",
+    "recentExpenses": "Последние расходы",
+    "recentIncomes": "Последние доходы",
     "expenses": "Расходы",
     "incomes": "Доходы",
     "expense": "Расход",

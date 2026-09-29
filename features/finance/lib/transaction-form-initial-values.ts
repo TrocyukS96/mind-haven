@@ -1,5 +1,5 @@
 import type { TransactionFormDraft } from '@/features/finance/lib/map-voice-to-finance-draft';
-import type { FinanceCategoryKey } from '@/entities/finance/model/types';
+import type { FinanceCategoryKey, TransactionType } from '@/entities/finance/model/types';
 import { getCategoriesByType } from '@/entities/finance/model/categories';
 
 export interface TransactionFormValues {
@@ -12,9 +12,10 @@ export interface TransactionFormValues {
 
 export function buildTransactionFormValues(
   draft?: TransactionFormDraft | null,
-  fallbackAccountId?: string | null
+  fallbackAccountId?: string | null,
+  fallbackType: TransactionType = 'expense'
 ): TransactionFormValues {
-  const type = draft?.type ?? 'expense';
+  const type = draft?.type ?? fallbackType;
   const defaultCategory = getCategoriesByType(type)[0].key;
 
   if (draft) {

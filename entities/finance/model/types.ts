@@ -31,6 +31,7 @@ export interface FinanceAccount {
   currency: FinanceCurrency;
   initialBalance: number;
   balance: number;
+  isDefault: boolean;
 }
 
 export interface FinanceTransaction {

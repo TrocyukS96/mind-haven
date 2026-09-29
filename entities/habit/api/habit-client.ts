@@ -27,11 +27,31 @@ export async function createHabitRequest(input: HabitInput): Promise<Habit> {
   return payload.habit;
 }
 
+export async function setHabitDayCountRequest(id: string, date: string, count: number): Promise<Habit> {
+  const response = await fetch(`/api/habits/${id}/count`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date, count }),
+  });
+  const payload = await parseResponse<{ habit: Habit }>(response);
+  return payload.habit;
+}
+
 export async function toggleHabitDayRequest(id: string, date: string): Promise<Habit> {
   const response = await fetch(`/api/habits/${id}/toggle`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ date }),
+  });
+  const payload = await parseResponse<{ habit: Habit }>(response);
+  return payload.habit;
+}
+
+export async function updateHabitRequest(id: string, input: HabitInput): Promise<Habit> {
+  const response = await fetch(`/api/habits/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
   });
   const payload = await parseResponse<{ habit: Habit }>(response);
   return payload.habit;

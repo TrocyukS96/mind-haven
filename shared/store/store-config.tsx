@@ -47,6 +47,8 @@ export const useStore = create<AppStore>()(
             selectedJournalEntry: _selectedJournalEntry,
             isJournalFormOpen: _isJournalFormOpen,
             isHabitFormOpen: _isHabitFormOpen,
+            editingHabit: _editingHabit,
+            habitFormDraft: _habitFormDraft,
             isAccountFormOpen: _isAccountFormOpen,
             isTransactionFormOpen: _isTransactionFormOpen,
             editingTransactionId: _editingTransactionId,

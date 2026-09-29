@@ -10,6 +10,7 @@ import { CategoryBreakdownList } from '@/features/finance/ui/CategoryBreakdownLi
 import { DisplayCurrencySelector } from '@/features/finance/ui/DisplayCurrencySelector';
 import { FinanceVoiceButton } from '@/features/finance/ui/FinanceVoiceButton';
 import { AccountDeleteButton } from '@/features/finance/ui/AccountDeleteButton';
+import { AccountSettingsModal } from '@/features/finance/ui/AccountSettingsModal';
 import { useStoreHydrated } from '@/shared/hooks/use-store-hydrated';
 import {
   filterTransactionsByPeriod,
@@ -40,6 +41,7 @@ import {
   Trash2,
   Wallet,
   Pencil,
+  Settings,
 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
@@ -82,6 +84,7 @@ export function FinancePage({
   const dateLocale = locale === 'ru' ? ru : enUS;
 
   const [referenceDate, setReferenceDate] = useState(new Date());
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const selectedAccount = financeAccounts.find((a) => a.id === selectedAccountId) ?? null;
   const displaySymbol = CURRENCY_SYMBOLS[displayCurrency] ?? displayCurrency;
@@ -181,7 +184,22 @@ export function FinancePage({
     };
   };
 
-  const recentTransactions = periodTransactions.slice(0, 10);
+  const visibleTransactions = useMemo(
+    () => periodTransactions.filter((tx) => tx.type === financeViewType),
+    [periodTransactions, financeViewType]
+  );
+
+  const hiddenOnOtherAccounts = useMemo(() => {
+    if (!selectedAccountId) return false;
+
+    const otherTransactions = financeTransactions.filter(
+      (tx) => tx.accountId !== selectedAccountId && tx.type === financeViewType
+    );
+
+    return filterTransactionsByPeriod(otherTransactions, financePeriod, referenceDate).length > 0;
+  }, [financeTransactions, selectedAccountId, financeViewType, financePeriod, referenceDate]);
+
+  const recentTransactions = visibleTransactions.slice(0, 10);
 
   if (!hydrated) {
     return (
@@ -219,6 +237,10 @@ export function FinancePage({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <FinanceVoiceButton />
+          <Button variant="outline" onClick={() => setSettingsOpen(true)}>
+            <Settings size={18} />
+            {t('accountSettings')}
+          </Button>
           <Button variant="outline" onClick={() => openAccountForm()}>
             <Wallet size={18} />
             {t('newAccount')}
@@ -377,12 +399,32 @@ export function FinancePage({
           )}
 
           <CategoryBreakdownList items={breakdown} currency={displayCurrency} />
+
+          {breakdown.length === 0 && hiddenOnOtherAccounts && (
+            <div className="mt-4 flex flex-col items-start gap-3 rounded-xl border border-dashed px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted-foreground">
+                {financeViewType === 'expense'
+                  ? t('expensesOnOtherAccounts')
+                  : t('incomesOnOtherAccounts')}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedAccountId(null)}
+              >
+                {t('showAllAccounts')}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {recentTransactions.length > 0 && (
         <div>
-          <h2 className="mb-3 text-lg font-medium">{t('recentTransactions')}</h2>
+          <h2 className="mb-3 text-lg font-medium">
+            {financeViewType === 'expense' ? t('recentExpenses') : t('recentIncomes')}
+          </h2>
           <ul className="space-y-2">
             {recentTransactions.map((tx) => {
               const def = getCategoryDefinition(tx.category);
@@ -451,6 +493,8 @@ export function FinancePage({
           </ul>
         </div>
       )}
+
+      <AccountSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 }

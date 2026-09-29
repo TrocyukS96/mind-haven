@@ -44,9 +44,15 @@ export function TransactionForm({ type, transaction = null, onSuccess }: Transac
   } = useStore();
   const categories = getCategoriesByType(type);
 
+  const defaultAccountId = financeAccounts.find((account) => account.isDefault)?.id ?? null;
   const initialValues = buildTransactionFormValues(
     isEditing ? null : transactionFormDraft,
-    transaction?.accountId ?? selectedAccountId ?? financeAccounts[0]?.id ?? null
+    transaction?.accountId ??
+      selectedAccountId ??
+      defaultAccountId ??
+      financeAccounts[0]?.id ??
+      null,
+    type
   );
 
   const [accountId, setAccountId] = useState(

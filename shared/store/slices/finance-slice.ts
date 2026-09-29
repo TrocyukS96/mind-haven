@@ -15,6 +15,7 @@ import {
   createFinanceTransactionRequest,
   deleteFinanceAccountRequest,
   deleteFinanceTransactionRequest,
+  setDefaultFinanceAccountRequest,
   updateFinanceAccountRequest,
   updateFinanceTransactionRequest,
 } from '@/entities/finance/api/finance-client';
@@ -67,6 +68,7 @@ export interface FinanceSlice {
   setDisplayCurrency: (currency: FinanceCurrency) => void;
   addFinanceAccount: (input: FinanceAccountInput) => Promise<void>;
   updateFinanceAccount: (id: string, input: FinanceAccountInput) => Promise<void>;
+  setDefaultFinanceAccount: (id: string | null) => Promise<void>;
   deleteFinanceAccount: (id: string) => Promise<void>;
   addFinanceTransaction: (input: FinanceTransactionInput) => Promise<void>;
   updateFinanceTransaction: (id: string, input: FinanceTransactionInput) => Promise<void>;
@@ -101,7 +103,7 @@ export const createFinanceSlice: StateCreator<AppStore, [], [], FinanceSlice> = 
     set({
       financeAccounts: withUpdatedBalances(accounts, transactions),
       financeTransactions: transactions,
-      selectedAccountId: accounts[0]?.id ?? null,
+      selectedAccountId: getDefaultAccountId(accounts),
     }),
 
   setSelectedAccountId: (id) => set({ selectedAccountId: id }),
@@ -112,13 +114,11 @@ export const createFinanceSlice: StateCreator<AppStore, [], [], FinanceSlice> = 
   addFinanceAccount: async (input) => {
     if (await shouldUseFinanceApi()) {
       const saved = await createFinanceAccountRequest(input);
-      set((state) => {
-        const accounts = [...state.financeAccounts, saved];
-        return {
-          financeAccounts: accounts,
-          selectedAccountId: state.selectedAccountId ?? saved.id,
-        };
-      });
+      set((state) => ({
+        financeAccounts: [...state.financeAccounts, saved],
+        selectedAccountId:
+          state.financeAccounts.length === 0 ? saved.id : state.selectedAccountId,
+      }));
       return;
     }
 
@@ -128,11 +128,13 @@ export const createFinanceSlice: StateCreator<AppStore, [], [], FinanceSlice> = 
       currency: input.currency,
       initialBalance: input.initialBalance ?? 0,
       balance: input.initialBalance ?? 0,
+      isDefault: get().financeAccounts.length === 0,
     };
 
     set((state) => ({
       financeAccounts: [...state.financeAccounts, localAccount],
-      selectedAccountId: state.selectedAccountId ?? localAccount.id,
+      selectedAccountId:
+        state.financeAccounts.length === 0 ? localAccount.id : state.selectedAccountId,
     }));
   },
 
@@ -165,6 +167,24 @@ export const createFinanceSlice: StateCreator<AppStore, [], [], FinanceSlice> = 
     });
   },
 
+  setDefaultFinanceAccount: async (id) => {
+    if (id && !get().financeAccounts.some((account) => account.id === id)) {
+      return;
+    }
+
+    if (await shouldUseFinanceApi()) {
+      await setDefaultFinanceAccountRequest(id);
+    }
+
+    set((state) => ({
+      financeAccounts: state.financeAccounts.map((account) => ({
+        ...account,
+        isDefault: id != null && account.id === id,
+      })),
+      selectedAccountId: id,
+    }));
+  },
+
   deleteFinanceAccount: async (id) => {
     if (await shouldUseFinanceApi()) {
       await deleteFinanceAccountRequest(id);
@@ -174,7 +194,7 @@ export const createFinanceSlice: StateCreator<AppStore, [], [], FinanceSlice> = 
       const accounts = state.financeAccounts.filter((a) => a.id !== id);
       const transactions = state.financeTransactions.filter((t) => t.accountId !== id);
       const selectedAccountId =
-        state.selectedAccountId === id ? (accounts[0]?.id ?? null) : state.selectedAccountId;
+        state.selectedAccountId === id ? getDefaultAccountId(accounts) : state.selectedAccountId;
 
       return {
         financeAccounts: withUpdatedBalances(accounts, transactions),
@@ -311,6 +331,10 @@ export const createFinanceSlice: StateCreator<AppStore, [], [], FinanceSlice> = 
       transactionFormDraft: null,
     }),
 });
+
+export function getDefaultAccountId(accounts: FinanceAccount[]): string | null {
+  return accounts.find((account) => account.isDefault)?.id ?? null;
+}
 
 export function getPeriodRange(period: FinancePeriod, referenceDate = new Date()): {
   start: Date;

@@ -40,6 +40,15 @@ export async function deleteFinanceAccountRequest(id: string): Promise<void> {
   await parseResponse<{ ok: true }>(response);
 }
 
+export async function setDefaultFinanceAccountRequest(accountId: string | null): Promise<void> {
+  const response = await fetch('/api/finance/default-account', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accountId }),
+  });
+  await parseResponse<{ ok: true }>(response);
+}
+
 export async function updateFinanceAccountRequest(
   id: string,
   input: FinanceAccountInput
