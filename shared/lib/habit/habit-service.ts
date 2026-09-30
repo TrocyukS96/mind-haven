@@ -7,6 +7,7 @@ import { isHabitScheduledOn, normalizeStoredHabitFrequency } from '@/shared/lib/
 import {
   normalizeHabitTrackingType,
   resolveHabitTrackingType,
+  type HabitTrackingType,
 } from '@/entities/habit/model/tracking-type';
 import {
   applyDayCount,
@@ -60,7 +61,14 @@ export function mapHabitFromDb(row: HabitDbRow): Habit {
   };
 }
 
-function normalizeHabitInput(input: HabitInput): HabitInput {
+interface NormalizedHabitInput {
+  name: string;
+  frequency: string;
+  trackingType: HabitTrackingType;
+  targetCount: number | null;
+}
+
+function normalizeHabitInput(input: HabitInput): NormalizedHabitInput {
   const name = input.name.trim();
   const frequency = normalizeStoredHabitFrequency(input.frequency);
 
