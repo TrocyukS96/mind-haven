@@ -33,6 +33,7 @@ interface TaskCardProps {
   task: Task;
   showGoalTitle?: boolean;
   showType?: boolean;
+  showMeta?: boolean;
   variant?: 'default' | 'step';
 }
 
@@ -51,6 +52,7 @@ export function TaskCard({
   task,
   showGoalTitle = false,
   showType = true,
+  showMeta = false,
   variant = 'default',
 }: TaskCardProps) {
   const { toggleTask, deleteTask, openTaskForm, goals } = useStore();
@@ -155,6 +157,16 @@ export function TaskCard({
             >
               {task.title}
             </span>
+            {showMeta ? (
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                <ItemTypeBadge section="tasks" typeKey={task.type} className="h-5 px-1.5 text-[10px] font-normal" />
+                {formattedDeadline ? (
+                  <span className={cn('text-[11px] text-muted-foreground', task.overdue && !task.completed && 'text-destructive')}>
+                    {formattedDeadline}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-1 self-start">
             {priorityBadge}

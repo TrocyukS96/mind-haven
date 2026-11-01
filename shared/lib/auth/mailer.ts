@@ -8,7 +8,7 @@ interface SendEmailInput {
 }
 
 function getFromAddress(): string {
-  return process.env.EMAIL_FROM || process.env.SMTP_USER || 'Mind Haven <noreply@localhost>';
+  return process.env.EMAIL_FROM || process.env.SMTP_USER || 'Lesok <noreply@localhost>';
 }
 
 async function sendWithResend(input: SendEmailInput): Promise<void> {

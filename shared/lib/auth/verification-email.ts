@@ -16,24 +16,24 @@ export function getVerificationEmailCopy(
 
   if (locale === 'en') {
     return {
-      subject: 'Confirm your Mind Haven registration',
+      subject: 'Confirm your Lesok registration',
       preview: 'Click the link to finish creating your account.',
       greeting: displayName ? `Hi ${displayName},` : 'Hi,',
       body: 'To finish registration, confirm your email address:',
       button: 'Confirm email',
       expiry: 'This link is valid for 24 hours.',
-      ignore: 'If you did not create a Mind Haven account, you can ignore this email.',
+      ignore: 'If you did not create a Lesok account, you can ignore this email.',
     };
   }
 
   return {
-    subject: 'Подтвердите регистрацию в Mind Haven',
+    subject: 'Подтвердите регистрацию в Lesok',
     preview: 'Нажмите на ссылку, чтобы завершить создание аккаунта.',
     greeting: displayName ? `Здравствуйте, ${displayName}!` : 'Здравствуйте!',
     body: 'Чтобы завершить регистрацию, подтвердите адрес электронной почты:',
     button: 'Подтвердить email',
     expiry: 'Ссылка действует 24 часа.',
-    ignore: 'Если вы не регистрировались в Mind Haven, просто проигнорируйте это письмо.',
+    ignore: 'Если вы не регистрировались в Lesok, просто проигнорируйте это письмо.',
   };
 }
 

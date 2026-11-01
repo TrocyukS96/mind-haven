@@ -10,7 +10,7 @@ import { ItemTypeProvider } from '@/features/item-types';
 import { ReflectionQuestionProvider } from '@/features/reflection-questions';
 import { routing } from '@/i18n/routing';
 import type { Metadata } from 'next';
-import { Geist } from 'next/font/google';
+import { Manrope } from 'next/font/google';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -25,29 +25,23 @@ import { ThemeSync } from '@/shared/providers/theme-sync';
 import { LayoutShell } from '@/widgets/layout-shell';
 import '../globals.css';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
+const manrope = Manrope({
+  variable: '--font-manrope',
+  subsets: ['latin', 'cyrillic'],
 });
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://mindhaven.com'),
-  title: 'MindHaven',
-  description:
-    'Mind Haven is a platform for creating and sharing your own mind maps.',
+  title: 'Lesok',
+  description: 'Выращивай свои цели',
   icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: '48x48' },
-      { url: '/icon.png', type: 'image/png', sizes: '192x192' },
-    ],
-    apple: [{ url: '/apple-icon.png', sizes: '180x180' }],
+    icon: [{ url: '/lesok-mark.svg', type: 'image/svg+xml' }],
   },
   openGraph: {
-    title: 'Mind Haven',
-    description:
-      'Mind Haven is a platform for creating and sharing your own mind maps.',
+    title: 'Lesok',
+    description: 'Выращивай свои цели',
     url: 'https://mindhaven.com',
-    siteName: 'Mind Haven',
+    siteName: 'Lesok',
     images: ['/og.jpg'],
   },
 };
@@ -106,7 +100,7 @@ export default async function LocaleLayout({
           }}
         />
       </head>
-      <body className={geistSans.className}>
+      <body className={`${manrope.variable} ${manrope.className}`}>
         <NextIntlClientProvider messages={messages}>
           <ThemeSync />
           <AuthSessionProvider>

@@ -1,3 +1,4 @@
+import { LesokLogo } from '@/shared/ui/lesok-logo';
 import { cn } from '@/shared/lib/utils';
 
 interface AppLogoProps {
@@ -7,12 +8,8 @@ interface AppLogoProps {
 
 export function AppLogo({ className, size = 40 }: AppLogoProps) {
   return (
-    <img
-      src="/logo.png"
-      alt="MindHaven"
-      width={size}
-      height={size}
-      className={cn('shrink-0 rounded-xl', className)}
-    />
+    <span role="img" aria-label="Lesok" className={cn('inline-flex shrink-0', className)}>
+      <LesokLogo size={size} />
+    </span>
   );
 }
