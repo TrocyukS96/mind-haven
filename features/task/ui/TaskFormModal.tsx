@@ -26,7 +26,7 @@ const TaskFormModal = ({ open, onOpenChange }: Props) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {open && (
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="min-w-0 sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {selectedTask ? t('editTask') : t('newTask')}

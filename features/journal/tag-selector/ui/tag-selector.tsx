@@ -18,6 +18,7 @@ export function TagSelector({ entryId, tagIds }: TagSelectorProps) {
   const { journalTags, addJournalTag, addTagToEntry, removeTagFromEntry } = useStore();
   const [open, setOpen] = useState(false);
   const [newTagName, setNewTagName] = useState('');
+  const [creating, setCreating] = useState(false);
   const t = useTranslations('journal');
   const tCommon = useTranslations('common');
 
@@ -32,9 +33,14 @@ export function TagSelector({ entryId, tagIds }: TagSelectorProps) {
     const trimmed = newTagName.trim();
     if (!trimmed) return;
 
-    const tagId = await addJournalTag(trimmed);
-    await addTagToEntry(entryId, tagId);
-    setNewTagName('');
+    setCreating(true);
+    try {
+      const tagId = await addJournalTag(trimmed);
+      await addTagToEntry(entryId, tagId);
+      setNewTagName('');
+    } finally {
+      setCreating(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -96,7 +102,7 @@ export function TagSelector({ entryId, tagIds }: TagSelectorProps) {
                 placeholder={t('tagNamePlaceholder')}
                 className="h-8 text-sm"
               />
-              <Button size="sm" onClick={handleCreateTag} disabled={!newTagName.trim()}>
+              <Button size="sm" onClick={handleCreateTag} disabled={!newTagName.trim()} loading={creating}>
                 {tCommon('add')}
               </Button>
             </div>

@@ -10,7 +10,7 @@ import {
   getEnabledItemTypes,
   resolveItemType,
 } from '@/shared/config/item-types';
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 
 interface ItemTypeProviderProps {
   catalog: ItemTypeCatalog;
@@ -19,6 +19,7 @@ interface ItemTypeProviderProps {
 
 interface ItemTypeContextValue {
   catalog: ItemTypeCatalog;
+  setCatalog: (catalog: ItemTypeCatalog) => void;
   getTypes: (section: ItemTypeSection) => ItemTypeDefinition[];
   getEnabledTypes: (section: ItemTypeSection) => ItemTypeDefinition[];
   getDefaultTypeKey: (section: ItemTypeSection) => string;
@@ -28,13 +29,22 @@ interface ItemTypeContextValue {
 
 const ItemTypeContext = createContext<ItemTypeContextValue | null>(null);
 
-export function ItemTypeProvider({ catalog, children }: ItemTypeProviderProps) {
+export function ItemTypeProvider({ catalog: initialCatalog, children }: ItemTypeProviderProps) {
+  const [catalog, setCatalog] = useState(initialCatalog);
+  const [sourceCatalog, setSourceCatalog] = useState(initialCatalog);
+
+  if (sourceCatalog !== initialCatalog) {
+    setSourceCatalog(initialCatalog);
+    setCatalog(initialCatalog);
+  }
+
   const value = useMemo<ItemTypeContextValue>(
     () => ({
       catalog,
+      setCatalog,
       getTypes: (section) => catalog[section],
       getEnabledTypes: (section) => getEnabledItemTypes(catalog, section),
-      getDefaultTypeKey: (section) => getDefaultItemTypeKey(section),
+      getDefaultTypeKey: (section) => getDefaultItemTypeKey(section, catalog),
       resolveType: (section, typeValue) => resolveItemType(typeValue, section, catalog),
       getTypeLabel: (section, key) => {
         const type = catalog[section].find((item) => item.key === key);

@@ -1,6 +1,7 @@
 'use client';
 
 import { RewardUnlockListener } from '@/features/points';
+import { usePathname } from '@/i18n/routing';
 import { Header } from '@/widgets/header';
 import { Sidebar } from '@/widgets/sidebar';
 import { cn } from '@/shared/lib/utils';
@@ -13,6 +14,8 @@ interface LayoutShellProps {
 }
 
 export function LayoutShell({ children }: LayoutShellProps) {
+  const pathname = usePathname();
+  const isHome = pathname === '/';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(false);
 
@@ -52,12 +55,16 @@ export function LayoutShell({ children }: LayoutShellProps) {
         )}
       >
         <Header
+          overlay={isHome}
           onMobileMenuOpen={() => setMobileMenuOpen(true)}
           onDesktopSidebarOpen={() => setDesktopCollapsed(false)}
           showDesktopSidebarOpen={desktopSidebarCollapsed}
         />
-        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
-          <div className="mx-auto max-w-7xl">{children}</div>
+        <main
+          id="app-main"
+          className={cn('flex-1', isHome ? 'overflow-visible' : 'overflow-auto p-4 sm:p-6 lg:p-8')}
+        >
+          {isHome ? children : <div className="mx-auto max-w-7xl">{children}</div>}
         </main>
       </div>
     </div>

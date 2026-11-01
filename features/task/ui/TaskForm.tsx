@@ -2,6 +2,7 @@
 
 import { Task, TaskPriority, TaskType } from '@/entities/task/model/types';
 import { useItemTypes } from '@/features/item-types';
+import { getItemTypeOptionLabel } from '@/shared/config/item-types';
 import {
   buildTaskFormValues,
 } from '@/features/task/lib/task-form-initial-values';
@@ -31,7 +32,7 @@ interface Props {
 
 const TaskForm = ({ task, open, onOpenChange }: Props) => {
   const { goals, addTask, updateTask, defaultGoalId, defaultDeadline, taskFormDraft } = useStore();
-  const { getEnabledTypes, getDefaultTypeKey } = useItemTypes();
+  const { getEnabledTypes, getDefaultTypeKey, resolveType } = useItemTypes();
   const taskTypes = getEnabledTypes('tasks');
   const defaultType = getDefaultTypeKey('tasks');
   const t = useTranslations('tasks');
@@ -49,7 +50,7 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
   const [title, setTitle] = useState(initialValues.title);
   const [description, setDescription] = useState(initialValues.description);
   const [priority, setPriority] = useState<TaskPriority>(initialValues.priority);
-  const [type, setType] = useState<TaskType>(initialValues.type);
+  const [type, setType] = useState<TaskType>(() => resolveType('tasks', initialValues.type));
   const [goalId, setGoalId] = useState<string>(initialValues.goalId);
   const [completed, setCompleted] = useState(initialValues.completed);
   const [deadline, setDeadline] = useState(initialValues.deadline);
@@ -112,15 +113,15 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
     setTitle(nextValues.title);
     setDescription(nextValues.description);
     setPriority(nextValues.priority);
-    setType(nextValues.type);
+    setType(resolveType('tasks', nextValues.type));
     setGoalId(nextValues.goalId);
     setCompleted(nextValues.completed);
     setDeadline(nextValues.deadline);
     setSubtasks(nextValues.subtasks);
-  }, [task, open, defaultGoalId, defaultDeadline, taskFormDraft, defaultType]);
+  }, [task, open, defaultGoalId, defaultDeadline, taskFormDraft, defaultType, resolveType]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="min-w-0 space-y-6">
       <div>
         <Label htmlFor="title">{t('taskTitle')}</Label>
         <Input
@@ -171,31 +172,31 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
+      <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="min-w-0">
           <Label htmlFor="type">{t('taskType')}</Label>
           <Select key={`type-${type}`} value={type} onValueChange={(v) => setType(v)}>
-            <SelectTrigger className="mt-2">
+            <SelectTrigger className="mt-2 w-full min-w-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {taskTypes.map((taskType) => (
                 <SelectItem key={taskType.key} value={taskType.key}>
-                  {taskType.label || t(`types.${taskType.key}` as 'types.short')}
+                  {getItemTypeOptionLabel(taskType, (key) => t(`types.${key}`))}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
-        <div>
+        <div className="min-w-0">
           <Label htmlFor="priority">{t('priority')}</Label>
           <Select
             key={`priority-${priority}`}
             value={priority}
             onValueChange={(v) => setPriority(v as TaskPriority)}
           >
-            <SelectTrigger className="mt-2">
+            <SelectTrigger className="mt-2 w-full min-w-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -207,7 +208,7 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
           </Select>
         </div>
 
-        <div className="space-y-2">
+        <div className="min-w-0 space-y-2">
           <Label htmlFor="deadline">{tCommon('deadline')}</Label>
           <DatePicker
             id="deadline"
@@ -217,16 +218,20 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
         </div>
       </div>
 
-      <div>
+      <div className="min-w-0">
         <Label htmlFor="goal">{t('linkToGoal')}</Label>
         <Select value={goalId} onValueChange={setGoalId}>
-          <SelectTrigger className="mt-2">
+          <SelectTrigger className="mt-2 w-full min-w-0">
             <SelectValue placeholder={t('noGoal')} />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="w-[var(--radix-select-trigger-width)]">
             <SelectItem value="none">{t('noGoal')}</SelectItem>
             {goals.map((goal) => (
-              <SelectItem key={goal.id} value={goal.id}>
+              <SelectItem
+                key={goal.id}
+                value={goal.id}
+                className="h-auto whitespace-normal py-2 *:[span]:last:block *:[span]:last:whitespace-normal"
+              >
                 {goal.title}
               </SelectItem>
             ))}

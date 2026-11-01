@@ -113,7 +113,7 @@ export function AccountForm({ account = null, onSuccess }: AccountFormProps) {
         />
       </div>
 
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button type="submit" className="w-full" loading={loading}>
         {isEditing ? t('saveAccount') : t('createAccount')}
       </Button>
     </form>

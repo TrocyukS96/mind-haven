@@ -73,8 +73,11 @@ export function AccountDeleteButton({ account, className, onDeleted }: Props) {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={loading}>{tCommon('cancel')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
-              disabled={loading}
+              loading={loading}
+              onClick={(event) => {
+                event.preventDefault();
+                void handleDelete();
+              }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {tCommon('delete')}

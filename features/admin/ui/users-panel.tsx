@@ -357,7 +357,7 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
                         type="button"
                         variant="outline"
                         size="sm"
-                        disabled={busy}
+                        loading={busy}
                         onClick={() => void handleUnban(user)}
                       >
                         <ShieldOff className="size-3.5" />
@@ -451,7 +451,7 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
             </Button>
             <Button
               type="button"
-              disabled={pendingAction === banTarget?.id}
+              loading={pendingAction === banTarget?.id}
               className={cn('bg-destructive text-white hover:bg-destructive/90')}
               onClick={() => void handleBan()}
             >
@@ -483,7 +483,7 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
           <AlertDialogFooter>
             <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
             <AlertDialogAction
-              disabled={pendingAction === roleTarget?.id}
+              loading={pendingAction === roleTarget?.id}
               onClick={(event) => {
                 event.preventDefault();
                 void handleRoleChange();
@@ -516,7 +516,7 @@ export function UsersPanel({ initialUsers }: UsersPanelProps) {
           <AlertDialogFooter>
             <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
             <AlertDialogAction
-              disabled={pendingAction === deleteTarget?.id}
+              loading={pendingAction === deleteTarget?.id}
               className="bg-destructive text-white hover:bg-destructive/90"
               onClick={(event) => {
                 event.preventDefault();

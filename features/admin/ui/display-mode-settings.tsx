@@ -8,6 +8,7 @@ import {
   type DisplaySection,
 } from '@/shared/config/display-modes';
 import { Checkbox } from '@/shared/ui/checkbox';
+import { Spinner } from '@/shared/ui/spinner';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
@@ -123,6 +124,11 @@ export function DisplayModeSettingsPanel({
         ))}
       </div>
 
+      {isSaving && (
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Spinner className="size-4" />
+        </p>
+      )}
       {message && <p className="text-sm text-muted-foreground">{message}</p>}
     </section>
   );

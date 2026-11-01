@@ -74,6 +74,7 @@ export function HabitForm({ open, onOpenChange }: Props) {
   const [trackingType, setTrackingType] = useState<HabitTrackingType>(initialValues.trackingType);
   const [targetCount, setTargetCount] = useState(initialValues.targetCount);
   const [weekdays, setWeekdays] = useState<number[]>(initialValues.weekdays);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -96,7 +97,7 @@ export function HabitForm({ open, onOpenChange }: Props) {
       if (!Number.isInteger(parsedTarget) || parsedTarget < 1) return;
     }
 
-    if (frequency === 'custom' && weekdays.length === 0) return;
+    if (frequency === 'custom' && weekdays.length === 0 || saving) return;
 
     const payload = {
       name: name.trim(),
@@ -105,13 +106,18 @@ export function HabitForm({ open, onOpenChange }: Props) {
       targetCount: parsedTarget,
     };
 
-    if (editingHabit) {
-      await updateHabit(editingHabit.id, payload);
-    } else {
-      await addHabit(payload);
-    }
+    setSaving(true);
+    try {
+      if (editingHabit) {
+        await updateHabit(editingHabit.id, payload);
+      } else {
+        await addHabit(payload);
+      }
 
-    onOpenChange(false);
+      onOpenChange(false);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -213,7 +219,7 @@ export function HabitForm({ open, onOpenChange }: Props) {
         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
           {tCommon('cancel')}
         </Button>
-        <Button type="submit" disabled={frequency === 'custom' && weekdays.length === 0}>
+        <Button type="submit" disabled={frequency === 'custom' && weekdays.length === 0} loading={saving}>
           {editingHabit ? tCommon('save') : t('createHabit')}
         </Button>
       </DialogFooter>

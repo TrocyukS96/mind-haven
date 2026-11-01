@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { Label } from '@/shared/ui/label';
+import { Spinner } from '@/shared/ui/spinner';
 import {
   Select,
   SelectContent,
@@ -66,7 +67,10 @@ export function AccountSettingsModal({ open, onOpenChange }: AccountSettingsModa
 
         <div className="max-h-[calc(100vh-10rem)] space-y-6 overflow-y-auto px-6 py-5">
           <div className="space-y-2">
-            <Label>{t('defaultAccount')}</Label>
+            <Label className="flex items-center gap-2">
+              {t('defaultAccount')}
+              {saving ? <Spinner className="size-3.5" /> : null}
+            </Label>
             <Select
               value={defaultAccountId}
               onValueChange={handleDefaultChange}

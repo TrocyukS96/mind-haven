@@ -47,6 +47,7 @@ function formatDate(value: string | undefined, locale: string, fallback: string)
 export function JournalEntriesTable({ entries, sort, onSortChange }: JournalEntriesTableProps) {
   const { journalTags, openJournalForm, deleteJournalEntry } = useStore();
   const [entryToDelete, setEntryToDelete] = useState<JournalEntry | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const t = useTranslations('journal');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -185,10 +186,15 @@ export function JournalEntriesTable({ entries, sort, onSortChange }: JournalEntr
           <AlertDialogFooter>
             <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                if (entryToDelete) {
-                  void deleteJournalEntry(entryToDelete.id);
-                }
+              loading={deleting}
+              onClick={(event) => {
+                event.preventDefault();
+                if (!entryToDelete) return;
+                setDeleting(true);
+                void deleteJournalEntry(entryToDelete.id).finally(() => {
+                  setDeleting(false);
+                  setEntryToDelete(null);
+                });
               }}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >

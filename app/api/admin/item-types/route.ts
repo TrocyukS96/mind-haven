@@ -6,13 +6,23 @@ import { hasMinRole } from '@/entities/user';
 import { auth } from '@/shared/lib/auth/auth';
 import {
   addItemType,
+  deleteItemType,
   getItemTypes,
+  ItemTypeError,
   updateItemTypeSettings,
 } from '@/shared/lib/item-types/item-type-service';
 import { NextResponse } from 'next/server';
 
 function isItemTypeSection(value: string): value is ItemTypeSection {
   return ITEM_TYPE_SECTIONS.includes(value as ItemTypeSection);
+}
+
+function itemTypeErrorResponse(error: unknown, fallback: string) {
+  if (error instanceof ItemTypeError) {
+    return NextResponse.json({ error: error.code }, { status: 400 });
+  }
+
+  return NextResponse.json({ error: fallback }, { status: 400 });
 }
 
 export async function POST(request: Request) {
@@ -41,8 +51,7 @@ export async function POST(request: Request) {
     );
     return NextResponse.json({ types });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to add type';
-    return NextResponse.json({ error: message }, { status: 400 });
+    return itemTypeErrorResponse(error, 'Failed to add type');
   }
 }
 
@@ -78,8 +87,31 @@ export async function PATCH(request: Request) {
     );
     return NextResponse.json({ types });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to update type';
-    return NextResponse.json({ error: message }, { status: 400 });
+    return itemTypeErrorResponse(error, 'Failed to update type');
+  }
+}
+
+export async function DELETE(request: Request) {
+  const session = await auth();
+
+  if (!session?.user?.id || !hasMinRole(session.user.role, 'ADMIN')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const body = (await request.json()) as {
+    section?: string;
+    key?: string;
+  };
+
+  if (!body.section || !body.key || !isItemTypeSection(body.section)) {
+    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+  }
+
+  try {
+    const result = await deleteItemType(body.section, body.key);
+    return NextResponse.json(result);
+  } catch (error) {
+    return itemTypeErrorResponse(error, 'Failed to delete type');
   }
 }
 

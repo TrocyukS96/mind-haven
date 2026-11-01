@@ -9,6 +9,7 @@ import { cn } from '@/shared/lib/utils';
 import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
+import { Spinner } from '@/shared/ui/spinner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover';
 import { Check } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
@@ -62,6 +63,7 @@ export function HabitDayCell({ habit, date, today, showDateNumber = false, fill 
     month: 'long',
   });
   const dayNumber = parseHabitDate(date).getDate();
+  const [pending, setPending] = useState(false);
 
   if (habit.targetCount == null) {
     const isCompleted = isHabitDayMet(habit, date);
@@ -69,8 +71,12 @@ export function HabitDayCell({ habit, date, today, showDateNumber = false, fill 
     return (
       <button
         type="button"
-        onClick={() => !isInactive && void toggleHabitDay(habit.id, date)}
-        disabled={isInactive}
+        onClick={() => {
+          if (isInactive || pending) return;
+          setPending(true);
+          void toggleHabitDay(habit.id, date).finally(() => setPending(false));
+        }}
+        disabled={isInactive || pending}
         aria-label={
           isCompleted ? t('unmarkDay', { date: formattedDate }) : t('markDay', { date: formattedDate })
         }
@@ -83,7 +89,9 @@ export function HabitDayCell({ habit, date, today, showDateNumber = false, fill 
           isInactive ? 'cursor-not-allowed opacity-40' : 'cursor-pointer hover:border-primary hover:bg-primary/5'
         )}
       >
-        {isCompleted ? (
+        {pending ? (
+          <Spinner className="size-4" />
+        ) : isCompleted ? (
           <Check size={16} strokeWidth={3} />
         ) : showDateNumber ? (
           <span className="text-[11px] tabular-nums text-muted-foreground">{dayNumber}</span>
@@ -138,6 +146,7 @@ function HabitCountButton({
   const presentation = getHabitCountPresentation(habit, date, today);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
+  const [saving, setSaving] = useState(false);
 
   function handleOpenChange(next: boolean) {
     if (isFuture) return;
@@ -150,9 +159,14 @@ function HabitCountButton({
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     const parsed = Number(draft);
-    if (!Number.isInteger(parsed) || parsed < 0) return;
-    await onSave(parsed);
-    setOpen(false);
+    if (!Number.isInteger(parsed) || parsed < 0 || saving) return;
+    setSaving(true);
+    try {
+      await onSave(parsed);
+      setOpen(false);
+    } finally {
+      setSaving(false);
+    }
   }
 
   const button = (
@@ -218,14 +232,19 @@ function HabitCountButton({
                 type="button"
                 variant="outline"
                 size="sm"
+                loading={saving}
                 onClick={() => {
-                  void onSave(0).then(() => setOpen(false));
+                  if (saving) return;
+                  setSaving(true);
+                  void onSave(0)
+                    .then(() => setOpen(false))
+                    .finally(() => setSaving(false));
                 }}
               >
                 {t('clearCount')}
               </Button>
             ) : null}
-            <Button type="submit" size="sm">
+            <Button type="submit" size="sm" loading={saving}>
               {t('saveCount')}
             </Button>
           </div>

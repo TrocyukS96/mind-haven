@@ -152,7 +152,7 @@ export function ReflectionQuestionSettingsPanel({
                 <Button
                   type="button"
                   size="sm"
-                  disabled={isSaving}
+                  loading={isSaving}
                   onClick={() => handleSave(question.sortOrder)}
                 >
                   {t('saveQuestion')}

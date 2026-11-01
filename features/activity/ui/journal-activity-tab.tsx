@@ -10,6 +10,7 @@ import { selectVisibleActivityEvents } from '@/shared/store/slices/activity-slic
 import { useStore } from '@/shared/store/store-config';
 import { Card, CardContent } from '@/shared/ui/card';
 import { Button } from '@/shared/ui/button';
+import { Spinner } from '@/shared/ui/spinner';
 import { Input } from '@/shared/ui/input';
 import { EmptyState } from '@/shared/ui/empty-state';
 import { useTranslations } from 'next-intl';
@@ -80,9 +81,8 @@ export function JournalActivityTab() {
       </Card>
 
       {isActivityLoading && visibleEvents.length === 0 ? (
-        <div className="space-y-3 animate-pulse">
-          <div className="h-16 rounded-xl bg-muted" />
-          <div className="h-16 rounded-xl bg-muted" />
+        <div className="flex justify-center py-10">
+          <Spinner className="size-6 text-muted-foreground" />
         </div>
       ) : visibleEvents.length === 0 ? (
         <EmptyState
@@ -98,7 +98,7 @@ export function JournalActivityTab() {
               <Button
                 variant="outline"
                 onClick={() => void loadActivityEvents({ reset: false })}
-                disabled={isActivityLoadingMore}
+                loading={isActivityLoadingMore}
               >
                 {isActivityLoadingMore ? t('loadingMore') : t('loadMore')}
               </Button>

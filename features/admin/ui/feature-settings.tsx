@@ -2,6 +2,7 @@
 
 import { getAdminToggleableFeatures, type FeatureKey } from '@/shared/config/features';
 import { Checkbox } from '@/shared/ui/checkbox';
+import { Spinner } from '@/shared/ui/spinner';
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -95,6 +96,11 @@ export function FeatureSettings({
         ))}
       </div>
 
+      {isSaving && (
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Spinner className="size-4" />
+        </p>
+      )}
       {message && <p className="text-sm text-muted-foreground">{message}</p>}
     </section>
   );

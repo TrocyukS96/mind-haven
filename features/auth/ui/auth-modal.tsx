@@ -201,7 +201,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
               <Button
                 type="button"
                 className="h-10 w-full"
-                disabled={loading}
+                loading={loading}
                 onClick={() => void handleSubmit({ preventDefault() {} } as React.FormEvent)}
               >
                 {loading ? t('submitting') : t('resendEmail')}
@@ -311,7 +311,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
                   </p>
                 )}
 
-                <Button type="submit" className="h-10 w-full" disabled={loading}>
+                <Button type="submit" className="h-10 w-full" loading={loading}>
                   {loading
                     ? t('submitting')
                     : mode === 'signin'

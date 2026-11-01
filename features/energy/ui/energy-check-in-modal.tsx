@@ -197,7 +197,7 @@ export function EnergyCheckInModal({ open, onOpenChange }: EnergyCheckInModalPro
                   {t('back')}
                 </Button>
               )}
-              <Button onClick={handleNext} disabled={!currentQuestion || submitting}>
+              <Button onClick={handleNext} disabled={!currentQuestion} loading={submitting}>
                 {submitting ? t('saving') : isLastQuestion ? t('finish') : t('next')}
               </Button>
             </>

@@ -84,10 +84,13 @@ function FreeEntryForm({
     return [];
   };
 
+  const [saving, setSaving] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim()) return;
+    if (!title.trim() || !content.trim() || saving) return;
 
+    setSaving(true);
     try {
       const tagIds = await resolveTagIds();
       const finalDate = toDateString(date);
@@ -113,6 +116,8 @@ function FreeEntryForm({
       onOpenChange(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('saveError'));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -176,7 +181,7 @@ function FreeEntryForm({
         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
           {tCommon('cancel')}
         </Button>
-        <Button type="submit">
+        <Button type="submit" loading={saving}>
           {isEditMode ? tCommon('save') : t('createEntry')}
         </Button>
       </div>

@@ -6,7 +6,6 @@ import { convertCurrency } from '@/entities/finance/lib/currency-converter';
 import { useFinanceSync } from '@/features/finance/hooks/use-finance-sync';
 import { useExchangeRates } from '@/features/finance/hooks/use-exchange-rates';
 import { FinanceDonutChart } from '@/features/finance/ui/FinanceDonutChart';
-import { CategoryBreakdownList } from '@/features/finance/ui/CategoryBreakdownList';
 import { DisplayCurrencySelector } from '@/features/finance/ui/DisplayCurrencySelector';
 import { FinanceVoiceButton } from '@/features/finance/ui/FinanceVoiceButton';
 import { AccountDeleteButton } from '@/features/finance/ui/AccountDeleteButton';
@@ -22,6 +21,7 @@ import {
 } from '@/shared/store/slices/finance-slice';
 import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
+import { Spinner } from '@/shared/ui/spinner';
 import { Card, CardContent } from '@/shared/ui/card';
 import { EmptyState } from '@/shared/ui/empty-state';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
@@ -85,6 +85,7 @@ export function FinancePage({
 
   const [referenceDate, setReferenceDate] = useState(new Date());
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const selectedAccount = financeAccounts.find((a) => a.id === selectedAccountId) ?? null;
   const displaySymbol = CURRENCY_SYMBOLS[displayCurrency] ?? displayCurrency;
@@ -266,12 +267,17 @@ export function FinancePage({
             <div>
               <p className="text-sm opacity-80">{t('totalBalance')}</p>
               <p className="mt-1 text-3xl font-semibold tabular-nums">
-                {totalBalance === null
-                  ? t('ratesLoading')
-                  : `${totalBalance.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })} ${displaySymbol}`}
+                {totalBalance === null ? (
+                  <span className="inline-flex items-center gap-2 text-lg font-medium">
+                    {ratesLoading ? <Spinner className="size-5" /> : null}
+                    {t('ratesLoading')}
+                  </span>
+                ) : (
+                  `${totalBalance.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })} ${displaySymbol}`
+                )}
               </p>
               {!selectedAccountId && financeAccounts.length > 1 && rates && (
                 <p className="mt-1 text-xs opacity-70">{t('balanceConvertedHint')}</p>
@@ -381,7 +387,7 @@ export function FinancePage({
             data={breakdown}
             total={periodTotal}
             currencySymbol={displaySymbol}
-            className="my-6"
+            className="mb-2 mt-1"
           />
 
           <DisplayCurrencySelector
@@ -395,10 +401,15 @@ export function FinancePage({
             <p className="mb-3 text-sm text-destructive">{t('ratesError')}</p>
           )}
           {ratesLoading && !rates && (
-            <p className="mb-3 text-sm text-muted-foreground">{t('ratesLoading')}</p>
+            <p className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+              <Spinner className="size-4" />
+              {t('ratesLoading')}
+            </p>
           )}
 
-          <CategoryBreakdownList items={breakdown} currency={displayCurrency} />
+          {breakdown.length === 0 && !hiddenOnOtherAccounts && (
+            <p className="py-6 text-center text-sm text-muted-foreground">{t('noDataForPeriod')}</p>
+          )}
 
           {breakdown.length === 0 && hiddenOnOtherAccounts && (
             <div className="mt-4 flex flex-col items-start gap-3 rounded-xl border border-dashed px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -480,11 +491,16 @@ export function FinancePage({
                     </button>
                     <button
                       type="button"
-                      onClick={() => deleteFinanceTransaction(tx.id)}
-                      className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-destructive"
+                      disabled={deletingId === tx.id}
+                      onClick={() => {
+                        if (deletingId) return;
+                        setDeletingId(tx.id);
+                        void Promise.resolve(deleteFinanceTransaction(tx.id)).finally(() => setDeletingId(null));
+                      }}
+                      className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-destructive disabled:opacity-70"
                       aria-label={t('deleteTransaction')}
                     >
-                      <Trash2 size={16} />
+                      {deletingId === tx.id ? <Spinner className="size-4" /> : <Trash2 size={16} />}
                     </button>
                   </div>
                 </li>

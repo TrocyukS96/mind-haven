@@ -96,10 +96,13 @@ export function ReflectionForm({ entry, open, onOpenChange }: Props) {
     setTitle(value);
   };
 
+  const [saving, setSaving] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!hasMinimumAnswers(answers) || !title.trim()) return;
+    if (!hasMinimumAnswers(answers) || !title.trim() || saving) return;
 
+    setSaving(true);
     try {
       const content = buildReflectionContent(
         questions,
@@ -138,6 +141,8 @@ export function ReflectionForm({ entry, open, onOpenChange }: Props) {
       onOpenChange(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('saveError'));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -204,7 +209,7 @@ export function ReflectionForm({ entry, open, onOpenChange }: Props) {
         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
           {tCommon('cancel')}
         </Button>
-        <Button type="submit" disabled={!canSubmit}>
+        <Button type="submit" disabled={!canSubmit} loading={saving}>
           {isEditMode ? tCommon('save') : t('createEntry')}
         </Button>
       </div>

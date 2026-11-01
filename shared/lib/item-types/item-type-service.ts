@@ -1,46 +1,47 @@
 import {
+  buildItemTypeCatalog,
+  getDefaultItemTypeKey,
   getDefaultItemTypes,
+  isValidItemTypeKey,
+  ITEM_TYPE_LABEL_MAX_LENGTH,
   ITEM_TYPE_SECTIONS,
+  normalizeItemTypeKey,
   type ItemTypeCatalog,
   type ItemTypeDefinition,
   type ItemTypeSection,
 } from '@/shared/config/item-types';
 import { prisma } from '@/shared/lib/db';
 
+export const ITEM_TYPE_ERROR_CODES = [
+  'invalid_key',
+  'invalid_label',
+  'exists',
+  'not_found',
+  'system',
+  'last_enabled',
+] as const;
+
+export type ItemTypeErrorCode = (typeof ITEM_TYPE_ERROR_CODES)[number];
+
+export class ItemTypeError extends Error {
+  code: ItemTypeErrorCode;
+
+  constructor(code: ItemTypeErrorCode) {
+    super(code);
+    this.code = code;
+  }
+}
+
 function isItemTypeSection(value: string): value is ItemTypeSection {
   return ITEM_TYPE_SECTIONS.includes(value as ItemTypeSection);
 }
 
-function normalizeCatalog(rows: ItemTypeDefinition[]): ItemTypeCatalog {
-  const defaults = getDefaultItemTypes();
-  const result = structuredClone(defaults);
-
-  for (const row of rows) {
-    const sectionTypes = result[row.section];
-    const existingIndex = sectionTypes.findIndex((type) => type.key === row.key);
-
-    if (existingIndex >= 0) {
-      sectionTypes[existingIndex] = row;
-    } else {
-      sectionTypes.push(row);
-    }
-  }
-
-  for (const section of ITEM_TYPE_SECTIONS) {
-    result[section].sort((a, b) => a.sortOrder - b.sortOrder);
-  }
-
-  return result;
-}
-
 export async function ensureItemTypesSeeded(): Promise<void> {
   const existing = await prisma.itemType.findMany({
-    select: { section: true, key: true },
+    select: { section: true },
   });
 
-    const existingKeys = new Set(
-      existing.map((item: { section: string; key: string }) => `${item.section}:${item.key}`)
-    );
+  const sectionsWithColumns = new Set(existing.map((item: { section: string }) => item.section));
   const defaults = getDefaultItemTypes();
   const missing: Array<{
     section: ItemTypeSection;
@@ -52,18 +53,19 @@ export async function ensureItemTypesSeeded(): Promise<void> {
   }> = [];
 
   for (const section of ITEM_TYPE_SECTIONS) {
+    if (sectionsWithColumns.has(section)) {
+      continue;
+    }
+
     for (const type of defaults[section]) {
-      const compositeKey = `${section}:${type.key}`;
-      if (!existingKeys.has(compositeKey)) {
-        missing.push({
-          section: type.section,
-          key: type.key,
-          label: type.label,
-          enabled: type.enabled,
-          sortOrder: type.sortOrder,
-          isSystem: type.isSystem,
-        });
-      }
+      missing.push({
+        section: type.section,
+        key: type.key,
+        label: type.label,
+        enabled: type.enabled,
+        sortOrder: type.sortOrder,
+        isSystem: type.isSystem,
+      });
     }
   }
 
@@ -73,6 +75,11 @@ export async function ensureItemTypesSeeded(): Promise<void> {
       skipDuplicates: true,
     });
   }
+
+  await prisma.itemType.updateMany({
+    where: { isSystem: true, enabled: false },
+    data: { enabled: true },
+  });
 
   await syncSystemTypeSortOrders(defaults);
 }
@@ -126,7 +133,7 @@ export async function getItemTypes(): Promise<ItemTypeCatalog> {
         isSystem: row.isSystem,
       }));
 
-    return mapped.length > 0 ? normalizeCatalog(mapped) : defaults;
+    return mapped.length > 0 ? buildItemTypeCatalog(mapped) : defaults;
   } catch {
     return defaults;
   }
@@ -161,6 +168,20 @@ export async function upsertItemType(
   });
 }
 
+function normalizeItemTypeLabel(label: string, allowEmpty: boolean): string {
+  const normalized = label.trim();
+
+  if (!normalized && !allowEmpty) {
+    throw new ItemTypeError('invalid_label');
+  }
+
+  if (normalized.length > ITEM_TYPE_LABEL_MAX_LENGTH) {
+    throw new ItemTypeError('invalid_label');
+  }
+
+  return normalized;
+}
+
 export async function addItemType(
   section: ItemTypeSection,
   key: string,
@@ -169,14 +190,15 @@ export async function addItemType(
 ): Promise<ItemTypeCatalog> {
   const catalog = await getItemTypes();
   const sectionTypes = catalog[section];
-  const normalizedKey = key.trim().toLowerCase().replace(/\s+/g, '-');
+  const normalizedKey = normalizeItemTypeKey(key);
+  const normalizedLabel = normalizeItemTypeLabel(label, false);
 
-  if (!normalizedKey) {
-    throw new Error('Invalid type key');
+  if (!isValidItemTypeKey(normalizedKey)) {
+    throw new ItemTypeError('invalid_key');
   }
 
   if (sectionTypes.some((type) => type.key === normalizedKey)) {
-    throw new Error('Type already exists');
+    throw new ItemTypeError('exists');
   }
 
   const nextSortOrder =
@@ -186,7 +208,7 @@ export async function addItemType(
     {
       section,
       key: normalizedKey,
-      label: label.trim(),
+      label: normalizedLabel,
       enabled: true,
       sortOrder: nextSortOrder,
       isSystem: false,
@@ -207,15 +229,33 @@ export async function updateItemTypeSettings(
   const current = catalog[section].find((type) => type.key === key);
 
   if (!current) {
-    throw new Error('Type not found');
+    throw new ItemTypeError('not_found');
+  }
+
+  const nextEnabled = current.isSystem ? true : (updates.enabled ?? current.enabled);
+
+  if (!nextEnabled) {
+    const otherEnabled = catalog[section].filter((type) => type.enabled && type.key !== key);
+    if (otherEnabled.length === 0) {
+      throw new ItemTypeError('last_enabled');
+    }
+  }
+
+  const nextLabel =
+    updates.label === undefined
+      ? current.label
+      : normalizeItemTypeLabel(updates.label, current.isSystem);
+
+  if (!current.isSystem && !nextLabel) {
+    throw new ItemTypeError('invalid_label');
   }
 
   await upsertItemType(
     {
       section,
       key,
-      label: updates.label ?? current.label,
-      enabled: updates.enabled ?? current.enabled,
+      label: nextLabel,
+      enabled: nextEnabled,
       sortOrder: updates.sortOrder ?? current.sortOrder,
       isSystem: current.isSystem,
     },
@@ -223,4 +263,56 @@ export async function updateItemTypeSettings(
   );
 
   return getItemTypes();
+}
+
+export async function deleteItemType(
+  section: ItemTypeSection,
+  key: string
+): Promise<{ types: ItemTypeCatalog; fallbackKey: string }> {
+  const catalog = await getItemTypes();
+  const current = catalog[section].find((type) => type.key === key);
+
+  if (!current) {
+    throw new ItemTypeError('not_found');
+  }
+
+  const remaining = catalog[section].filter((type) => type.key !== key);
+  const enabledRemaining = remaining.filter((type) => type.enabled);
+
+  if (current.enabled && enabledRemaining.length === 0) {
+    throw new ItemTypeError('last_enabled');
+  }
+
+  const fallbackKey = getDefaultItemTypeKey(section, {
+    ...catalog,
+    [section]: remaining,
+  });
+
+  const reassign =
+    section === 'goals'
+      ? prisma.goal.updateMany({
+          where: { type: key },
+          data: { type: fallbackKey },
+        })
+      : prisma.task.updateMany({
+          where: { type: key },
+          data: { type: fallbackKey },
+        });
+
+  await prisma.$transaction([
+    reassign,
+    prisma.itemType.delete({
+      where: {
+        section_key: {
+          section,
+          key,
+        },
+      },
+    }),
+  ]);
+
+  return {
+    types: await getItemTypes(),
+    fallbackKey,
+  };
 }

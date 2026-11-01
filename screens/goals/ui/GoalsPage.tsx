@@ -100,10 +100,10 @@ const GoalsPage = () => {
         }
       />
 
-      {filteredGoals.length === 0 ? (
-        <GoalsEmptyState />
-      ) : (
+      {displayMode === 'kanban' || filteredGoals.length > 0 ? (
         renderContent()
+      ) : (
+        <GoalsEmptyState />
       )}
     </div>
   );

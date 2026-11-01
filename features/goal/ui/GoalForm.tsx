@@ -5,6 +5,7 @@ import { getGoalCategoryFromDeadline } from '@/entities/goal/lib/get-goal-catego
 import { TaskPriority } from '@/entities/task/model/types';
 import { buildGoalFormValues } from '@/features/goal/lib/goal-form-initial-values';
 import { useItemTypes } from '@/features/item-types';
+import { getItemTypeOptionLabel } from '@/shared/config/item-types';
 import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
 import { DatePicker } from '@/shared/ui/date-picker';
@@ -54,7 +55,7 @@ function FormField({
 
 export function GoalForm({ goal, open, onOpenChange }: Props) {
   const { addGoal, updateGoal, addTask, goalFormDraft } = useStore();
-  const { getEnabledTypes, getDefaultTypeKey } = useItemTypes();
+  const { getEnabledTypes, getDefaultTypeKey, resolveType } = useItemTypes();
   const goalTypes = getEnabledTypes('goals');
   const defaultType = getDefaultTypeKey('goals');
   const t = useTranslations('goals');
@@ -71,7 +72,7 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
   const [description, setDescription] = useState(initialValues.description);
   const [deadline, setDeadline] = useState(initialValues.deadline);
   const [progress, setProgress] = useState(initialValues.progress);
-  const [type, setType] = useState<GoalType>(initialValues.type);
+  const [type, setType] = useState<GoalType>(() => resolveType('goals', initialValues.type));
   const [priority, setPriority] = useState<TaskPriority>(initialValues.priority);
   const [steps, setSteps] = useState<string[]>(initialValues.steps);
 
@@ -92,10 +93,10 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
     setDescription(nextValues.description);
     setDeadline(nextValues.deadline);
     setProgress(nextValues.progress);
-    setType(nextValues.type);
+    setType(resolveType('goals', nextValues.type));
     setPriority(nextValues.priority);
     setSteps(nextValues.steps);
-  }, [goal, open, goalFormDraft, defaultType]);
+  }, [goal, open, goalFormDraft, defaultType, resolveType]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -216,7 +217,7 @@ export function GoalForm({ goal, open, onOpenChange }: Props) {
               <SelectContent>
                 {goalTypes.map((goalType) => (
                   <SelectItem key={goalType.key} value={goalType.key}>
-                    {goalType.label || t(`types.${goalType.key}` as 'types.short')}
+                    {getItemTypeOptionLabel(goalType, (key) => t(`types.${key}`))}
                   </SelectItem>
                 ))}
               </SelectContent>

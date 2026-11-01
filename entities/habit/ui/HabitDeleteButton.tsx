@@ -27,12 +27,22 @@ interface Props {
 export function HabitDeleteButton({ habit, className }: Props) {
   const { deleteHabit } = useStore();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const t = useTranslations('habits');
   const tCommon = useTranslations('common');
 
-  const handleDelete = async () => {
-    await deleteHabit(habit.id);
-    toast.success(t('habitDeleted'));
+  const handleDelete = async (event: React.MouseEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    try {
+      await deleteHabit(habit.id);
+      toast.success(t('habitDeleted'));
+      setIsDeleteOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('saveError'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -65,6 +75,7 @@ export function HabitDeleteButton({ habit, className }: Props) {
           <AlertDialogFooter>
             <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
             <AlertDialogAction
+              loading={loading}
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >

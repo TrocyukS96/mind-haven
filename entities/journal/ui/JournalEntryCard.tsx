@@ -33,6 +33,7 @@ interface JournalEntryCardProps {
 export function JournalEntryCard({ entry }: JournalEntryCardProps) {
   const { deleteJournalEntry, openJournalForm } = useStore();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [canExpand, setCanExpand] = useState(false);
   const contentRef = useRef<HTMLParagraphElement>(null);
@@ -145,7 +146,15 @@ export function JournalEntryCard({ entry }: JournalEntryCardProps) {
           <AlertDialogFooter>
             <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => void deleteJournalEntry(entry.id)}
+              loading={deleting}
+              onClick={(event) => {
+                event.preventDefault();
+                setDeleting(true);
+                void deleteJournalEntry(entry.id).finally(() => {
+                  setDeleting(false);
+                  setIsDeleteOpen(false);
+                });
+              }}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
               {tCommon('delete')}

@@ -17,6 +17,7 @@ export interface GoalsSlice {
   deleteGoal: (id: string) => void;
   updateGoalProgress: (id: string, progress: number) => void;
   reorderGoalsKanbanColumns: (columnKeys: string[]) => void;
+  reassignGoalsColumn: (fromKey: string, toKey: string) => void;
   moveGoalInKanban: (goalId: string, targetType: string, targetIndex: number) => void;
 
   selectedGoal: Goal | null;
@@ -97,6 +98,14 @@ export const createGoalsSlice: StateCreator<AppStore, [], [], GoalsSlice> = (set
 
   reorderGoalsKanbanColumns: (columnKeys) =>
     set({ goalsKanbanColumnOrder: columnKeys }),
+
+  reassignGoalsColumn: (fromKey, toKey) =>
+    set((state) => ({
+      goals: state.goals.map((goal) =>
+        goal.type === fromKey ? { ...goal, type: toKey } : goal
+      ),
+      goalsKanbanColumnOrder: state.goalsKanbanColumnOrder.filter((key) => key !== fromKey),
+    })),
 
   moveGoalInKanban: (goalId, targetType, targetIndex) =>
     set((state) => {

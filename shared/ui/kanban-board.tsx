@@ -26,6 +26,7 @@ import { GripVertical } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ItemTypeDefinition, ItemTypeSection } from '@/shared/config/item-types';
+import { KanbanColumnMenu } from '@/features/item-types/ui/kanban-column-menu';
 import { useItemTypes } from '@/features/item-types';
 import {
   getColumnId,
@@ -130,7 +131,6 @@ function StaticKanbanBoard<T extends { id: string; kanbanOrder?: number }>({
   items,
   getItemType,
   renderItem,
-  emptyMessage,
   columns,
 }: {
   section: ItemTypeSection;
@@ -142,10 +142,6 @@ function StaticKanbanBoard<T extends { id: string; kanbanOrder?: number }>({
 }) {
   const { resolveType } = useItemTypes();
   const t = useTranslations(section);
-
-  if (items.length === 0) {
-    return <p className="text-center text-muted-foreground py-12">{emptyMessage}</p>;
-  }
 
   return (
     <div className="overflow-x-auto pb-2">
@@ -164,14 +160,12 @@ function StaticKanbanBoard<T extends { id: string; kanbanOrder?: number }>({
 
           return (
             <div key={column.key} className="rounded-xl border bg-card/50 p-4 space-y-3 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="font-semibold truncate">
-                  {getColumnLabel(section, column.key, column.label, t)}
-                </h3>
-                <span className="text-xs text-muted-foreground shrink-0">
-                  {columnItems.length}
-                </span>
-              </div>
+              <KanbanColumnHeader
+                section={section}
+                column={column}
+                label={getColumnLabel(section, column.key, column.label, t)}
+                count={columnItems.length}
+              />
               <div className="space-y-2 min-h-24">
                 {columnItems.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center">
@@ -189,15 +183,40 @@ function StaticKanbanBoard<T extends { id: string; kanbanOrder?: number }>({
   );
 }
 
+function KanbanColumnHeader({
+  section,
+  column,
+  label,
+  count,
+  dragHandle,
+}: {
+  section: ItemTypeSection;
+  column: ItemTypeDefinition;
+  label: string;
+  count: number;
+  dragHandle?: ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      {dragHandle}
+      <h3 className="min-w-0 truncate font-semibold">{label}</h3>
+      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{count}</span>
+      <KanbanColumnMenu section={section} column={column} label={label} />
+    </div>
+  );
+}
+
 function SortableKanbanColumn({
-  columnKey,
+  section,
+  column,
   label,
   count,
   itemIds,
   emptyLabel,
   renderItem,
 }: {
-  columnKey: string;
+  section: ItemTypeSection;
+  column: ItemTypeDefinition;
   label: string;
   count: number;
   itemIds: string[];
@@ -212,13 +231,13 @@ function SortableKanbanColumn({
     transition,
     isDragging,
   } = useSortable({
-    id: getColumnId(columnKey),
-    data: { type: 'column', columnKey },
+    id: getColumnId(column.key),
+    data: { type: 'column', columnKey: column.key },
   });
 
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
-    id: getColumnId(columnKey),
-    data: { type: 'column', columnKey },
+    id: getColumnId(column.key),
+    data: { type: 'column', columnKey: column.key },
   });
   const tCommon = useTranslations('common');
 
@@ -237,8 +256,12 @@ function SortableKanbanColumn({
         isOver && 'border-primary bg-primary/5'
       )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
+      <KanbanColumnHeader
+        section={section}
+        column={column}
+        label={label}
+        count={count}
+        dragHandle={
           <button
             type="button"
             className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
@@ -248,10 +271,8 @@ function SortableKanbanColumn({
           >
             <GripVertical className="h-4 w-4" />
           </button>
-          <h3 className="font-semibold truncate">{label}</h3>
-        </div>
-        <span className="text-xs text-muted-foreground shrink-0">{count}</span>
-      </div>
+        }
+      />
 
       <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
         <div
@@ -262,7 +283,7 @@ function SortableKanbanColumn({
             <p className="text-sm text-muted-foreground text-center">{emptyLabel}</p>
           ) : (
             itemIds.map((itemId) => (
-              <SortableKanbanItem key={itemId} itemId={itemId} columnKey={columnKey}>
+              <SortableKanbanItem key={itemId} itemId={itemId} columnKey={column.key}>
                 {renderItem(itemId)}
               </SortableKanbanItem>
             ))
@@ -317,7 +338,6 @@ function DraggableKanbanBoard<T extends { id: string; kanbanOrder?: number }>({
   items,
   getItemType,
   renderItem,
-  emptyMessage,
   columns,
   columnKeys,
   onColumnReorder,
@@ -495,10 +515,6 @@ function DraggableKanbanBoard<T extends { id: string; kanbanOrder?: number }>({
     );
   };
 
-  if (items.length === 0) {
-    return <p className="text-center text-muted-foreground py-12">{emptyMessage}</p>;
-  }
-
   const activeOverlay =
     activeType === 'item' && activeId && itemsById.has(activeId)
       ? renderItem(itemsById.get(activeId) as T)
@@ -527,7 +543,8 @@ function DraggableKanbanBoard<T extends { id: string; kanbanOrder?: number }>({
             {columns.map((column) => (
               <SortableKanbanColumn
                 key={column.key}
-                columnKey={column.key}
+                section={section}
+                column={column}
                 label={getColumnLabel(section, column.key, column.label, t)}
                 count={columnItems[column.key]?.length ?? 0}
                 itemIds={(columnItems[column.key] ?? []).filter((itemId) => itemsById.has(itemId))}

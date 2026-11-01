@@ -33,6 +33,7 @@ export interface TasksSlice {
     updateTask: (id: string, updates: Partial<Task>) => void;
     deleteTask: (task: Task) => void;
     reorderTasksKanbanColumns: (columnKeys: string[]) => void;
+    reassignTasksColumn: (fromKey: string, toKey: string) => void;
     moveTaskInKanban: (taskId: string, targetType: string, targetIndex: number) => void;
     openTaskForm: (task?: Task, goalId?: string, deadline?: string) => void;
     openTaskFormFromVoice: (draft: TaskFormDraft) => void;
@@ -248,6 +249,20 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
 
     reorderTasksKanbanColumns: (columnKeys) =>
         set({ tasksKanbanColumnOrder: columnKeys }),
+
+    reassignTasksColumn: (fromKey, toKey) =>
+        set((state) => ({
+            tasks: state.tasks.map((task) =>
+                task.type === fromKey ? { ...task, type: toKey } : task
+            ),
+            tasksKanbanColumnOrder: state.tasksKanbanColumnOrder.filter((key) => key !== fromKey),
+            goals: state.goals.map((goal) => ({
+                ...goal,
+                tasks: (goal.tasks ?? []).map((task) =>
+                    task.type === fromKey ? { ...task, type: toKey } : task
+                ),
+            })),
+        })),
 
     moveTaskInKanban: (taskId, targetType, targetIndex) =>
         set((state) => {

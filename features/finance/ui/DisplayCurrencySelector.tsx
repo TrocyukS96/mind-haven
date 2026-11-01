@@ -6,6 +6,7 @@ import { getRatesDate } from '@/entities/finance/api/exchange-rates-client';
 import { ExchangeRatesConverter } from '@/features/finance/ui/ExchangeRatesConverter';
 import type { ExchangeRatesMap } from '@/shared/lib/finance/nbrb-exchange-service';
 import { Button } from '@/shared/ui/button';
+import { Spinner } from '@/shared/ui/spinner';
 import {
   Dialog,
   DialogContent,
@@ -97,7 +98,10 @@ export function DisplayCurrencySelector({
 
           <div className="px-6 py-5">
             {!rates ? (
-              <p className="text-sm text-muted-foreground">{t('ratesLoading')}</p>
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Spinner className="size-4" />
+                {t('ratesLoading')}
+              </p>
             ) : (
               <ExchangeRatesConverter rates={rates} />
             )}

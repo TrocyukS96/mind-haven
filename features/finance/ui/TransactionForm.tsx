@@ -8,7 +8,10 @@ import type {
 } from '@/entities/finance/model/types';
 import {
   buildTransactionFormValues,
+  orderAccountsDefaultFirst,
+  resolveNewTransactionAccountId,
 } from '@/features/finance/lib/transaction-form-initial-values';
+import { TransactionDateField } from '@/features/finance/ui/TransactionDateField';
 import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
@@ -23,7 +26,7 @@ import {
 import { Textarea } from '@/shared/ui/textarea';
 import { cn } from '@/shared/lib/utils';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 
 interface TransactionFormProps {
@@ -37,27 +40,25 @@ export function TransactionForm({ type, transaction = null, onSuccess }: Transac
   const isEditing = Boolean(transaction);
   const {
     financeAccounts,
-    selectedAccountId,
     transactionFormDraft,
     addFinanceTransaction,
     updateFinanceTransaction,
   } = useStore();
   const categories = getCategoriesByType(type);
+  const orderedAccounts = orderAccountsDefaultFirst(financeAccounts);
+  const draftAccountId = isEditing ? null : transactionFormDraft?.accountId;
+  const defaultAccountId = resolveNewTransactionAccountId(financeAccounts, draftAccountId);
 
-  const defaultAccountId = financeAccounts.find((account) => account.isDefault)?.id ?? null;
   const initialValues = buildTransactionFormValues(
     isEditing ? null : transactionFormDraft,
-    transaction?.accountId ??
-      selectedAccountId ??
-      defaultAccountId ??
-      financeAccounts[0]?.id ??
-      null,
+    transaction?.accountId ?? defaultAccountId,
     type
   );
 
   const [accountId, setAccountId] = useState(
     transaction?.accountId ?? initialValues.accountId
   );
+  const [accountTouched, setAccountTouched] = useState(false);
   const [category, setCategory] = useState<FinanceCategoryKey>(
     transaction?.category ?? initialValues.category
   );
@@ -70,11 +71,16 @@ export function TransactionForm({ type, transaction = null, onSuccess }: Transac
   const [date, setDate] = useState(transaction?.date ?? initialValues.date);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (isEditing || accountTouched || draftAccountId) return;
+    if (defaultAccountId) setAccountId(defaultAccountId);
+  }, [isEditing, accountTouched, draftAccountId, defaultAccountId]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!accountId) {
-      toast.error(t('noAccountError'));
+      toast.error(financeAccounts.length ? t('selectAccount') : t('noAccountError'));
       return;
     }
 
@@ -111,12 +117,18 @@ export function TransactionForm({ type, transaction = null, onSuccess }: Transac
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label>{t('account')}</Label>
-        <Select value={accountId} onValueChange={setAccountId}>
+        <Select
+          value={accountId || undefined}
+          onValueChange={(value) => {
+            setAccountTouched(true);
+            setAccountId(value);
+          }}
+        >
           <SelectTrigger>
             <SelectValue placeholder={t('selectAccount')} />
           </SelectTrigger>
           <SelectContent>
-            {financeAccounts.map((account) => (
+            {orderedAccounts.map((account) => (
               <SelectItem key={account.id} value={account.id}>
                 {account.name} ({account.currency})
               </SelectItem>
@@ -171,13 +183,7 @@ export function TransactionForm({ type, transaction = null, onSuccess }: Transac
 
       <div className="space-y-2">
         <Label htmlFor="date">{t('date')}</Label>
-        <Input
-          id="date"
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          required
-        />
+        <TransactionDateField id="date" value={date} onChange={setDate} />
       </div>
 
       <div className="space-y-2">
@@ -191,7 +197,7 @@ export function TransactionForm({ type, transaction = null, onSuccess }: Transac
         />
       </div>
 
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button type="submit" className="w-full" loading={loading}>
         {isEditing
           ? t('saveTransaction')
           : type === 'expense'
