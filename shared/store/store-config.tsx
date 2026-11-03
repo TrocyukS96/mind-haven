@@ -35,6 +35,7 @@ export const useStore = create<AppStore>()(
           const {
             journalApiEnabled: _journalApiEnabled,
             habitsApiEnabled: _habitsApiEnabled,
+            plannerApiEnabled: _plannerApiEnabled,
             energyApiEnabled: _energyApiEnabled,
             activityApiEnabled: _activityApiEnabled,
             isEnergyCheckInOpen: _isEnergyCheckInOpen,

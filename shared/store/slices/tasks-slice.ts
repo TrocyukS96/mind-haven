@@ -1,5 +1,14 @@
 import { buildActivityInput } from '@/entities/activity/lib/build-activity-input';
 import { getGoalStatus } from '@/shared/lib/goal-heplers';
+import {
+    createTaskRequest,
+    deleteTaskRequest,
+    reorderPlannerRequest,
+    savePlannerLayoutRequest,
+    updateTaskRequest,
+} from '@/entities/planner/api/planner-client';
+import { waitForGoalSave } from '@/entities/planner/lib/goal-save-queue';
+import { isPlannerApiEnabled } from '@/entities/planner/lib/resolve-planner-api';
 import { Task, TaskPriority } from '@/entities/task/model/types';
 import type { TaskFormDraft } from '@/features/task/lib/map-voice-to-task-draft';
 import {
@@ -40,6 +49,82 @@ export interface TasksSlice {
     closeTaskForm: () => void;
     getOverdueTasks: () => Task[];
     markOverdueTasks: () => void;
+}
+
+function persistNewTask(get: () => AppStore, task: Task) {
+    if (!isPlannerApiEnabled()) return;
+
+    void waitForGoalSave(task.goalId)
+        .then(() => createTaskRequest(task))
+        .then(async (saved) => {
+            if (!get().tasks.some((item) => item.id === task.id)) {
+                await deleteTaskRequest(saved.id);
+            }
+        })
+        .catch(() => {
+            const latest = get().tasks.find((item) => item.id === task.id);
+            if (latest) {
+                get().enqueuePlannerOutbox({ kind: 'upsert-task', entityId: task.id, task: latest });
+            }
+        });
+}
+
+function persistTaskUpdate(get: () => AppStore, id: string) {
+    if (!isPlannerApiEnabled()) return;
+
+    const current = get().tasks.find((item) => item.id === id);
+    void waitForGoalSave(current?.goalId)
+        .then(() => {
+            const task = get().tasks.find((item) => item.id === id);
+            if (!task) return;
+            return updateTaskRequest(id, task);
+        })
+        .catch(() => {
+            const latest = get().tasks.find((item) => item.id === id);
+            if (latest) {
+                get().enqueuePlannerOutbox({ kind: 'upsert-task', entityId: id, task: latest });
+            }
+        });
+}
+
+function persistTaskDelete(get: () => AppStore, id: string) {
+    if (!isPlannerApiEnabled()) return;
+
+    void deleteTaskRequest(id).catch(() => {
+        get().enqueuePlannerOutbox({ kind: 'delete-task', entityId: id });
+    });
+}
+
+function persistTaskOrder(get: () => AppStore) {
+    if (!isPlannerApiEnabled()) return;
+
+    const tasks = get().tasks.map((task) => ({
+        id: task.id,
+        type: task.type,
+        kanbanOrder: task.kanbanOrder ?? 0,
+    }));
+
+    void reorderPlannerRequest({ tasks }).catch(() => {
+        for (const task of get().tasks) {
+            get().enqueuePlannerOutbox({ kind: 'upsert-task', entityId: task.id, task });
+        }
+    });
+}
+
+function persistTaskLayout(get: () => AppStore) {
+    if (!isPlannerApiEnabled()) return;
+
+    const goalsKanbanColumnOrder = get().goalsKanbanColumnOrder;
+    const tasksKanbanColumnOrder = get().tasksKanbanColumnOrder;
+
+    void savePlannerLayoutRequest({ goalsKanbanColumnOrder, tasksKanbanColumnOrder }).catch(() => {
+        get().enqueuePlannerOutbox({
+            kind: 'layout',
+            entityId: 'layout',
+            goalsKanbanColumnOrder,
+            tasksKanbanColumnOrder,
+        });
+    });
 }
 
 const calculateProgress = (subtasks: Task[]) => {
@@ -116,6 +201,7 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
                 idempotencyKey: `task:${newTask.id}:created`,
             })
         );
+        persistNewTask(get, newTask);
     },
 
     toggleTask: (id) => {
@@ -194,6 +280,7 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
         }
 
         get().recalculateRating(get().tasks);
+        persistTaskUpdate(get, id);
     },
 
     deleteTask: (task: Task) => {
@@ -227,6 +314,7 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
             });
         }
 
+        persistTaskDelete(get, task.id);
     },
 
     updateTask: (id, updates: Partial<Task>) => {
@@ -245,12 +333,15 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
         }
 
 
+        persistTaskUpdate(get, id);
     },
 
-    reorderTasksKanbanColumns: (columnKeys) =>
-        set({ tasksKanbanColumnOrder: columnKeys }),
+    reorderTasksKanbanColumns: (columnKeys) => {
+        set({ tasksKanbanColumnOrder: columnKeys });
+        persistTaskLayout(get);
+    },
 
-    reassignTasksColumn: (fromKey, toKey) =>
+    reassignTasksColumn: (fromKey, toKey) => {
         set((state) => ({
             tasks: state.tasks.map((task) =>
                 task.type === fromKey ? { ...task, type: toKey } : task
@@ -262,9 +353,12 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
                     task.type === fromKey ? { ...task, type: toKey } : task
                 ),
             })),
-        })),
+        }));
+        persistTaskOrder(get);
+        persistTaskLayout(get);
+    },
 
-    moveTaskInKanban: (taskId, targetType, targetIndex) =>
+    moveTaskInKanban: (taskId, targetType, targetIndex) => {
         set((state) => {
             const task = state.tasks.find((item) => item.id === taskId);
             if (!task) {
@@ -325,7 +419,9 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
                         : goal;
                 }),
             };
-        }),
+        });
+        persistTaskOrder(get);
+    },
 
     openTaskForm: (task, goalId, deadline) => {
         set({
@@ -386,9 +482,8 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
             set({ tasks: nextTasks });
 
             nextTasks.forEach((task) => {
-                const wasOverdue = Boolean(
-                    previousTasks.find((item) => item.id === task.id)?.overdue
-                );
+                const previous = previousTasks.find((item) => item.id === task.id);
+                const wasOverdue = Boolean(previous?.overdue);
                 if (task.overdue && !wasOverdue) {
                     void get().recordActivity(
                         buildActivityInput({
@@ -398,6 +493,9 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
                             idempotencyKey: `task:${task.id}:overdue:${task.deadline ?? now}`,
                         })
                     );
+                }
+                if (previous && previous.overdue !== task.overdue) {
+                    persistTaskUpdate(get, task.id);
                 }
             });
         }

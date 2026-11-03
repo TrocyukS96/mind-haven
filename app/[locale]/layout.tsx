@@ -5,6 +5,7 @@ import { JournalApiProvider } from '@/features/journal/model/journal-api-provide
 import { HabitApiProvider } from '@/features/habit/model/habit-api-provider';
 import { EnergyApiProvider } from '@/features/energy/model/energy-api-provider';
 import { ActivityApiProvider } from '@/features/activity';
+import { PlannerApiProvider } from '@/features/planner/model/planner-api-provider';
 import { FinanceApiProvider } from '@/features/finance/model/finance-api-provider';
 import { ItemTypeProvider } from '@/features/item-types';
 import { ReflectionQuestionProvider } from '@/features/reflection-questions';
@@ -21,6 +22,7 @@ import { getFeatureFlags } from '@/shared/lib/features/feature-service';
 import { getDisplayModeSettings } from '@/shared/lib/display-modes/display-mode-service';
 import { getItemTypes } from '@/shared/lib/item-types/item-type-service';
 import { getReflectionQuestions } from '@/shared/lib/reflection-questions/reflection-question-service';
+import { getPlanner, type PlannerData } from '@/shared/lib/planner/planner-service';
 import { ThemeSync } from '@/shared/providers/theme-sync';
 import { LayoutShell } from '@/widgets/layout-shell';
 import '../globals.css';
@@ -74,6 +76,15 @@ export default async function LocaleLayout({
     getReflectionQuestions(),
   ]);
 
+  let initialPlanner: PlannerData | null = null;
+  if ('id' in profile && profile.id) {
+    try {
+      initialPlanner = await getPlanner(profile.id);
+    } catch {
+      initialPlanner = null;
+    }
+  }
+
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
@@ -110,6 +121,7 @@ export default async function LocaleLayout({
                   <FinanceApiProvider>
                   <EnergyApiProvider>
                   <ActivityApiProvider>
+                  <PlannerApiProvider initialPlanner={initialPlanner}>
                   <DisplayModeProvider settings={displayModeSettings}>
                     <ItemTypeProvider catalog={itemTypes}>
                       <ReflectionQuestionProvider catalog={reflectionQuestions}>
@@ -119,6 +131,7 @@ export default async function LocaleLayout({
                       </ReflectionQuestionProvider>
                     </ItemTypeProvider>
                   </DisplayModeProvider>
+                  </PlannerApiProvider>
                   </ActivityApiProvider>
                   </EnergyApiProvider>
                   </FinanceApiProvider>
