@@ -2,6 +2,7 @@
 
 import GoalCard from './GoalCard';
 import type { Goal } from '@/entities/goal/model/types';
+import { GoalColumnToolbar } from '@/features/goal/ui/goal-column-toolbar';
 import { KanbanBoard } from '@/shared/ui/kanban-board';
 import { useStore } from '@/shared/store/store-config';
 import { useTranslations } from 'next-intl';
@@ -17,18 +18,21 @@ export function GoalsKanbanMode({ goals }: GoalsKanbanModeProps) {
   const moveGoalInKanban = useStore((state) => state.moveGoalInKanban);
 
   return (
-    <KanbanBoard
-      section="goals"
-      items={goals}
-      getItemType={(goal) => goal.type}
-      renderItem={(goal) =>
-        goal ? <GoalCard key={goal.id} goal={goal} showType={false} /> : null
-      }
-      emptyMessage={t('noGoals')}
-      draggable
-      columnOrder={goalsKanbanColumnOrder}
-      onColumnReorder={reorderGoalsKanbanColumns}
-      onItemMove={moveGoalInKanban}
-    />
+    <div className="space-y-3">
+      <GoalColumnToolbar />
+      <KanbanBoard
+        section="goals"
+        items={goals}
+        getItemType={(goal) => goal.type}
+        renderItem={(goal) =>
+          goal ? <GoalCard key={goal.id} goal={goal} showType={false} /> : null
+        }
+        emptyMessage={t('noGoals')}
+        draggable
+        columnOrder={goalsKanbanColumnOrder}
+        onColumnReorder={reorderGoalsKanbanColumns}
+        onItemMove={moveGoalInKanban}
+      />
+    </div>
   );
 }

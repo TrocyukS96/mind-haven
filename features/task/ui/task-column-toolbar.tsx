@@ -27,12 +27,7 @@ import { useTranslations } from 'next-intl';
 import { useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 
-interface TaskColumnToolbarProps {
-  onlyCurrent: boolean;
-  onOnlyCurrentChange: (value: boolean) => void;
-}
-
-export function TaskColumnToolbar({ onlyCurrent, onOnlyCurrentChange }: TaskColumnToolbarProps) {
+export function TaskColumnToolbar() {
   const t = useTranslations('tasks');
   const tCommon = useTranslations('common');
   const taskColumns = useStore((state) => state.taskColumns);
@@ -81,7 +76,7 @@ export function TaskColumnToolbar({ onlyCurrent, onOnlyCurrentChange }: TaskColu
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex w-full flex-wrap items-center justify-start gap-2">
         <div className="flex">
           <Button
             type="button"
@@ -123,15 +118,6 @@ export function TaskColumnToolbar({ onlyCurrent, onOnlyCurrentChange }: TaskColu
           {t('columns.newColumn')}
         </Button>
         <TaskColumnsManager onOpenArchive={() => setArchiveOpen(true)} />
-        <Button
-          type="button"
-          variant={onlyCurrent ? 'default' : 'outline'}
-          size="sm"
-          aria-pressed={onlyCurrent}
-          onClick={() => onOnlyCurrentChange(!onlyCurrent)}
-        >
-          {t('columns.currentWeeksOnly')}
-        </Button>
         <Button type="button" variant="outline" size="sm" onClick={() => setArchiveOpen(true)}>
           <Archive className="h-4 w-4" />
           {t('columns.weekArchive')}

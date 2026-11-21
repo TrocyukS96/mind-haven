@@ -187,6 +187,21 @@ export async function archiveProject(userId: string, projectId: string): Promise
   return updateProject(userId, projectId, { status: 'archived' });
 }
 
+export async function listUserProjectNotes(userId: string): Promise<Record<string, ProjectNote[]>> {
+  const rows = await prisma.projectNote.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+  });
+  const grouped: Record<string, ProjectNote[]> = {};
+  for (const row of rows) {
+    const note = mapNote(row);
+    const list = grouped[note.projectId] ?? [];
+    list.push(note);
+    grouped[note.projectId] = list;
+  }
+  return grouped;
+}
+
 export async function listProjectNotes(userId: string, projectId: string): Promise<ProjectNote[]> {
   const project = await prisma.project.findFirst({ where: { id: projectId, userId }, select: { id: true } });
   if (!project) throw new Error('Project not found');
@@ -206,18 +221,21 @@ export async function createProjectNote(
   const project = await prisma.project.findFirst({ where: { id: projectId, userId }, select: { id: true } });
   if (!project) throw new Error('Project not found');
 
+  const trimmed = content.trim().slice(0, 10000);
+  if (!trimmed) throw new Error('Note content is required');
+
   const row = await prisma.projectNote.create({
     data: {
       userId,
       projectId,
-      content: content.trim().slice(0, 10000),
+      content: trimmed,
     },
   });
   return mapNote(row);
 }
 
-export async function deleteProjectNote(userId: string, noteId: string): Promise<void> {
-  const note = await prisma.projectNote.findFirst({ where: { id: noteId, userId } });
+export async function deleteProjectNote(userId: string, projectId: string, noteId: string): Promise<void> {
+  const note = await prisma.projectNote.findFirst({ where: { id: noteId, userId, projectId } });
   if (!note) throw new Error('Note not found');
   await prisma.projectNote.delete({ where: { id: noteId } });
 }

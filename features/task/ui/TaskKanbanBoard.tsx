@@ -10,16 +10,20 @@ import { useStore } from '@/shared/store/store-config';
 import { KanbanBoard } from '@/shared/ui/kanban-board';
 import { Button } from '@/shared/ui/button';
 import { useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { toast } from 'react-toastify';
 
 interface TaskKanbanBoardProps {
   tasks: Task[];
-  projectFilter?: string;
-  goalFilter?: string;
+  onlyCurrentWeeks?: boolean;
+  onShowAllWeeks?: () => void;
 }
 
-export function TaskKanbanBoard({ tasks, projectFilter, goalFilter }: TaskKanbanBoardProps) {
+export function TaskKanbanBoard({
+  tasks,
+  onlyCurrentWeeks = false,
+  onShowAllWeeks,
+}: TaskKanbanBoardProps) {
   const t = useTranslations('tasks');
   const taskColumns = useStore((state) => state.taskColumns);
   const moveTaskInKanban = useStore((state) => state.moveTaskInKanban);
@@ -28,7 +32,6 @@ export function TaskKanbanBoard({ tasks, projectFilter, goalFilter }: TaskKanban
   const updateTaskColumn = useStore((state) => state.updateTaskColumn);
   const tasksKanbanColumnOrder = useStore((state) => state.tasksKanbanColumnOrder);
   const reorderTasksKanbanColumns = useStore((state) => state.reorderTasksKanbanColumns);
-  const [onlyCurrent, setOnlyCurrent] = useState(false);
 
   const activeColumns = useMemo(
     () =>
@@ -40,22 +43,13 @@ export function TaskKanbanBoard({ tasks, projectFilter, goalFilter }: TaskKanban
   const visibleColumns = useMemo(
     () =>
       activeColumns.filter(
-        (column) => !column.isHidden && (!onlyCurrent || !isPastWeekColumn(column))
+        (column) => !column.isHidden && (!onlyCurrentWeeks || !isPastWeekColumn(column))
       ),
-    [activeColumns, onlyCurrent]
-  );
-  const filteredTasks = useMemo(
-    () =>
-      tasks.filter((task) => {
-        if (projectFilter && projectFilter !== 'all' && task.projectId !== projectFilter) return false;
-        if (goalFilter && goalFilter !== 'all' && task.goalId !== goalFilter) return false;
-        return true;
-      }),
-    [tasks, projectFilter, goalFilter]
+    [activeColumns, onlyCurrentWeeks]
   );
 
   const showAll = async () => {
-    setOnlyCurrent(false);
+    onShowAllWeeks?.();
     const hidden = activeColumns.filter((column) => column.isHidden);
     try {
       await Promise.all(hidden.map((column) => updateTaskColumn(column.id, { isHidden: false })));
@@ -66,11 +60,11 @@ export function TaskKanbanBoard({ tasks, projectFilter, goalFilter }: TaskKanban
 
   return (
     <div className="space-y-3">
-      <TaskColumnToolbar onlyCurrent={onlyCurrent} onOnlyCurrentChange={setOnlyCurrent} />
+      <TaskColumnToolbar />
       {activeColumns.length === 0 ? (
         <KanbanBoard
           section="tasks"
-          items={filteredTasks}
+          items={tasks}
           getItemType={(task) => task.type}
           renderItem={(task) => (
             <TaskCard task={task} showGoalTitle showProjectTitle showType={false} />
@@ -92,7 +86,7 @@ export function TaskKanbanBoard({ tasks, projectFilter, goalFilter }: TaskKanban
         <TaskColumnsDndBoard
           columns={visibleColumns}
           resolveColumns={activeColumns}
-          tasks={filteredTasks}
+          tasks={tasks}
           onMoveTask={(taskId, columnId, targetIndex, visibleOrder) =>
             moveTaskToColumn(taskId, columnId, targetIndex, visibleOrder)
           }

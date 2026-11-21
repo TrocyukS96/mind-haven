@@ -12,7 +12,7 @@ import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover';
 import { cn } from '@/shared/lib/utils';
-import { Columns3 } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
@@ -53,9 +53,21 @@ export function TaskColumnsManager({ onOpenArchive }: { onOpenArchive: () => voi
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button type="button" variant="outline" size="sm">
-          <Columns3 className="h-4 w-4" />
-          {t('columns.manageColumns')}
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-sm"
+          aria-label={t('columns.manageColumns')}
+          className="group/gear relative"
+        >
+          <Settings className="h-4 w-4" />
+          <span
+            role="tooltip"
+            aria-hidden
+            className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md border bg-popover px-2 py-1 text-xs font-normal text-popover-foreground opacity-0 shadow-md transition-opacity group-hover/gear:opacity-100 group-focus-visible/gear:opacity-100"
+          >
+            {t('columns.manageColumns')}
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[min(24rem,calc(100vw-2rem))] p-3">

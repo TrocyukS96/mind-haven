@@ -11,43 +11,43 @@ import { TasksKanbanMode } from './TasksKanbanMode';
 import { TasksSearch } from './TasksSearch';
 import { TasksFilter } from './TasksFilter';
 import { TaskVoiceButton } from '@/features/task/ui/TaskVoiceButton';
-import { TaskPriority } from '@/entities/task/model/types';
-import { useFilteredTasks } from '@/features/task/hooks/use-filtered-tasks';
+import {
+  DEFAULT_TASK_LIST_FILTER,
+  isTaskListFilterActive,
+  useFilteredTasks,
+  type TaskListFilter,
+} from '@/features/task/hooks/use-filtered-tasks';
 import { useTranslations } from 'next-intl';
 import type { DisplayMode } from '@/shared/config/display-modes';
 import { PageToolbar } from '@/shared/ui/page-toolbar';
 import { DisplayModeTabs } from '@/shared/ui/display-mode-tabs';
 import { useDisplayModeSettings, resolveDisplayMode } from '@/features/display-modes';
 
-type FilterState = {
-  priority?: TaskPriority | 'all';
-  overdue?: boolean;
-  dateFrom?: string;
-  dateTo?: string;
-};
-
 const TasksPage = () => {
-  const { tasks, openTaskForm } = useStore();
+  const { tasks, taskColumns, openTaskForm } = useStore();
   const { settings, getDefaultMode } = useDisplayModeSettings();
   const [displayMode, setDisplayMode] = useState<DisplayMode>(() => getDefaultMode('tasks'));
   const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<FilterState>({ priority: 'all' });
+  const [filter, setFilter] = useState<TaskListFilter>(DEFAULT_TASK_LIST_FILTER);
   const t = useTranslations('tasks');
 
   useEffect(() => {
     setDisplayMode((current) => resolveDisplayMode('tasks', current, settings));
   }, [settings]);
 
-  const filteredTasks = useFilteredTasks(tasks, searchQuery, filter);
-
-  const isFilterActive = Object.values(filter).some(
-    (v) => v !== undefined && v !== 'all'
-  );
+  const filteredTasks = useFilteredTasks(tasks, searchQuery, filter, taskColumns);
+  const isFilterActive = isTaskListFilterActive(filter);
 
   const renderContent = () => {
     switch (displayMode) {
       case 'kanban':
-        return <TasksKanbanMode tasks={filteredTasks} />;
+        return (
+          <TasksKanbanMode
+            tasks={filteredTasks}
+            onlyCurrentWeeks={filter.weeks === 'current'}
+            onShowAllWeeks={() => setFilter((current) => ({ ...current, weeks: 'all' }))}
+          />
+        );
       case 'list':
         return <TasksListMode tasks={filteredTasks} />;
       case 'by-day':
@@ -78,7 +78,7 @@ const TasksPage = () => {
             <TasksFilter
               filter={filter}
               onApply={setFilter}
-              onReset={() => setFilter({})}
+              onReset={() => setFilter(DEFAULT_TASK_LIST_FILTER)}
               isActive={isFilterActive}
             />
             <TasksSearch value={searchQuery} onChange={setSearchQuery} />

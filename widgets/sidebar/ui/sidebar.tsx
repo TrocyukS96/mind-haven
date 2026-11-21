@@ -57,6 +57,11 @@ interface SidebarProps {
   onDesktopCollapse?: () => void;
 }
 
+function isNavActive(pathname: string, href: string) {
+  if (href === '/') return pathname === '/';
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 function navItemClass(isActive: boolean) {
   return cn(
     'relative z-10 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm transition-colors sm:px-3.5',
@@ -159,7 +164,7 @@ export function Sidebar({
               />
               {visiblePrimary.map((item) => {
                 const Icon = item.icon;
-                const isActive = pathname === item.href;
+                const isActive = isNavActive(pathname, item.href);
                 return (
                   <Link
                     key={item.id}
@@ -179,7 +184,7 @@ export function Sidebar({
                 <nav className="space-y-1">
                   {visibleSecondary.map((item) => {
                     const Icon = item.icon;
-                    const isActive = pathname === item.href;
+                    const isActive = isNavActive(pathname, item.href);
                     return (
                       <Link
                         key={item.id}

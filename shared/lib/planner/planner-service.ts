@@ -8,7 +8,7 @@ import {
   calculateCompletionProgress,
   tasksForGoalProgress,
 } from '@/shared/lib/planner/calculate-progress';
-import { listProjects, refreshProjectProgress } from '@/shared/lib/planner/project-service';
+import { listProjects, listUserProjectNotes, refreshProjectProgress } from '@/shared/lib/planner/project-service';
 import {
   listTaskColumns,
   ownedColumnId,
@@ -238,12 +238,13 @@ function buildTaskData(
 export async function getPlanner(userId: string): Promise<PlannerData> {
   await ensureTaskColumnsForUser(userId);
 
-  const [goalRows, taskRows, layout, projects, taskColumns] = await Promise.all([
+  const [goalRows, taskRows, layout, projects, taskColumns, projectNotes] = await Promise.all([
     prisma.goal.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } }),
     prisma.task.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } }),
     prisma.plannerLayout.findUnique({ where: { userId } }),
     listProjects(userId),
     listTaskColumns(userId),
+    listUserProjectNotes(userId),
   ]);
 
   const tasks = taskRows.map(mapTask);
@@ -274,7 +275,7 @@ export async function getPlanner(userId: string): Promise<PlannerData> {
     goals: goalRows.map((row) => mapGoal(row, tasksByGoal.get(row.id) ?? [])),
     tasks,
     projects,
-    projectNotes: {},
+    projectNotes,
     taskColumns,
     goalsKanbanColumnOrder: normalizeColumnOrder(layout?.goalsKanbanColumnOrder),
     tasksKanbanColumnOrder: columnOrder,

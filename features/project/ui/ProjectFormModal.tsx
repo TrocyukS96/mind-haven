@@ -21,12 +21,14 @@ import {
   SelectValue,
 } from '@/shared/ui/select';
 import { DatePicker } from '@/shared/ui/date-picker';
+import { useRouter } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 export function ProjectFormModal() {
   const t = useTranslations('projects');
   const tPriorities = useTranslations('priorities');
+  const router = useRouter();
   const { isProjectFormOpen, selectedProject, closeProjectForm, addProject, updateProject, goals } =
     useStore();
 
@@ -69,7 +71,8 @@ export function ProjectFormModal() {
     if (selectedProject) {
       updateProject(selectedProject.id, payload);
     } else {
-      addProject(payload);
+      const id = addProject(payload);
+      router.push(`/projects/${id}`);
     }
     closeProjectForm();
   };

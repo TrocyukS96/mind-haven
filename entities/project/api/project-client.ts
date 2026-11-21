@@ -1,4 +1,4 @@
-import type { Project, ProjectDeleteMode } from '@/entities/project/model/types';
+import type { Project, ProjectDeleteMode, ProjectNote } from '@/entities/project/model/types';
 import { PlannerApiError } from '@/entities/planner/api/planner-client';
 
 async function parseResponse<T>(response: Response): Promise<T> {
@@ -34,6 +34,22 @@ export async function deleteProjectRequest(
   mode: ProjectDeleteMode = 'detach'
 ): Promise<void> {
   const response = await fetch(`/api/projects/${id}?mode=${mode}`, { method: 'DELETE' });
+  if (response.status === 404) return;
+  await parseResponse<{ ok: true }>(response);
+}
+
+export async function createProjectNoteRequest(projectId: string, content: string): Promise<ProjectNote> {
+  const response = await fetch(`/api/projects/${projectId}/notes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
+  const payload = await parseResponse<{ note: ProjectNote }>(response);
+  return payload.note;
+}
+
+export async function deleteProjectNoteRequest(projectId: string, noteId: string): Promise<void> {
+  const response = await fetch(`/api/projects/${projectId}/notes/${noteId}`, { method: 'DELETE' });
   if (response.status === 404) return;
   await parseResponse<{ ok: true }>(response);
 }

@@ -1,55 +1,65 @@
 'use client';
 
-import type { Project } from '@/entities/project/model/types';
 import { TaskCard } from '@/entities/task/ui/TaskCard';
-import { Link } from '@/i18n/routing';
+import { Link, useRouter } from '@/i18n/routing';
 import { tasksForProject } from '@/shared/lib/planner/calculate-progress';
+import { getDateLocale } from '@/shared/lib/date-locale';
+import { cn } from '@/shared/lib/utils';
 import { useStoreHydrated } from '@/shared/hooks/use-store-hydrated';
 import { useStore } from '@/shared/store/store-config';
+import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
+import { Input } from '@/shared/ui/input';
 import { Textarea } from '@/shared/ui/textarea';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { format } from 'date-fns';
+import { ArrowLeft, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
-import { format } from 'date-fns';
-import { getDateLocale } from '@/shared/lib/date-locale';
 
-type ProjectTab = 'tasks' | 'description' | 'activity' | 'notes';
+type StepFilter = 'all' | 'active' | 'done';
+
+const EMPTY_NOTES: never[] = [];
 
 export function ProjectDetailPage({ projectId }: { projectId: string }) {
   const t = useTranslations('projects');
+  const tPriorities = useTranslations('priorities');
+  const tCommon = useTranslations('common');
   const locale = useLocale();
   const dateLocale = getDateLocale(locale);
+  const router = useRouter();
   const hydrated = useStoreHydrated();
   const project = useStore((s) => s.projects.find((p) => p.id === projectId));
   const tasks = useStore((s) => s.tasks);
   const goals = useStore((s) => s.goals);
-  const activityEvents = useStore((s) => s.activityEvents);
-  const projectNotes = useStore((s) => s.projectNotes[projectId] ?? []);
+  const projectNotes = useStore((s) => s.projectNotes[projectId]) ?? EMPTY_NOTES;
   const openTaskForm = useStore((s) => s.openTaskForm);
+  const openProjectForm = useStore((s) => s.openProjectForm);
+  const addTask = useStore((s) => s.addTask);
   const addProjectNote = useStore((s) => s.addProjectNote);
+  const removeProjectNote = useStore((s) => s.removeProjectNote);
   const updateProject = useStore((s) => s.updateProject);
   const deleteProject = useStore((s) => s.deleteProject);
   const archiveProject = useStore((s) => s.archiveProject);
-  const [tab, setTab] = useState<ProjectTab>('tasks');
-  const [noteDraft, setNoteDraft] = useState('');
+  const [stepDraft, setStepDraft] = useState('');
+  const [commentDraft, setCommentDraft] = useState('');
+  const [filter, setFilter] = useState<StepFilter>('all');
+  const [leaving, setLeaving] = useState(false);
 
-  const projectTasks = useMemo(
-    () => (project ? tasksForProject(tasks, project.id) : []),
-    [project, tasks]
-  );
+  const projectTasks = useMemo(() => {
+    if (!project) return [];
+    return tasksForProject(tasks, project.id).sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+  }, [project, tasks]);
 
-  const activity = useMemo(
-    () =>
-      activityEvents.filter(
-        (event) =>
-          (event.entityId === projectId && event.entityType === 'PROJECT') ||
-          (event.metadata?.projectId === projectId)
-      ),
-    [activityEvents, projectId]
-  );
+  const visibleSteps = projectTasks.filter((step) => {
+    if (filter === 'active') return !step.completed;
+    if (filter === 'done') return step.completed;
+    return true;
+  });
 
-  if (!hydrated) {
+  if (!hydrated || leaving) {
     return <div className="h-64 animate-pulse rounded-2xl bg-muted" />;
   }
 
@@ -65,9 +75,12 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
   }
 
   const linkedGoal = goals.find((g) => g.id === project.goalId);
+  const completed = projectTasks.filter((step) => step.completed).length;
+  const formatDate = (value?: string) =>
+    value ? format(new Date(value), 'd MMM yyyy', { locale: dateLocale }) : t('notSet');
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       <Button variant="ghost" asChild className="px-0">
         <Link href="/projects" className="inline-flex items-center gap-2">
           <ArrowLeft className="h-4 w-4" />
@@ -75,142 +88,224 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
         </Link>
       </Button>
 
-      <header className="rounded-2xl border bg-card p-6 space-y-4">
+      <header className="space-y-5 rounded-2xl border bg-card/80 p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold">{project.title}</h1>
-            <p className="text-sm text-muted-foreground">
-              {t(`status.${project.status}`)} · {project.progress}%
-            </p>
+          <div className="min-w-0 space-y-2">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{project.title}</h1>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary">{t(`status.${project.status}`)}</Badge>
+              <Badge variant="outline">{tPriorities(project.priority)}</Badge>
+              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs text-foreground">
+                {completed}/{projectTasks.length}
+              </span>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => updateProject(project.id, { status: 'paused' })}>
-              {t('actions.pause')}
+            <Button variant="outline" size="sm" onClick={() => openProjectForm(project)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              {tCommon('edit')}
             </Button>
-            <Button variant="outline" onClick={() => archiveProject(project.id)}>
-              {t('actions.archive')}
-            </Button>
+            {project.status === 'active' ? (
+              <Button variant="outline" size="sm" onClick={() => updateProject(project.id, { status: 'paused' })}>
+                {t('actions.pause')}
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => updateProject(project.id, { status: 'active' })}>
+                {t('actions.resume')}
+              </Button>
+            )}
+            {project.status !== 'archived' ? (
+              <Button variant="outline" size="sm" onClick={() => archiveProject(project.id)}>
+                {t('actions.archive')}
+              </Button>
+            ) : null}
             <Button
               variant="destructive"
+              size="sm"
               onClick={() => {
-                if (confirm(t('deleteConfirm'))) {
-                  deleteProject(project.id, 'detach');
-                }
+                if (!confirm(t('deleteConfirm'))) return;
+                setLeaving(true);
+                deleteProject(project.id, 'detach');
+                router.push('/projects');
               }}
             >
               {t('actions.delete')}
             </Button>
           </div>
         </div>
-        <div className="h-2 rounded-full bg-muted">
-          <div className="h-full rounded-full bg-primary" style={{ width: `${project.progress}%` }} />
-        </div>
-        {project.nextAction ? (
-          <p className="text-sm">
-            <span className="font-medium">{t('nextAction')}: </span>
-            {project.nextAction}
-          </p>
-        ) : null}
-        {linkedGoal ? (
-          <p className="text-sm text-muted-foreground">
-            {t('goal')}:{' '}
-            <Link href={`/goals/${linkedGoal.id}`} className="text-primary underline-offset-2 hover:underline">
-              {linkedGoal.title}
-            </Link>
-          </p>
-        ) : null}
-      </header>
 
-      <div className="flex gap-2 border-b pb-2">
-        {(['tasks', 'description', 'activity', 'notes'] as ProjectTab[]).map((key) => (
-          <Button
-            key={key}
-            type="button"
-            variant={tab === key ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setTab(key)}
-          >
-            {t(`tabs.${key}`)}
-          </Button>
-        ))}
-      </div>
-
-      {tab === 'tasks' ? (
-        <div className="space-y-4">
-          <Button onClick={() => openTaskForm(undefined, project.goalId, undefined, project.id)}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t('addTask')}
-          </Button>
-          <div className="space-y-2">
-            {projectTasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t('noTasks')}</p>
-            ) : (
-              projectTasks.map((task) => <TaskCard key={task.id} task={task} showType />)
-            )}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">{t('progress')}</span>
+            <span className="tabular-nums">{project.progress}%</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, project.progress)}%` }} />
           </div>
         </div>
-      ) : null}
 
-      {tab === 'description' ? (
-        <div className="rounded-2xl border bg-card p-6 space-y-4 text-sm">
-          <p className="whitespace-pre-wrap">{project.description || t('noDescription')}</p>
-          <dl className="grid gap-2 sm:grid-cols-2">
-            {project.startDate ? (
-              <div>
-                <dt className="text-muted-foreground">{t('startDate')}</dt>
-                <dd>{format(new Date(project.startDate), 'd MMM yyyy', { locale: dateLocale })}</dd>
-              </div>
-            ) : null}
-            {project.plannedEnd ? (
-              <div>
-                <dt className="text-muted-foreground">{t('plannedEnd')}</dt>
-                <dd>{format(new Date(project.plannedEnd), 'd MMM yyyy', { locale: dateLocale })}</dd>
-              </div>
-            ) : null}
-          </dl>
-        </div>
-      ) : null}
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold">{t('about')}</h2>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+            {project.description.trim() ? project.description : t('noDescription')}
+          </p>
+        </section>
 
-      {tab === 'activity' ? (
-        <ul className="space-y-2">
-          {activity.length === 0 ? (
-            <li className="text-sm text-muted-foreground">{t('noActivity')}</li>
-          ) : (
-            activity.map((event) => (
-              <li key={event.id} className="rounded-xl border bg-card px-4 py-3 text-sm">
-                <span className="font-medium">{event.title || event.type}</span>
-                <span className="ml-2 text-muted-foreground">
-                  {format(new Date(event.createdAt), 'd MMM yyyy HH:mm', { locale: dateLocale })}
-                </span>
-              </li>
-            ))
-          )}
-        </ul>
-      ) : null}
+        <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+          <InfoItem label={t('goal')} value={linkedGoal?.title} empty={t('fields.noGoal')} href={linkedGoal ? `/goals/${linkedGoal.id}` : undefined} />
+          <InfoItem label={t('nextAction')} value={project.nextAction} empty={t('notSet')} />
+          <InfoItem label={t('fields.priority')} value={tPriorities(project.priority)} empty={t('notSet')} />
+          <InfoItem label={t('startDate')} value={project.startDate ? formatDate(project.startDate) : undefined} empty={t('notSet')} />
+          <InfoItem label={t('plannedEnd')} value={project.plannedEnd ? formatDate(project.plannedEnd) : undefined} empty={t('notSet')} />
+          <InfoItem label={t('createdAt')} value={formatDate(project.createdAt)} empty={t('notSet')} />
+          <InfoItem label={t('updatedAt')} value={formatDate(project.updatedAt)} empty={t('notSet')} />
+        </dl>
+      </header>
 
-      {tab === 'notes' ? (
-        <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(18rem,0.9fr)]">
+        <section className="rounded-2xl border bg-card/80 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-semibold">{t('stepsTitle')}</h2>
+            <div className="flex gap-2">
+              {(['all', 'active', 'done'] as const).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => setFilter(item)}
+                  className={cn(
+                    'rounded-full border px-3 py-1 text-xs',
+                    filter === item ? 'border-primary bg-primary/10 text-foreground' : 'border-border text-muted-foreground'
+                  )}
+                >
+                  {t(`filters.${item}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <form
-            className="space-y-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!noteDraft.trim()) return;
-              addProjectNote(projectId, noteDraft);
-              setNoteDraft('');
+            className="mt-4 flex flex-col gap-2 sm:flex-row"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const title = stepDraft.trim();
+              if (!title) return;
+              addTask(title, project.goalId, project.priority, undefined, 'backlog', undefined, project.id);
+              setStepDraft('');
             }}
           >
-            <Textarea value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} rows={4} placeholder={t('notePlaceholder')} />
-            <Button type="submit">{t('saveNote')}</Button>
+            <Input
+              value={stepDraft}
+              onChange={(event) => setStepDraft(event.target.value)}
+              placeholder={t('stepPlaceholder')}
+              aria-label={t('stepPlaceholder')}
+            />
+            <div className="flex gap-2">
+              <Button type="submit" className="shrink-0">
+                <Plus className="mr-2 h-4 w-4" />
+                {t('addStep')}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="shrink-0"
+                onClick={() => openTaskForm(undefined, project.goalId, undefined, project.id)}
+              >
+                {t('openStepDetails')}
+              </Button>
+            </div>
           </form>
-          <ul className="space-y-2">
-            {projectNotes.map((note) => (
-              <li key={note.id} className="rounded-xl border bg-card p-4 text-sm whitespace-pre-wrap">
-                {note.content}
-              </li>
-            ))}
+
+          <div className="mt-4">
+            {visibleSteps.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">{t('noSteps')}</p>
+            ) : (
+              <ul className="space-y-1">
+                {visibleSteps.map((step) => (
+                  <li key={step.id}>
+                    <TaskCard task={step} variant="step" showMeta />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border bg-card/80 p-4 sm:p-5">
+          <h2 className="font-semibold">{t('commentsTitle')}</h2>
+          <form
+            className="mt-4 space-y-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!commentDraft.trim()) return;
+              addProjectNote(projectId, commentDraft);
+              setCommentDraft('');
+            }}
+          >
+            <Textarea
+              value={commentDraft}
+              onChange={(event) => setCommentDraft(event.target.value)}
+              rows={4}
+              placeholder={t('commentPlaceholder')}
+              aria-label={t('commentPlaceholder')}
+            />
+            <Button type="submit">{t('addComment')}</Button>
+          </form>
+          <ul className="mt-4 space-y-2">
+            {projectNotes.length === 0 ? (
+              <li className="text-sm text-muted-foreground">{t('noComments')}</li>
+            ) : (
+              projectNotes.map((note) => (
+                <li key={note.id} className="rounded-xl border bg-background/60 p-3">
+                  <div className="mb-1 flex items-start justify-between gap-2">
+                    <time className="text-xs text-muted-foreground" dateTime={note.createdAt}>
+                      {format(new Date(note.createdAt), 'd MMM yyyy HH:mm', { locale: dateLocale })}
+                    </time>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0"
+                      aria-label={tCommon('delete')}
+                      onClick={() => removeProjectNote(projectId, note.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <p className="whitespace-pre-wrap text-sm">{note.content}</p>
+                </li>
+              ))
+            )}
           </ul>
-        </div>
-      ) : null}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function InfoItem({
+  label,
+  value,
+  empty,
+  href,
+}: {
+  label: string;
+  value?: string;
+  empty: string;
+  href?: string;
+}) {
+  const text = value?.trim() ? value : empty;
+  return (
+    <div className="rounded-xl bg-muted/40 px-3 py-2">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5">
+        {href && value?.trim() ? (
+          <Link href={href} className="text-primary underline-offset-2 hover:underline">
+            {text}
+          </Link>
+        ) : (
+          text
+        )}
+      </dd>
     </div>
   );
 }

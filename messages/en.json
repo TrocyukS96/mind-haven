@@ -305,7 +305,7 @@
     }
   },
   "tasks": {
-    "title": "To-do list",
+    "title": "Tasks",
     "newTask": "New task",
     "editTask": "Edit task",
     "searchPlaceholder": "Search tasks...",
@@ -324,6 +324,7 @@
     "kanbanCompleted": "Completed",
     "kanbanEmptyColumn": "No items",
     "priority": "Priority",
+    "hideCompleted": "Hide completed",
     "overdue": "Overdue",
     "overdueBadge": "Overdue",
     "status": {
@@ -388,6 +389,8 @@
       "columnTitlePlaceholder": "Column title",
       "addColumn": "Add",
       "manageColumns": "Manage columns",
+      "weeks": "Weeks",
+      "allWeeks": "All weeks",
       "currentWeeksOnly": "Current weeks only",
       "weekArchive": "Week archive",
       "filterProject": "Project",
@@ -464,10 +467,23 @@
     "goal": "Goal",
     "nextAction": "Next action",
     "addTask": "Add task",
+    "addStep": "Add step",
+    "stepPlaceholder": "Step title",
+    "openStepDetails": "With details",
+    "stepsTitle": "Steps",
+    "noSteps": "This project has no steps yet",
     "noTasks": "No tasks in this project yet",
     "noDescription": "No description",
     "startDate": "Start date",
     "plannedEnd": "Planned end",
+    "createdAt": "Created",
+    "updatedAt": "Updated",
+    "notSet": "Not set",
+    "about": "About",
+    "commentsTitle": "Comments",
+    "commentPlaceholder": "Write a comment",
+    "addComment": "Add comment",
+    "noComments": "No comments yet",
     "noActivity": "No activity yet",
     "notePlaceholder": "Project note",
     "saveNote": "Save note",
@@ -493,8 +509,14 @@
       "goal": "Linked goal",
       "noGoal": "No goal"
     },
+    "filters": {
+      "all": "All",
+      "active": "Active",
+      "done": "Done"
+    },
     "actions": {
       "pause": "Pause",
+      "resume": "Resume",
       "archive": "Archive",
       "delete": "Delete"
     }
@@ -519,6 +541,12 @@
     "list": "List",
     "kanban": "Kanban",
     "kanbanEmptyColumn": "No items",
+    "columns": {
+      "newColumn": "New column",
+      "columnTitlePlaceholder": "Column title",
+      "addColumn": "Add",
+      "createColumnError": "Could not create the column"
+    },
     "noGoalsInSection": "No goals in this section",
     "goalsOnDate": "Goals for {date}",
     "goalCount": "{count, plural, =0 {No goals} one {# goal} other {# goals}}",

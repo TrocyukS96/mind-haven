@@ -28,7 +28,7 @@ function itemTypeErrorResponse(error: unknown, fallback: string) {
 export async function POST(request: Request) {
   const session = await auth();
 
-  if (!session?.user?.id || !hasMinRole(session.user.role, 'ADMIN')) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -40,6 +40,11 @@ export async function POST(request: Request) {
 
   if (!body.section || !body.key || !body.label || !isItemTypeSection(body.section)) {
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+  }
+
+  const canAddGoalColumn = body.section === 'goals';
+  if (!canAddGoalColumn && !hasMinRole(session.user.role, 'ADMIN')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   try {

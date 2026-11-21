@@ -3,7 +3,9 @@ import type { Project, ProjectNote } from '@/entities/project/model/types';
 import type { TaskColumn, TaskColumnKind, TaskColumnPatch } from '@/entities/task-column/model/types';
 import type { Task, TaskPriority } from '@/entities/task/model/types';
 import {
+  createProjectNoteRequest,
   createProjectRequest,
+  deleteProjectNoteRequest,
   deleteProjectRequest,
   updateProjectRequest,
 } from '@/entities/project/api/project-client';
@@ -31,6 +33,7 @@ export interface ProjectsSlice {
     plannedEnd?: string;
     color?: string;
     icon?: string;
+    nextAction?: string;
   }) => string;
   updateProject: (id: string, updates: Partial<Project>) => void;
   deleteProject: (id: string, mode?: 'detach' | 'unlink') => void;
@@ -115,7 +118,7 @@ export const createProjectsSlice: StateCreator<AppStore, [], [], ProjectsSlice> 
       color: input.color,
       icon: input.icon,
       goalId: input.goalId,
-      nextAction: '',
+      nextAction: input.nextAction?.trim() ?? '',
       progress: 0,
       createdAt: now,
       updatedAt: now,
@@ -198,24 +201,59 @@ export const createProjectsSlice: StateCreator<AppStore, [], [], ProjectsSlice> 
   },
 
   addProjectNote: (projectId, content) => {
-    const id = `${Date.now()}-note`;
+    const trimmed = content.trim();
+    if (!trimmed) return;
+
+    const tempId = `${Date.now()}-note`;
     const now = new Date().toISOString();
-    const note: ProjectNote = { id, projectId, content: content.trim(), createdAt: now, updatedAt: now };
+    const note: ProjectNote = {
+      id: tempId,
+      projectId,
+      content: trimmed,
+      createdAt: now,
+      updatedAt: now,
+    };
     set((state) => ({
       projectNotes: {
         ...state.projectNotes,
         [projectId]: [note, ...(state.projectNotes[projectId] ?? [])],
       },
     }));
+
+    if (!isPlannerApiEnabled()) return;
+
+    void createProjectNoteRequest(projectId, trimmed)
+      .then((saved) => {
+        set((state) => {
+          const current = state.projectNotes[projectId] ?? [];
+          const hadTemp = current.some((item) => item.id === tempId);
+          const next = hadTemp
+            ? current.map((item) => (item.id === tempId ? saved : item))
+            : [saved, ...current.filter((item) => item.id !== saved.id)];
+          return {
+            projectNotes: { ...state.projectNotes, [projectId]: next },
+          };
+        });
+      })
+      .catch(() => undefined);
   },
 
   removeProjectNote: (projectId, noteId) => {
+    const previous = get().projectNotes[projectId] ?? [];
     set((state) => ({
       projectNotes: {
         ...state.projectNotes,
         [projectId]: (state.projectNotes[projectId] ?? []).filter((n) => n.id !== noteId),
       },
     }));
+
+    if (!isPlannerApiEnabled() || noteId.endsWith('-note')) return;
+
+    void deleteProjectNoteRequest(projectId, noteId).catch(() => {
+      set((state) => ({
+        projectNotes: { ...state.projectNotes, [projectId]: previous },
+      }));
+    });
   },
 
   addTaskColumn: (title, kind = 'custom', dateFrom, dateTo, serverColumn) => {
