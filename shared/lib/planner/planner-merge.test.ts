@@ -113,6 +113,9 @@ describe('mergePlannerData', () => {
       {
         goals: [goal('goal-1')],
         tasks: [],
+        projects: [],
+        projectNotes: {},
+        taskColumns: [],
         goalsKanbanColumnOrder: [],
         tasksKanbanColumnOrder: [],
       },

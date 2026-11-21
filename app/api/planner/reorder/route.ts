@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 interface ReorderBody {
   goals?: { id: string; type: string; kanbanOrder: number }[];
-  tasks?: { id: string; type: string; kanbanOrder: number }[];
+  tasks?: { id: string; type: string; kanbanOrder: number; columnId?: string | null }[];
 }
 
 export async function POST(request: Request) {

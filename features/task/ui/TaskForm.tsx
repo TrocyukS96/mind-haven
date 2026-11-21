@@ -31,7 +31,18 @@ interface Props {
 }
 
 const TaskForm = ({ task, open, onOpenChange }: Props) => {
-  const { goals, addTask, updateTask, defaultGoalId, defaultDeadline, taskFormDraft } = useStore();
+  const {
+    goals,
+    projects,
+    taskColumns,
+    addTask,
+    updateTask,
+    defaultGoalId,
+    defaultProjectId,
+    defaultColumnId,
+    defaultDeadline,
+    taskFormDraft,
+  } = useStore();
   const { getEnabledTypes, getDefaultTypeKey, resolveType } = useItemTypes();
   const taskTypes = getEnabledTypes('tasks');
   const defaultType = getDefaultTypeKey('tasks');
@@ -54,6 +65,11 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
   const [goalId, setGoalId] = useState<string>(initialValues.goalId);
   const [completed, setCompleted] = useState(initialValues.completed);
   const [deadline, setDeadline] = useState(initialValues.deadline);
+  const [projectId, setProjectId] = useState<string>(defaultProjectId ?? 'none');
+  const [columnId, setColumnId] = useState<string>(defaultColumnId ?? 'none');
+  const [estimatedMinutes, setEstimatedMinutes] = useState<string>(
+    task?.estimatedMinutes ? String(task.estimatedMinutes) : ''
+  );
   const [subtasks, setSubtasks] = useState<string[]>(initialValues.subtasks);
 
   const isEditMode = !!task;
@@ -63,8 +79,15 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
     if (!title.trim()) return;
 
     const finalGoalId = goalId === 'none' ? undefined : goalId;
+    const finalProjectId = projectId === 'none' ? undefined : projectId;
+    const finalColumnId = columnId === 'none' ? undefined : columnId;
     const finalDeadline = deadline || undefined;
     const finalDescription = description.trim() || undefined;
+    const parsedMinutes = estimatedMinutes.trim() ? Number(estimatedMinutes) : undefined;
+    const finalMinutes =
+      parsedMinutes !== undefined && Number.isFinite(parsedMinutes)
+        ? Math.max(0, Math.round(parsedMinutes))
+        : undefined;
 
     if (isEditMode && task) {
       updateTask(task.id, {
@@ -73,16 +96,38 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
         priority,
         type,
         goalId: finalGoalId,
+        projectId: finalProjectId,
+        columnId: finalColumnId,
+        estimatedMinutes: finalMinutes,
         deadline: finalDeadline,
       });
     } else {
-      addTask(title.trim(), finalGoalId, priority, finalDeadline, type, finalDescription);
+      addTask(
+        title.trim(),
+        finalGoalId,
+        priority,
+        finalDeadline,
+        type,
+        finalDescription,
+        finalProjectId,
+        finalColumnId,
+        finalMinutes
+      );
 
       subtasks
         .map((item) => item.trim())
         .filter(Boolean)
         .forEach((subtaskTitle) => {
-          addTask(subtaskTitle, finalGoalId, priority, finalDeadline, type);
+          addTask(
+            subtaskTitle,
+            finalGoalId,
+            priority,
+            finalDeadline,
+            type,
+            undefined,
+            finalProjectId,
+            finalColumnId
+          );
         });
     }
 
@@ -118,7 +163,10 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
     setCompleted(nextValues.completed);
     setDeadline(nextValues.deadline);
     setSubtasks(nextValues.subtasks);
-  }, [task, open, defaultGoalId, defaultDeadline, taskFormDraft, defaultType, resolveType]);
+    setProjectId(task?.projectId ?? defaultProjectId ?? 'none');
+    setColumnId(task?.columnId ?? defaultColumnId ?? 'none');
+    setEstimatedMinutes(task?.estimatedMinutes ? String(task.estimatedMinutes) : '');
+  }, [task, open, defaultGoalId, defaultProjectId, defaultColumnId, defaultDeadline, taskFormDraft, defaultType, resolveType]);
 
   return (
     <form onSubmit={handleSubmit} className="min-w-0 space-y-6">
@@ -237,6 +285,61 @@ const TaskForm = ({ task, open, onOpenChange }: Props) => {
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="min-w-0">
+          <Label>{t('linkToProject')}</Label>
+          <Select value={projectId} onValueChange={setProjectId}>
+            <SelectTrigger className="mt-2 w-full min-w-0">
+              <SelectValue placeholder={t('noProject')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">{t('noProject')}</SelectItem>
+              {projects.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {taskColumns.length > 0 ? (
+          <div className="min-w-0">
+            <Label>{t('kanbanColumn')}</Label>
+            <Select value={columnId} onValueChange={setColumnId}>
+              <SelectTrigger className="mt-2 w-full min-w-0">
+                <SelectValue placeholder={t('defaultColumn')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">{t('defaultColumn')}</SelectItem>
+                {taskColumns
+                  .filter((c) => !c.archivedAt && (!c.isHidden || c.id === columnId))
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .map((column) => (
+                    <SelectItem key={column.id} value={column.id}>
+                      {column.title}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
+      </div>
+
+      <div>
+        <Label htmlFor="estimated">{t('estimatedMinutesLabel')}</Label>
+        <Input
+          id="estimated"
+          type="number"
+          min={0}
+          step={5}
+          className="mt-2"
+          value={estimatedMinutes}
+          onChange={(e) => setEstimatedMinutes(e.target.value)}
+          placeholder="30"
+        />
       </div>
 
       {isEditMode && (

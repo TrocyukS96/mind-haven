@@ -11,6 +11,7 @@ describe('activity catalog', () => {
 
     expect(categories).toEqual([
       'TASK',
+      'PROJECT',
       'GOAL',
       'HABIT',
       'JOURNAL',

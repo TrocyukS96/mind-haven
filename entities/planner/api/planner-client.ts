@@ -57,9 +57,18 @@ export async function deleteGoalRequest(id: string): Promise<void> {
   await parseResponse<{ ok: true }>(response);
 }
 
-function serializeTask(task: Partial<Task>) {
-  if (!('goalId' in task)) return task;
-  return { ...task, goalId: task.goalId ?? null };
+function serializeTask(task: Partial<Task>): Record<string, unknown> {
+  const serialized: Record<string, unknown> = { ...task };
+  if ('goalId' in task) {
+    serialized.goalId = task.goalId ?? null;
+  }
+  if ('projectId' in task) {
+    serialized.projectId = task.projectId ?? null;
+  }
+  if ('columnId' in task) {
+    serialized.columnId = task.columnId ?? null;
+  }
+  return serialized;
 }
 
 export async function createTaskRequest(task: Task): Promise<Task> {
@@ -90,7 +99,7 @@ export async function deleteTaskRequest(id: string): Promise<void> {
 
 export async function reorderPlannerRequest(input: {
   goals?: { id: string; type: string; kanbanOrder: number }[];
-  tasks?: { id: string; type: string; kanbanOrder: number }[];
+  tasks?: { id: string; type: string; kanbanOrder: number; columnId?: string | null }[];
 }): Promise<void> {
   const response = await fetch('/api/planner/reorder', {
     method: 'POST',

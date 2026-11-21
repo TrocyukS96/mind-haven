@@ -9,6 +9,7 @@ import { cn } from '@/shared/lib/utils';
 import {
   Apple,
   BookOpen,
+  Briefcase,
   Footprints,
   Home,
   Leaf,
@@ -29,11 +30,12 @@ const primaryItems: {
   id: string;
   labelKey: string;
   icon: typeof Home;
-  href: '/' | '/goals' | '/tasks' | '/habits' | '/journal' | '/rewards';
+  href: '/' | '/goals' | '/projects' | '/tasks' | '/habits' | '/journal' | '/rewards';
   feature: FeatureKey;
 }[] = [
   { id: 'dashboard', labelKey: 'dashboard', icon: Home, href: '/', feature: 'dashboard' },
   { id: 'goals', labelKey: 'goals', icon: Sprout, href: '/goals', feature: 'goals' },
+  { id: 'projects', labelKey: 'projects', icon: Briefcase, href: '/projects', feature: 'projects' },
   { id: 'tasks', labelKey: 'tasks', icon: Footprints, href: '/tasks', feature: 'tasks' },
   { id: 'habits', labelKey: 'habits', icon: Leaf, href: '/habits', feature: 'habits' },
   { id: 'journal', labelKey: 'journal', icon: BookOpen, href: '/journal', feature: 'journal' },

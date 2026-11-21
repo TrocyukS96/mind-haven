@@ -1,0 +1,413 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  EXPIRED
+  TRIAL
+}
+
+model User {
+  id             String              @id @default(cuid())
+  email          String              @unique
+  name           String?
+  image          String?
+  passwordHash   String?
+  emailVerified  DateTime?
+  role           UserRole            @default(USER)
+  bannedUntil    DateTime?
+  banReason      String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  accounts       Account[]
+  sessions       Session[]
+  goals          Goal[]
+  tasks          Task[]
+  journalEntries JournalEntry[]
+  journalTags    JournalTag[]
+  habits         Habit[]
+  financeAccounts FinanceAccount[]
+  financeTransactions FinanceTransaction[]
+  tables         CustomTable[]
+  dailyTasks     DailyTask[]
+  subscription   Subscription?
+  featureGrants  UserFeatureGrant[]
+  energyCheckIns EnergyCheckIn[]
+  activityEvents ActivityEvent[]
+  plannerLayout  PlannerLayout?
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PendingRegistration {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  tokenHash    String   @unique
+  locale       String   @default("ru")
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  userId    String             @unique
+  plan      String             @default("free")
+  status    SubscriptionStatus @default(TRIAL)
+  expiresAt DateTime?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FeatureFlag {
+  key       String   @id
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}
+
+model DisplayModeFlag {
+  key       String   @id
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}
+
+model ItemType {
+  key       String
+  section   String
+  label     String   @default("")
+  enabled   Boolean  @default(true)
+  sortOrder Int      @default(0)
+  isSystem  Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@id([section, key])
+}
+
+model UserFeatureGrant {
+  id          String    @id @default(cuid())
+  userId      String
+  featureKey  String
+  grantedAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, featureKey])
+  @@index([userId])
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String   @default("")
+  progress    Int      @default(0)
+  deadline    DateTime
+  category    String
+  type        String
+  priority    String   @default("medium")
+  kanbanOrder Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+
+  @@index([userId])
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  userId      String
+  goalId      String?
+  title       String
+  description String    @default("")
+  completed   Boolean   @default(false)
+  priority    String    @default("medium")
+  type        String    @default("backlog")
+  kanbanOrder Int       @default(0)
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+  deadline    DateTime?
+  overdue     Boolean   @default(false)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal        Goal?     @relation(fields: [goalId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([goalId])
+}
+
+model PlannerLayout {
+  userId                 String @id
+  goalsKanbanColumnOrder Json   @default("[]")
+  tasksKanbanColumnOrder Json   @default("[]")
+  user                   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ReflectionQuestion {
+  period    String
+  sortOrder Int
+  textRu    String   @db.Text
+  textEn    String   @db.Text
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@id([period, sortOrder])
+}
+
+model JournalTag {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model JournalEntry {
+  id                String   @id @default(cuid())
+  userId            String
+  title             String
+  content           String   @db.Text
+  date              DateTime @db.Date
+  entryType         String   @default("free")
+  reflectionPeriod  String?
+  reflectionAnswers Json?
+  tagIds            Json     @default("[]")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, date])
+}
+
+model Habit {
+  id            String   @id @default(cuid())
+  userId        String
+  name          String
+  frequency     String
+  streak        Int      @default(0)
+  completedDays Json     @default("[]")
+  trackingType  String   @default("check")
+  targetCount   Int?
+  dayCounts     Json     @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model FinanceAccount {
+  id             String               @id @default(cuid())
+  userId         String
+  name           String
+  currency       String               @default("BYN")
+  initialBalance Decimal              @default(0) @db.Decimal(14, 2)
+  isDefault      Boolean              @default(false)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions   FinanceTransaction[]
+
+  @@index([userId])
+}
+
+model FinanceTransaction {
+  id          String         @id @default(cuid())
+  userId      String
+  accountId   String
+  type        String
+  amount      Decimal        @db.Decimal(14, 2)
+  category    String
+  description String         @default("")
+  date        DateTime       @db.Date
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account     FinanceAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([accountId])
+  @@index([userId, date])
+}
+
+model CustomTable {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  type      String
+  columns   Json
+  rows      Json     @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model DailyTask {
+  id     String @id @default(cuid())
+  userId String
+  date   String
+  taskId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date, taskId])
+  @@index([userId, date])
+}
+
+model EnergyTestVersion {
+  id        String   @id
+  version   Int      @unique
+  name      String
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  questions EnergyTestVersionQuestion[]
+  checkIns  EnergyCheckIn[]
+}
+
+model EnergyQuestion {
+  id             String   @id
+  key            String
+  version        Int      @default(1)
+  textRu         String   @db.Text
+  textEn         String   @db.Text
+  minValue       Int      @default(0)
+  maxValue       Int      @default(10)
+  minLabelRu     String
+  minLabelEn     String
+  midLabelRu     String   @default("")
+  midLabelEn     String   @default("")
+  maxLabelRu     String
+  maxLabelEn     String
+  reverseScoring Boolean  @default(false)
+  defaultWeight  Float    @default(1)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  testVersions   EnergyTestVersionQuestion[]
+  answers        EnergyCheckInAnswer[]
+
+  @@unique([key, version])
+  @@index([key])
+}
+
+model EnergyTestVersionQuestion {
+  id            String            @id @default(cuid())
+  testVersionId String
+  questionId    String
+  sortOrder     Int
+  weight        Float             @default(1)
+  testVersion   EnergyTestVersion @relation(fields: [testVersionId], references: [id], onDelete: Restrict)
+  question      EnergyQuestion    @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@unique([testVersionId, questionId])
+  @@unique([testVersionId, sortOrder])
+  @@index([testVersionId])
+}
+
+model EnergyCheckIn {
+  id            String                 @id @default(cuid())
+  userId        String
+  testVersionId String
+  score         Float
+  createdAt     DateTime               @default(now())
+  user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testVersion   EnergyTestVersion      @relation(fields: [testVersionId], references: [id], onDelete: Restrict)
+  answers       EnergyCheckInAnswer[]
+
+  @@index([userId, createdAt])
+  @@index([testVersionId])
+}
+
+model ActivityEvent {
+  id             String   @id @default(cuid())
+  userId         String
+  type           String
+  entityType     String
+  entityId       String?
+  title          String   @default("")
+  metadata       Json     @default("{}")
+  idempotencyKey String
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt])
+  @@index([userId, type])
+  @@index([userId, entityType])
+}
+
+model EnergyCheckInAnswer {
+  id              String          @id @default(cuid())
+  checkInId       String
+  questionId      String
+  questionVersion Int
+  rawValue        Int
+  effectiveValue  Float
+  weight          Float
+  checkIn         EnergyCheckIn   @relation(fields: [checkInId], references: [id], onDelete: Cascade)
+  question        EnergyQuestion  @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@index([checkInId])
+  @@index([questionId])
+}

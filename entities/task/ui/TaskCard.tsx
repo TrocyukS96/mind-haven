@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu';
-import { Calendar, Edit, MoreVertical, Trash2, Brain, Target } from 'lucide-react';
+import { Briefcase, Calendar, Clock, Edit, MoreVertical, Trash2, Brain, Target } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { toast } from 'react-toastify';
 import { useStore } from '@/shared/store/store-config';
@@ -32,6 +32,8 @@ import { getTaskPriorityStyle } from '../lib/get-task-priority-style';
 interface TaskCardProps {
   task: Task;
   showGoalTitle?: boolean;
+  showProjectTitle?: boolean;
+  projectTitle?: string;
   showType?: boolean;
   showMeta?: boolean;
   variant?: 'default' | 'step';
@@ -51,12 +53,18 @@ function stopCardDrag(event: PointerEvent) {
 export function TaskCard({
   task,
   showGoalTitle = false,
+  showProjectTitle = false,
+  projectTitle,
   showType = true,
   showMeta = false,
   variant = 'default',
 }: TaskCardProps) {
-  const { toggleTask, deleteTask, openTaskForm, goals } = useStore();
+  const { toggleTask, deleteTask, openTaskForm, goals, projects } = useStore();
   const goal = goals.find((g) => g.id === task.goalId);
+  const project =
+    projectTitle !== undefined
+      ? { title: projectTitle }
+      : projects.find((p) => p.id === task.projectId);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const sortable = useKanbanItemSortable();
   const t = useTranslations('tasks');
@@ -223,8 +231,17 @@ export function TaskCard({
               </p>
             )}
 
-            {(formattedDeadline || (showGoalTitle && goal)) && (
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            {(formattedDeadline ||
+              task.estimatedMinutes ||
+              (showGoalTitle && goal) ||
+              (showProjectTitle && project)) && (
+              <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                {task.estimatedMinutes ? (
+                  <span className="inline-flex items-center gap-1">
+                    <Clock size={12} className="shrink-0" />
+                    {t('estimatedMinutes', { minutes: task.estimatedMinutes })}
+                  </span>
+                ) : null}
                 {formattedDeadline && (
                   <span
                     className={cn(
@@ -237,6 +254,12 @@ export function TaskCard({
                       {formattedDeadline}
                       {task.overdue && !task.completed && ` · ${t('overdueBadge')}`}
                     </span>
+                  </span>
+                )}
+                {showProjectTitle && project && (
+                  <span className="inline-flex min-w-0 items-center gap-1">
+                    <Briefcase size={12} className="shrink-0" />
+                    <span className="truncate">{project.title}</span>
                   </span>
                 )}
                 {showGoalTitle && goal && (

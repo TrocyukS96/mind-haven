@@ -8,6 +8,7 @@ import { useStore } from '@/shared/store/store-config';
 import { EnergyCheckInModal } from '@/features/energy/ui/energy-check-in-modal';
 import { EnergyResultDialog } from '@/features/energy/ui/energy-result-dialog';
 import { TaskFormModal } from '@/features/task';
+import { ProjectFormModal } from '@/features/project/ui/ProjectFormModal';
 
 export function ModalProvider() {
   const {
@@ -38,6 +39,8 @@ export function ModalProvider() {
         open={isTaskFormOpen}
         onOpenChange={(open) => !open && closeTaskForm()}
       />
+
+      <ProjectFormModal />
 
       <JournalFormModal
         open={isJournalFormOpen}

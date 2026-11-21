@@ -36,6 +36,9 @@ model User {
   accounts       Account[]
   sessions       Session[]
   goals          Goal[]
+  projects       Project[]
+  projectNotes   ProjectNote[]
+  taskColumns    TaskColumn[]
   tasks          Task[]
   journalEntries JournalEntry[]
   journalTags    JournalTag[]
@@ -164,31 +167,99 @@ model Goal {
   kanbanOrder Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   tasks       Task[]
+  projects    Project[]
 
   @@index([userId])
 }
 
-model Task {
+model Project {
   id          String    @id @default(cuid())
   userId      String
-  goalId      String?
   title       String
   description String    @default("")
-  completed   Boolean   @default(false)
+  status      String    @default("active")
   priority    String    @default("medium")
-  type        String    @default("backlog")
-  kanbanOrder Int       @default(0)
+  startDate   DateTime?
+  plannedEnd  DateTime?
+  color       String?
+  icon        String?
+  goalId      String?
+  nextAction  String    @default("")
+  progress    Int       @default(0)
   createdAt   DateTime  @default(now())
-  completedAt DateTime?
-  deadline    DateTime?
-  overdue     Boolean   @default(false)
+  updatedAt   DateTime  @updatedAt
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   goal        Goal?     @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  tasks       Task[]
+  notes       ProjectNote[]
 
   @@index([userId])
   @@index([goalId])
+}
+
+model ProjectNote {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([projectId])
+}
+
+model TaskColumn {
+  id         String    @id @default(cuid())
+  userId     String
+  title      String
+  kind       String    @default("default")
+  legacyKey  String?
+  dateFrom   DateTime?
+  dateTo     DateTime?
+  sortOrder  Int       @default(0)
+  isHidden   Boolean   @default(false)
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks      Task[]
+
+  @@unique([userId, legacyKey])
+  @@index([userId])
+  @@index([userId, kind])
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  userId           String
+  goalId           String?
+  projectId        String?
+  columnId         String?
+  title            String
+  description      String    @default("")
+  completed        Boolean   @default(false)
+  priority         String    @default("medium")
+  type             String    @default("backlog")
+  kanbanOrder      Int       @default(0)
+  estimatedMinutes Int?
+  createdAt        DateTime  @default(now())
+  completedAt      DateTime?
+  deadline         DateTime?
+  overdue          Boolean   @default(false)
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal             Goal?       @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  project          Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  column           TaskColumn? @relation(fields: [columnId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([goalId])
+  @@index([projectId])
+  @@index([columnId])
 }
 
 model PlannerLayout {

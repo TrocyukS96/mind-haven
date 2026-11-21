@@ -12,7 +12,8 @@ import { createPointsSlice, PointsSlice } from './slices/points-slice';
 import { createFinanceSlice, FinanceSlice } from './slices/finance-slice';
 import { createEnergySlice, EnergySlice } from './slices/energy-slice';
 import { createActivitySlice, ActivitySlice } from './slices/activity-slice';
-export type AppStore = HabitsSlice & GoalsSlice & JournalSlice & TablesSlice & AppSlice & TasksSlice & PointsSlice & FinanceSlice & EnergySlice & ActivitySlice;
+import { createProjectsSlice, ProjectsSlice } from './slices/projects-slice';
+export type AppStore = HabitsSlice & GoalsSlice & JournalSlice & TablesSlice & AppSlice & TasksSlice & PointsSlice & FinanceSlice & EnergySlice & ActivitySlice & ProjectsSlice;
 
 export const useStore = create<AppStore>()(
   devtools(
@@ -28,6 +29,7 @@ export const useStore = create<AppStore>()(
         ...createFinanceSlice(...args),
         ...createEnergySlice(...args),
         ...createActivitySlice(...args),
+        ...createProjectsSlice(...args),
       }),
       {
         name: 'mindhaven-storage',

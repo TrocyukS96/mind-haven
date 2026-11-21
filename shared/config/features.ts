@@ -3,6 +3,7 @@ import type { UserRole } from '@/entities/user';
 export const FEATURE_KEYS = [
   'dashboard',
   'goals',
+  'projects',
   'tasks',
   'journal',
   'habits',
@@ -46,6 +47,14 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
   },
   goals: {
     key: 'goals',
+    category: 'core',
+    minRole: 'GUEST',
+    requiresSubscription: false,
+    adminToggleable: true,
+    defaultEnabled: true,
+  },
+  projects: {
+    key: 'projects',
     category: 'core',
     minRole: 'GUEST',
     requiresSubscription: false,
@@ -161,6 +170,7 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
 export const NAV_FEATURE_KEYS: FeatureKey[] = [
   'dashboard',
   'goals',
+  'projects',
   'tasks',
   'journal',
   'habits',

@@ -1,4 +1,6 @@
 import type { Goal } from '@/entities/goal/model/types';
+import type { Project } from '@/entities/project/model/types';
+import type { TaskColumn } from '@/entities/task-column/model/types';
 import { getGoalCategoryFromDeadline } from '@/entities/goal/lib/get-goal-category-from-deadline';
 import type { Task, TaskPriority } from '@/entities/task/model/types';
 
@@ -20,6 +22,8 @@ export interface PlannerOutboxItem {
 export interface PlannerSnapshot {
   goals: Goal[];
   tasks: Task[];
+  projects?: Project[];
+  taskColumns?: TaskColumn[];
   goalsKanbanColumnOrder: string[];
   tasksKanbanColumnOrder: string[];
   outbox: PlannerOutboxItem[];
@@ -28,6 +32,9 @@ export interface PlannerSnapshot {
 export interface PlannerData {
   goals: Goal[];
   tasks: Task[];
+  projects: Project[];
+  projectNotes: Record<string, import('@/entities/project/model/types').ProjectNote[]>;
+  taskColumns: TaskColumn[];
   goalsKanbanColumnOrder: string[];
   tasksKanbanColumnOrder: string[];
 }
@@ -190,6 +197,9 @@ export function mergePlannerData(
     goalsKanbanColumnOrder: remote.goalsKanbanColumnOrder,
     tasksKanbanColumnOrder: remote.tasksKanbanColumnOrder,
     tasks,
+    projects: remote.projects ?? [],
+    projectNotes: remote.projectNotes ?? {},
+    taskColumns: remote.taskColumns ?? [],
     goals: goals.map((goal) => ({
       ...goal,
       tasks: tasks.filter((task) => task.goalId === goal.id),
@@ -239,6 +249,14 @@ export function sanitizeTask(task: Task, validGoalIds?: Set<string>): Task | nul
     goalId = undefined;
   }
 
+  let projectId = task.projectId && SAFE_ID.test(task.projectId) ? task.projectId : undefined;
+  let columnId = task.columnId && SAFE_ID.test(task.columnId) ? task.columnId : undefined;
+
+  const estimatedMinutes =
+    task.estimatedMinutes !== undefined && Number.isFinite(task.estimatedMinutes)
+      ? Math.max(0, Math.min(60 * 24 * 7, Math.round(task.estimatedMinutes)))
+      : undefined;
+
   return {
     ...task,
     id: task.id,
@@ -248,6 +266,9 @@ export function sanitizeTask(task: Task, validGoalIds?: Set<string>): Task | nul
     priority: sanitizePriority(task.priority),
     type: sanitizeType(task.type, 'backlog'),
     goalId,
+    projectId,
+    columnId,
+    estimatedMinutes,
     createdAt: createdAt.toISOString(),
     completedAt: task.completed && completedAt ? completedAt.toISOString() : undefined,
     deadline: deadline ? deadline.toISOString() : undefined,

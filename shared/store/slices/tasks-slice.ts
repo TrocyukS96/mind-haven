@@ -17,6 +17,7 @@ import {
 } from '@/entities/points/lib/calculate-points';
 import { tryEarnPoints } from '@/entities/points/lib/process-point-event';
 import { sortByKanbanOrder } from '@/shared/lib/kanban-utils';
+import { mergeReorderedVisibleColumns, resolveTaskColumnId } from '@/shared/lib/planner/week-column-range';
 import { StateCreator } from 'zustand';
 import { AppStore } from '../store-config';
 
@@ -27,6 +28,8 @@ export interface TasksSlice {
     dailyTasks: Record<string, string[]>;
     isTaskFormOpen: boolean;
     defaultGoalId?: string;
+    defaultProjectId?: string;
+    defaultColumnId?: string;
     defaultDeadline?: string;
     taskFormDraft: TaskFormDraft | null;
 
@@ -37,6 +40,9 @@ export interface TasksSlice {
         deadline?: string,
         type?: string,
         description?: string,
+        projectId?: string,
+        columnId?: string,
+        estimatedMinutes?: number,
     ) => void;
     toggleTask: (id: string) => void;
     updateTask: (id: string, updates: Partial<Task>) => void;
@@ -44,7 +50,14 @@ export interface TasksSlice {
     reorderTasksKanbanColumns: (columnKeys: string[]) => void;
     reassignTasksColumn: (fromKey: string, toKey: string) => void;
     moveTaskInKanban: (taskId: string, targetType: string, targetIndex: number) => void;
-    openTaskForm: (task?: Task, goalId?: string, deadline?: string) => void;
+    moveTaskToColumn: (
+        taskId: string,
+        columnId: string,
+        targetIndex: number,
+        visibleOrder?: string[]
+    ) => void;
+    moveOpenTasksToColumn: (fromColumnId: string, toColumnId: string) => number;
+    openTaskForm: (task?: Task, goalId?: string, deadline?: string, projectId?: string, columnId?: string) => void;
     openTaskFormFromVoice: (draft: TaskFormDraft) => void;
     closeTaskForm: () => void;
     getOverdueTasks: () => Task[];
@@ -102,6 +115,7 @@ function persistTaskOrder(get: () => AppStore) {
         id: task.id,
         type: task.type,
         kanbanOrder: task.kanbanOrder ?? 0,
+        columnId: task.columnId ?? null,
     }));
 
     void reorderPlannerRequest({ tasks }).catch(() => {
@@ -127,6 +141,19 @@ function persistTaskLayout(get: () => AppStore) {
     });
 }
 
+function patchGoalTasks<T extends { tasks: Task[] }>(goals: T[], patches: Map<string, Partial<Task>>): T[] {
+    return goals.map((goal) => {
+        let changed = false;
+        const tasks = goal.tasks.map((task) => {
+            const patch = patches.get(task.id);
+            if (!patch) return task;
+            changed = true;
+            return { ...task, ...patch };
+        });
+        return changed ? { ...goal, tasks } : goal;
+    });
+}
+
 const calculateProgress = (subtasks: Task[]) => {
     if (subtasks.length === 0) return 0;
     return Math.round(
@@ -142,8 +169,30 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
     isTaskFormOpen: false,
     defaultGoalId: undefined,
     taskFormDraft: null,
-    addTask: (title, goalId, priority = 'medium', deadline?: string, type = 'backlog', description?: string) => {
-        const columnTasks = get().tasks.filter((item) => item.type === type);
+    addTask: (
+        title,
+        goalId,
+        priority = 'medium',
+        deadline?: string,
+        type = 'backlog',
+        description?: string,
+        projectId?: string,
+        columnId?: string,
+        estimatedMinutes?: number,
+    ) => {
+        const columns = get().taskColumns;
+        const backlog = columns.find((c) => c.legacyKey === 'backlog');
+        const resolvedColumnId = columnId ?? backlog?.id;
+        const resolvedType =
+            columns.find((c) => c.id === resolvedColumnId)?.legacyKey ??
+            columns.find((c) => c.legacyKey === type)?.legacyKey ??
+            type;
+
+        const columnTasks = get().tasks.filter(
+            (item) =>
+                (resolvedColumnId && item.columnId === resolvedColumnId) ||
+                (!resolvedColumnId && item.type === resolvedType)
+        );
         const maxOrder = columnTasks.reduce(
             (max, item) => Math.max(max, item.kanbanOrder ?? -1),
             -1
@@ -155,8 +204,11 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
             description: description?.trim() || undefined,
             completed: false,
             priority,
-            type,
+            type: resolvedType,
             goalId,
+            projectId,
+            columnId: resolvedColumnId,
+            estimatedMinutes,
             createdAt: new Date().toISOString(),
             deadline: deadline ? new Date(deadline).toISOString() : undefined,
             kanbanOrder: maxOrder + 1,
@@ -176,7 +228,7 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
             }));
         }
 
-        if (goalId) {
+        if (goalId && !(projectId && get().projects.find((p) => p.id === projectId)?.goalId === goalId)) {
             set((state) => {
                 const goal = state.goals.find((g) => g.id === goalId);
                 if (!goal) return state;
@@ -190,6 +242,19 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
                     ),
                 };
             });
+        }
+
+        if (projectId) {
+            get().refreshProjectProgress(projectId);
+            void get().recordActivity(
+                buildActivityInput({
+                    type: 'TASK_ASSIGNED_TO_PROJECT',
+                    entityId: newTask.id,
+                    title: newTask.title,
+                    metadata: { projectId },
+                    idempotencyKey: `task:${newTask.id}:project:${projectId}`,
+                })
+            );
         }
 
         void get().recordActivity(
@@ -279,6 +344,10 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
             }
         }
 
+        if (task.projectId) {
+            get().refreshProjectProgress(task.projectId);
+        }
+
         get().recalculateRating(get().tasks);
         persistTaskUpdate(get, id);
     },
@@ -314,6 +383,10 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
             });
         }
 
+        if (task.projectId) {
+            get().refreshProjectProgress(task.projectId);
+        }
+
         persistTaskDelete(get, task.id);
     },
 
@@ -333,7 +406,130 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
         }
 
 
+        if (updates.projectId) {
+            get().refreshProjectProgress(updates.projectId);
+        }
+
         persistTaskUpdate(get, id);
+    },
+
+    moveTaskToColumn: (taskId, columnId, targetIndex, visibleOrder) => {
+        const columns = get().taskColumns.filter((column) => !column.archivedAt);
+        const column = columns.find((item) => item.id === columnId);
+        if (!column) return;
+
+        set((state) => {
+            const task = state.tasks.find((item) => item.id === taskId);
+            if (!task) return state;
+
+            const keyOf = (item: Task) => resolveTaskColumnId(item, columns);
+            const sourceKey = keyOf(task);
+            const targetColumnTasks = sortByKanbanOrder(
+                state.tasks.filter((item) => keyOf(item) === columnId && item.id !== taskId)
+            );
+            const clampedIndex = Math.max(0, Math.min(targetIndex, targetColumnTasks.length));
+            const previousVisible = (visibleOrder ?? [])
+                .filter((id) => id !== taskId && targetColumnTasks.some((item) => item.id === id));
+            const orderedIds = visibleOrder
+                ? mergeReorderedVisibleColumns(
+                    targetColumnTasks.map((item) => item.id),
+                    previousVisible,
+                    visibleOrder
+                )
+                : (() => {
+                    const ids = targetColumnTasks.map((item) => item.id);
+                    ids.splice(clampedIndex, 0, taskId);
+                    return ids;
+                })();
+
+            if (sourceKey === columnId) {
+                const currentIds = sortByKanbanOrder(
+                    state.tasks.filter((item) => keyOf(item) === sourceKey)
+                ).map((item) => item.id);
+                if (currentIds.join('\0') === orderedIds.join('\0')) return state;
+            }
+
+            const orderUpdates = new Map<string, Partial<Task>>();
+            orderedIds.forEach((id, index) => {
+                const patch: Partial<Task> = { columnId, kanbanOrder: index };
+                if (id === taskId && column.legacyKey) patch.type = column.legacyKey;
+                orderUpdates.set(id, patch);
+            });
+
+            if (sourceKey !== columnId) {
+                sortByKanbanOrder(
+                    state.tasks.filter((item) => keyOf(item) === sourceKey && item.id !== taskId)
+                ).forEach((item, index) => {
+                    orderUpdates.set(item.id, { kanbanOrder: index });
+                });
+            }
+
+            const updatedTasks = state.tasks.map((item) => {
+                const update = orderUpdates.get(item.id);
+                return update ? { ...item, ...update } : item;
+            });
+
+            return { tasks: updatedTasks, goals: patchGoalTasks(state.goals, orderUpdates) };
+        });
+
+        void get().recordActivity(
+            buildActivityInput({
+                type: 'TASK_MOVED_TO_COLUMN',
+                entityId: taskId,
+                title: get().tasks.find((t) => t.id === taskId)?.title ?? '',
+                metadata: { columnId },
+                idempotencyKey: `task:${taskId}:column:${columnId}:${Date.now()}`,
+            })
+        );
+
+        persistTaskOrder(get);
+    },
+
+    moveOpenTasksToColumn: (fromColumnId, toColumnId) => {
+        const target = get().taskColumns.find((column) => column.id === toColumnId && !column.archivedAt);
+        if (!target || fromColumnId === toColumnId) return 0;
+
+        let moved = 0;
+        set((state) => {
+            const moving = sortByKanbanOrder(
+                state.tasks.filter((task) => task.columnId === fromColumnId && !task.completed)
+            );
+            moved = moving.length;
+            if (moving.length === 0) return state;
+
+            const movingIds = new Set(moving.map((task) => task.id));
+            const staying = sortByKanbanOrder(
+                state.tasks.filter((task) => task.columnId === toColumnId && !movingIds.has(task.id))
+            );
+            const patches = new Map<string, Partial<Task>>();
+            let order = 0;
+            for (const task of staying) {
+                patches.set(task.id, { kanbanOrder: order });
+                order += 1;
+            }
+            for (const task of moving) {
+                const patch: Partial<Task> = { columnId: toColumnId, kanbanOrder: order };
+                if (target.legacyKey) patch.type = target.legacyKey;
+                patches.set(task.id, patch);
+                order += 1;
+            }
+            sortByKanbanOrder(
+                state.tasks.filter((task) => task.columnId === fromColumnId && !movingIds.has(task.id))
+            ).forEach((task, index) => {
+                patches.set(task.id, { kanbanOrder: index });
+            });
+
+            return {
+                tasks: state.tasks.map((task) => {
+                    const patch = patches.get(task.id);
+                    return patch ? { ...task, ...patch } : task;
+                }),
+                goals: patchGoalTasks(state.goals, patches),
+            };
+        });
+
+        if (moved > 0) persistTaskOrder(get);
+        return moved;
     },
 
     reorderTasksKanbanColumns: (columnKeys) => {
@@ -423,11 +619,13 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
         persistTaskOrder(get);
     },
 
-    openTaskForm: (task, goalId, deadline) => {
+    openTaskForm: (task, goalId, deadline, projectId, columnId) => {
         set({
             selectedTask: task || null,
             isTaskFormOpen: true,
             defaultGoalId: goalId,
+            defaultProjectId: projectId,
+            defaultColumnId: columnId,
             defaultDeadline: deadline || '',
             taskFormDraft: null,
         });
@@ -446,6 +644,8 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
             selectedTask: null,
             isTaskFormOpen: false,
             defaultGoalId: undefined,
+            defaultProjectId: undefined,
+            defaultColumnId: undefined,
             defaultDeadline: undefined,
             taskFormDraft: null,
         }),

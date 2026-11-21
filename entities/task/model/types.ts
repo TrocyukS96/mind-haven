@@ -9,6 +9,9 @@ export interface Task {
   priority: TaskPriority;
   type: TaskType;
   goalId?: string;
+  projectId?: string;
+  columnId?: string;
+  estimatedMinutes?: number;
   createdAt: string;
   completedAt?: string;
   deadline?: string;

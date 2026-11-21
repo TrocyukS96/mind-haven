@@ -19,8 +19,12 @@ import { TreeIllustration } from '@/widgets/dashboard/ui/tree-illustration';
 type StepFilter = 'all' | 'active' | 'done';
 type TreeTab = 'steps' | 'notes' | 'stats' | 'files';
 
-function goalSteps(goal: Goal, tasks: Task[]): Task[] {
-  const linked = tasks.filter((task) => task.goalId === goal.id);
+function goalSteps(goal: Goal, tasks: Task[], projectGoalIds: Map<string, string | undefined>): Task[] {
+  const linked = tasks.filter((task) => {
+    if (task.goalId !== goal.id) return false;
+  if (task.projectId && projectGoalIds.get(task.projectId) === goal.id) return false;
+    return true;
+  });
   const known = new Set(linked.map((task) => task.id));
   const embedded = (goal.tasks ?? []).filter((task) => !known.has(task.id));
   return [...linked, ...embedded];
@@ -33,12 +37,24 @@ export function GoalTreePage({ goalId }: { goalId: string }) {
   const hydrated = useStoreHydrated();
   const goal = useStore((state) => state.goals.find((item) => item.id === goalId));
   const tasks = useStore((state) => state.tasks);
+  const projects = useStore((state) => state.projects);
+  const projectGoalIds = useMemo(
+    () => new Map(projects.map((p) => [p.id, p.goalId])),
+    [projects]
+  );
+  const linkedProjects = useMemo(
+    () => projects.filter((p) => p.goalId === goalId && p.status !== 'archived'),
+    [projects, goalId]
+  );
   const activityEvents = useStore((state) => state.activityEvents);
   const openTaskForm = useStore((state) => state.openTaskForm);
   const [filter, setFilter] = useState<StepFilter>('all');
   const [tab, setTab] = useState<TreeTab>('steps');
 
-  const steps = useMemo(() => (goal ? goalSteps(goal, tasks) : []), [goal, tasks]);
+  const steps = useMemo(
+    () => (goal ? goalSteps(goal, tasks, projectGoalIds) : []),
+    [goal, tasks, projectGoalIds]
+  );
   const visibleSteps = steps.filter((step) => {
     if (filter === 'active') return !step.completed;
     if (filter === 'done') return step.completed;
@@ -132,6 +148,25 @@ export function GoalTreePage({ goalId }: { goalId: string }) {
               <div className="h-full rounded-full bg-primary motion-safe:transition-[width] motion-safe:duration-500" style={{ width: `${progress}%` }} />
             </div>
           </section>
+
+          {linkedProjects.length > 0 ? (
+            <section className="rounded-2xl border bg-card/80 p-5 space-y-3">
+              <h2 className="font-semibold">{t('relatedProjects')}</h2>
+              <ul className="space-y-2">
+                {linkedProjects.map((project) => (
+                  <li key={project.id}>
+                    <Link
+                      href={`/projects/${project.id}`}
+                      className="flex items-center justify-between rounded-xl border px-3 py-2 text-sm hover:bg-accent"
+                    >
+                      <span className="truncate font-medium">{project.title}</span>
+                      <span className="tabular-nums text-muted-foreground">{project.progress}%</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
           <section className="rounded-2xl border bg-card/80 p-4 sm:p-5">
             <div className="flex flex-wrap gap-2">

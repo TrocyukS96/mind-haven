@@ -3,6 +3,17 @@ import type { Goal } from '@/entities/goal/model/types';
 import type { Task, TaskPriority } from '@/entities/task/model/types';
 import { getGoalCategoryFromDeadline } from '@/entities/goal/lib/get-goal-category-from-deadline';
 import { prisma } from '@/shared/lib/db';
+import { ensureTaskColumnsForUser } from '@/shared/lib/planner/column-migration';
+import {
+  calculateCompletionProgress,
+  tasksForGoalProgress,
+} from '@/shared/lib/planner/calculate-progress';
+import { listProjects, refreshProjectProgress } from '@/shared/lib/planner/project-service';
+import {
+  listTaskColumns,
+  ownedColumnId,
+  ownedProjectId,
+} from '@/shared/lib/planner/task-column-service';
 import {
   normalizeColumnOrder,
   planPlannerSync,
@@ -22,20 +33,18 @@ interface IdOwner {
 
 export type { PlannerData, PlannerSnapshot };
 
-function calculateProgress(tasks: { completed: boolean }[]): number {
-  if (tasks.length === 0) return 0;
-  return Math.round(tasks.reduce((total, task) => total + (task.completed ? 100 : 20), 0) / tasks.length);
-}
-
 function mapTask(row: {
   id: string;
   goalId: string | null;
+  projectId: string | null;
+  columnId: string | null;
   title: string;
   description: string;
   completed: boolean;
   priority: string;
   type: string;
   kanbanOrder: number;
+  estimatedMinutes: number | null;
   createdAt: Date;
   completedAt: Date | null;
   deadline: Date | null;
@@ -49,6 +58,9 @@ function mapTask(row: {
     priority: PRIORITIES.has(row.priority as TaskPriority) ? (row.priority as TaskPriority) : 'medium',
     type: row.type,
     goalId: row.goalId ?? undefined,
+    projectId: row.projectId ?? undefined,
+    columnId: row.columnId ?? undefined,
+    estimatedMinutes: row.estimatedMinutes ?? undefined,
     createdAt: row.createdAt.toISOString(),
     completedAt: row.completedAt?.toISOString(),
     deadline: row.deadline?.toISOString(),
@@ -110,17 +122,44 @@ async function ownedGoalId(userId: string, goalId?: string | null): Promise<stri
   return goal?.id ?? null;
 }
 
-async function refreshGoalProgress(userId: string, goalId?: string | null): Promise<void> {
+export async function refreshGoalProgress(userId: string, goalId?: string | null): Promise<void> {
   if (!goalId) return;
 
-  const tasks = await prisma.task.findMany({
-    where: { userId, goalId },
-    select: { completed: true },
-  });
+  const [taskRows, projectRows] = await Promise.all([
+    prisma.task.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        goalId: true,
+        projectId: true,
+        completed: true,
+      },
+    }),
+    prisma.project.findMany({
+      where: { userId },
+      select: { id: true, goalId: true },
+    }),
+  ]);
+
+  const projectGoalIds = new Map(projectRows.map((p) => [p.id, p.goalId]));
+  const relevant = tasksForGoalProgress(
+    taskRows.map((t) => ({
+      id: t.id,
+      title: '',
+      completed: t.completed,
+      priority: 'medium' as const,
+      type: 'backlog',
+      goalId: t.goalId ?? undefined,
+      projectId: t.projectId ?? undefined,
+      createdAt: new Date().toISOString(),
+    })),
+    goalId,
+    projectGoalIds
+  );
 
   await prisma.goal.updateMany({
     where: { id: goalId, userId },
-    data: { progress: calculateProgress(tasks) },
+    data: { progress: calculateCompletionProgress(relevant) },
   });
 }
 
@@ -137,15 +176,58 @@ function goalData(goal: Goal) {
   };
 }
 
-function taskData(task: Task, goalId: string | null) {
+async function resolveColumnIdForType(userId: string, type: string): Promise<string | null> {
+  const column = await prisma.taskColumn.findFirst({
+    where: { userId, legacyKey: type, archivedAt: null },
+    select: { id: true },
+  });
+  return column?.id ?? null;
+}
+
+async function resolveTaskRelations(
+  userId: string,
+  task: Task,
+  fallback?: { goalId?: string | null; projectId?: string | null; columnId?: string | null }
+): Promise<{ goalId: string | null; projectId: string | null; columnId: string | null }> {
+  const goalId = await ownedGoalId(
+    userId,
+    task.goalId !== undefined ? task.goalId : fallback?.goalId
+  );
+  const projectId = await ownedProjectId(
+    userId,
+    task.projectId !== undefined ? task.projectId : fallback?.projectId
+  );
+
+  let columnId = await ownedColumnId(
+    userId,
+    task.columnId !== undefined ? task.columnId : fallback?.columnId
+  );
+
+  if (!columnId) {
+    columnId = await resolveColumnIdForType(userId, task.type);
+  }
+
+  return { goalId, projectId, columnId };
+}
+
+function buildTaskData(
+  task: Task,
+  goalId: string | null,
+  projectId: string | null,
+  columnId: string | null
+) {
   return {
     goalId,
+    projectId,
+    columnId,
     title: task.title,
     description: task.description ?? '',
     completed: task.completed,
     priority: task.priority,
     type: task.type,
     kanbanOrder: task.kanbanOrder ?? 0,
+    estimatedMinutes:
+      task.estimatedMinutes !== undefined ? Math.max(0, Math.round(task.estimatedMinutes)) : null,
     createdAt: new Date(task.createdAt),
     completedAt: task.completedAt ? new Date(task.completedAt) : null,
     deadline: task.deadline ? new Date(task.deadline) : null,
@@ -154,27 +236,48 @@ function taskData(task: Task, goalId: string | null) {
 }
 
 export async function getPlanner(userId: string): Promise<PlannerData> {
-  const [goalRows, taskRows, layout] = await Promise.all([
+  await ensureTaskColumnsForUser(userId);
+
+  const [goalRows, taskRows, layout, projects, taskColumns] = await Promise.all([
     prisma.goal.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } }),
     prisma.task.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } }),
     prisma.plannerLayout.findUnique({ where: { userId } }),
+    listProjects(userId),
+    listTaskColumns(userId),
   ]);
 
   const tasks = taskRows.map(mapTask);
+  const projectGoalIds = new Map(
+    (await prisma.project.findMany({ where: { userId }, select: { id: true, goalId: true } })).map(
+      (p) => [p.id, p.goalId]
+    )
+  );
+
   const tasksByGoal = new Map<string, Task[]>();
 
   for (const task of tasks) {
     if (!task.goalId) continue;
+    if (task.projectId && projectGoalIds.get(task.projectId) === task.goalId) {
+      continue;
+    }
     const grouped = tasksByGoal.get(task.goalId) ?? [];
     grouped.push(task);
     tasksByGoal.set(task.goalId, grouped);
   }
 
+  const columnOrder =
+    taskColumns.length > 0
+      ? taskColumns.map((c) => c.legacyKey ?? c.id).filter(Boolean)
+      : normalizeColumnOrder(layout?.tasksKanbanColumnOrder);
+
   return {
     goals: goalRows.map((row) => mapGoal(row, tasksByGoal.get(row.id) ?? [])),
     tasks,
+    projects,
+    projectNotes: {},
+    taskColumns,
     goalsKanbanColumnOrder: normalizeColumnOrder(layout?.goalsKanbanColumnOrder),
-    tasksKanbanColumnOrder: normalizeColumnOrder(layout?.tasksKanbanColumnOrder),
+    tasksKanbanColumnOrder: columnOrder,
   };
 }
 
@@ -225,8 +328,13 @@ export async function deleteGoal(userId: string, goalId: string): Promise<void> 
 }
 
 export async function createTask(userId: string, input: Task): Promise<Task> {
-  const goalId = await ownedGoalId(userId, input.goalId);
-  const sanitized = sanitizeTask({ ...input, goalId: goalId ?? undefined });
+  const relations = await resolveTaskRelations(userId, input);
+  const sanitized = sanitizeTask({
+    ...input,
+    goalId: relations.goalId ?? undefined,
+    projectId: relations.projectId ?? undefined,
+    columnId: relations.columnId ?? undefined,
+  });
   if (!sanitized) {
     throw new Error('Task is invalid');
   }
@@ -236,10 +344,17 @@ export async function createTask(userId: string, input: Task): Promise<Task> {
   );
 
   const row = await prisma.task.create({
-    data: { id, userId, ...taskData(sanitized, goalId) },
+    data: {
+      id,
+      userId,
+      ...buildTaskData(sanitized, relations.goalId, relations.projectId, relations.columnId),
+    },
   });
 
-  await refreshGoalProgress(userId, goalId);
+  await Promise.all([
+    refreshGoalProgress(userId, relations.goalId),
+    refreshProjectProgress(userId, relations.projectId),
+  ]);
   return mapTask(row);
 }
 
@@ -249,26 +364,38 @@ export async function updateTask(userId: string, taskId: string, input: Partial<
     throw new Error('Task not found');
   }
 
-  const goalId = await ownedGoalId(userId, input.goalId === undefined ? existing.goalId : input.goalId);
-  const sanitized = sanitizeTask({ ...mapTask(existing), ...input, id: taskId, goalId: goalId ?? undefined });
+  const merged = { ...mapTask(existing), ...input, id: taskId };
+  const relations = await resolveTaskRelations(userId, merged, existing);
+  const sanitized = sanitizeTask({
+    ...merged,
+    goalId: relations.goalId ?? undefined,
+    projectId: relations.projectId ?? undefined,
+    columnId: relations.columnId ?? undefined,
+  });
   if (!sanitized) {
     throw new Error('Task is invalid');
   }
 
   const row = await prisma.task.update({
     where: { id: taskId },
-    data: taskData(sanitized, goalId),
+    data: buildTaskData(sanitized, relations.goalId, relations.projectId, relations.columnId),
   });
 
   const completedChanged = existing.completed !== sanitized.completed;
-  const goalChanged = existing.goalId !== goalId;
-  if (completedChanged || goalChanged || input.goalId !== undefined) {
-    if (completedChanged || goalChanged) {
-      await refreshGoalProgress(userId, existing.goalId);
-      if (goalId !== existing.goalId) {
-        await refreshGoalProgress(userId, goalId);
-      }
-    }
+  const goalChanged = existing.goalId !== relations.goalId;
+  const projectChanged = existing.projectId !== relations.projectId;
+
+  if (completedChanged || goalChanged || projectChanged) {
+    await Promise.all([
+      refreshGoalProgress(userId, existing.goalId),
+      relations.goalId !== existing.goalId
+        ? refreshGoalProgress(userId, relations.goalId)
+        : Promise.resolve(),
+      refreshProjectProgress(userId, existing.projectId),
+      relations.projectId !== existing.projectId
+        ? refreshProjectProgress(userId, relations.projectId)
+        : Promise.resolve(),
+    ]);
   }
 
   return mapTask(row);
@@ -277,7 +404,7 @@ export async function updateTask(userId: string, taskId: string, input: Partial<
 export async function deleteTask(userId: string, taskId: string): Promise<void> {
   const existing = await prisma.task.findFirst({
     where: { id: taskId, userId },
-    select: { id: true, goalId: true },
+    select: { id: true, goalId: true, projectId: true },
   });
 
   if (!existing) {
@@ -285,14 +412,17 @@ export async function deleteTask(userId: string, taskId: string): Promise<void> 
   }
 
   await prisma.task.delete({ where: { id: taskId } });
-  await refreshGoalProgress(userId, existing.goalId);
+  await Promise.all([
+    refreshGoalProgress(userId, existing.goalId),
+    refreshProjectProgress(userId, existing.projectId),
+  ]);
 }
 
 export async function reorderPlanner(
   userId: string,
   input: {
     goals?: { id: string; type: string; kanbanOrder: number }[];
-    tasks?: { id: string; type: string; kanbanOrder: number }[];
+    tasks?: { id: string; type: string; kanbanOrder: number; columnId?: string | null }[];
   }
 ): Promise<void> {
   await prisma.$transaction(async (tx) => {
@@ -305,12 +435,29 @@ export async function reorderPlanner(
       });
     }
 
+    const columns = await tx.taskColumn.findMany({
+      where: { userId },
+      select: { id: true, legacyKey: true, archivedAt: true },
+    });
+    const columnsById = new Map(columns.map((column) => [column.id, column]));
+    const legacyToColumn = new Map(
+      columns
+        .filter((column) => column.legacyKey && !column.archivedAt)
+        .map((column) => [column.legacyKey as string, column.id])
+    );
+
     for (const task of input.tasks ?? []) {
       const type = task.type?.trim().slice(0, 40);
       if (!task.id || !type || !/^[A-Za-z0-9_-]+$/.test(type)) continue;
+      const explicitColumn = task.columnId ? columnsById.get(task.columnId) : undefined;
+      const columnId = explicitColumn?.id ?? legacyToColumn.get(type) ?? null;
       await tx.task.updateMany({
         where: { id: task.id, userId },
-        data: { type, kanbanOrder: Math.max(0, Math.round(task.kanbanOrder || 0)) },
+        data: {
+          type,
+          columnId,
+          kanbanOrder: Math.max(0, Math.round(task.kanbanOrder || 0)),
+        },
       });
     }
   });
@@ -398,7 +545,32 @@ export async function syncPlannerFromBrowser(userId: string, snapshot: PlannerSn
           tx.task.findUnique({ where: { id: taskId }, select: { userId: true } })
         );
         const goalId = sanitized.goalId ?? null;
-        const data = taskData(sanitized, goalId);
+        let projectId: string | null = sanitized.projectId ?? null;
+        if (projectId) {
+          const project = await tx.project.findFirst({
+            where: { id: projectId, userId },
+            select: { id: true },
+          });
+          projectId = project?.id ?? null;
+        }
+
+        let columnId: string | null = sanitized.columnId ?? null;
+        if (columnId) {
+          const column = await tx.taskColumn.findFirst({
+            where: { id: columnId, userId },
+            select: { id: true },
+          });
+          columnId = column?.id ?? null;
+        }
+        if (!columnId) {
+          const column = await tx.taskColumn.findFirst({
+            where: { userId, legacyKey: sanitized.type, archivedAt: null },
+            select: { id: true },
+          });
+          columnId = column?.id ?? null;
+        }
+
+        const data = buildTaskData(sanitized, goalId, projectId, columnId);
         const existing = await tx.task.findFirst({ where: { id, userId }, select: { id: true } });
 
         if (existing) {

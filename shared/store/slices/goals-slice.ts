@@ -155,6 +155,9 @@ export const createGoalsSlice: StateCreator<AppStore, [], [], GoalsSlice> = (set
     set({
       goals: data.goals,
       tasks: data.tasks,
+      projects: data.projects ?? [],
+      projectNotes: data.projectNotes ?? {},
+      taskColumns: data.taskColumns ?? [],
       goalsKanbanColumnOrder: data.goalsKanbanColumnOrder,
       tasksKanbanColumnOrder: data.tasksKanbanColumnOrder,
     }),
