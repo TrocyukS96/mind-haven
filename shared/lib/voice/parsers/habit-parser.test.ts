@@ -20,7 +20,7 @@ describe('normalizeParsedHabit', () => {
       frequency: '3 раза в неделю',
     });
 
-    expect(result.frequency).toBe('weekly');
+    expect(result.frequency).toBe('thricePerWeek');
   });
 
   it('throws when name is missing', () => {

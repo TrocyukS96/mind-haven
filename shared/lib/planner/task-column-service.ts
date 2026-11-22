@@ -4,7 +4,7 @@ import { ensureTaskColumnsForUser, getBacklogColumnId } from '@/shared/lib/plann
 
 const KINDS = new Set<TaskColumnKind>(['default', 'custom', 'week']);
 
-function mapColumn(row: {
+export function mapColumn(row: {
   id: string;
   title: string;
   kind: string;

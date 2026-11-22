@@ -11,6 +11,7 @@ import { useStoreHydrated } from '@/shared/hooks/use-store-hydrated';
 import { resolveHabitTrackingType } from '@/entities/habit/model/tracking-type';
 import { ensureHabitShape, isHabitDayMet } from '@/shared/lib/habit/habit-progress';
 import {
+  decodeWeeklyQuota,
   formatHabitWeekdayFrequency,
   HABIT_WEEKDAY_MESSAGE_KEY,
   isHabitScheduledOn,
@@ -58,9 +59,15 @@ export function HabitsPage({ initialHabits = null }: HabitsPageProps) {
   ];
 
   const habitFrequencyLabel = (habit: Habit) => {
-    const frequency = formatHabitWeekdayFrequency(habit.frequency, (day) =>
-      t(`weekdays.${HABIT_WEEKDAY_MESSAGE_KEY[day as keyof typeof HABIT_WEEKDAY_MESSAGE_KEY]}`)
-    );
+    const quota = decodeWeeklyQuota(habit.frequency);
+    const frequency =
+      quota === 2
+        ? t('frequencies.twicePerWeek')
+        : quota === 3
+          ? t('frequencies.thricePerWeek')
+          : formatHabitWeekdayFrequency(habit.frequency, (day) =>
+              t(`weekdays.${HABIT_WEEKDAY_MESSAGE_KEY[day as keyof typeof HABIT_WEEKDAY_MESSAGE_KEY]}`)
+            );
     const trackingType = resolveHabitTrackingType(habit);
     if (trackingType === 'check' || habit.targetCount == null) {
       return frequency;
@@ -188,10 +195,17 @@ export function HabitsPage({ initialHabits = null }: HabitsPageProps) {
               <Card className="hidden overflow-hidden lg:block">
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
-                    <table className="w-full min-w-max border-collapse text-sm">
+                    <table className="w-full table-fixed border-collapse text-sm">
+                      <colgroup>
+                        <col className="w-[280px]" />
+                        <col className="w-[72px]" />
+                        {dates.map((dateStr) => (
+                          <col key={dateStr} className="w-[72px]" />
+                        ))}
+                      </colgroup>
                       <thead>
                         <tr className="border-b bg-muted/30">
-                          <th className="sticky left-0 z-10 min-w-[180px] border-r bg-muted/30 px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          <th className="sticky left-0 z-10 border-r bg-muted/30 px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
                             {t('habitColumn')}
                           </th>
                           <th className="min-w-[72px] px-3 py-3 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -224,11 +238,13 @@ export function HabitsPage({ initialHabits = null }: HabitsPageProps) {
                               rowIndex === habits.length - 1 && 'border-b-0'
                             )}
                           >
-                            <td className="sticky left-0 z-10 border-r bg-card px-4 py-3">
+                            <td className="sticky left-0 z-10 border-r bg-card px-4 py-3 align-top">
                               <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0">
-                                  <p className="font-medium leading-snug">{habit.name}</p>
-                                  <p className="mt-0.5 text-xs text-muted-foreground">{habitFrequencyLabel(habit)}</p>
+                                <div className="min-w-0 flex-1">
+                                  <p className="break-words font-medium leading-snug">{habit.name}</p>
+                                  <p className="mt-0.5 break-words text-xs text-muted-foreground">
+                                    {habitFrequencyLabel(habit)}
+                                  </p>
                                 </div>
                                 <div className="flex shrink-0 items-center">
                                   <HabitEditButton habit={habit} />
@@ -265,7 +281,7 @@ export function HabitsPage({ initialHabits = null }: HabitsPageProps) {
                       <div className="space-y-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <h3 className="font-medium">{habit.name}</h3>
+                            <h3 className="break-words font-medium">{habit.name}</h3>
                             <p className="mt-1 text-sm text-muted-foreground">{habitFrequencyLabel(habit)}</p>
                           </div>
                           <div className="flex shrink-0 items-center gap-1">

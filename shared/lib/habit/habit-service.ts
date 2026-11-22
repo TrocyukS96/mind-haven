@@ -2,7 +2,7 @@ import type { Habit } from '@/entities/habit/model/types';
 import { buildActivityInput } from '@/entities/activity/lib/build-activity-input';
 import { recordActivityEvent } from '@/shared/lib/activity/activity-service';
 import { prisma } from '@/shared/lib/db';
-import { calculateHabitStreak, getHabitToday, shiftHabitDate } from '@/shared/lib/habit/habit-date';
+import { getHabitToday, shiftHabitDate } from '@/shared/lib/habit/habit-date';
 import { isHabitScheduledOn, normalizeStoredHabitFrequency } from '@/shared/lib/habit/habit-weekdays';
 import {
   normalizeHabitTrackingType,
@@ -11,6 +11,7 @@ import {
 } from '@/entities/habit/model/tracking-type';
 import {
   applyDayCount,
+  calculateHabitStreakForFrequency,
   completedDaysFromCounts,
   isHabitDayMet,
   normalizeDayCount,
@@ -223,9 +224,7 @@ export async function toggleHabitDay(
   const completedDays = wasCompleted
     ? habit.completedDays.filter((d) => d !== date)
     : [...habit.completedDays, date];
-  const nextStreak = calculateHabitStreak(completedDays, getHabitToday(), (day) =>
-    isHabitScheduledOn(habit.frequency, day)
-  );
+  const nextStreak = calculateHabitStreakForFrequency(habit.frequency, completedDays, getHabitToday());
 
   const row = await prisma.$transaction(async (tx) => {
     const updated = await tx.habit.update({
@@ -285,9 +284,7 @@ export async function setHabitDayCount(
   const wasCompleted = isHabitDayMet(habit, date);
   const dayCounts = applyDayCount(habit.dayCounts, date, normalizedCount);
   const completedDays = completedDaysFromCounts(dayCounts, habit.targetCount, habit.frequency);
-  const nextStreak = calculateHabitStreak(completedDays, getHabitToday(), (day) =>
-    isHabitScheduledOn(habit.frequency, day)
-  );
+  const nextStreak = calculateHabitStreakForFrequency(habit.frequency, completedDays, getHabitToday());
   const isCompleted = normalizedCount >= habit.targetCount;
 
   const row = await prisma.$transaction(async (tx) => {

@@ -449,6 +449,29 @@
       "fri": "Fri",
       "sat": "Sat",
       "sun": "Sun"
+    },
+    "weekBoard": {
+      "open": "Open week",
+      "back": "Back to tasks",
+      "backlog": "Week backlog",
+      "empty": "Nothing here yet",
+      "addTask": "+ Add task",
+      "localBadge": "Local task",
+      "editTitle": "Local task",
+      "status": "Status",
+      "statusTodo": "To do",
+      "statusInProgress": "In progress",
+      "statusDone": "Done",
+      "mainProgress": "Main tasks: {completed} of {total} done",
+      "localProgress": "Local tasks: {completed} of {total} done",
+      "overallProgress": "Whole week: {percent}%",
+      "archivedHint": "This archived week is view only",
+      "notFound": "Week not found",
+      "loading": "Loading week...",
+      "loadError": "Could not load the week",
+      "saveError": "Could not save the local task",
+      "titleRequired": "Enter a title",
+      "create": "Create"
     }
   },
   "projects": {
@@ -878,6 +901,8 @@
     },
     "frequencies": {
       "daily": "Daily",
+      "twicePerWeek": "2 times a week",
+      "thricePerWeek": "3 times a week",
       "weekly": "Weekly",
       "monthly": "Monthly",
       "yearly": "Yearly",

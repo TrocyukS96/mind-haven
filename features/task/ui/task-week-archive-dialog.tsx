@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog';
+import { Link } from '@/i18n/routing';
 import { cn } from '@/shared/lib/utils';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -129,6 +130,11 @@ export function TaskWeekArchiveDialog({
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    {column.kind === 'week' ? (
+                      <Button asChild size="sm" variant="outline">
+                        <Link href={`/tasks/weeks/${column.id}`}>{t('weekBoard.open')}</Link>
+                      </Button>
+                    ) : null}
                     <Button
                       type="button"
                       size="sm"

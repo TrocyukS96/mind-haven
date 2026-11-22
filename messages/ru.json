@@ -449,6 +449,29 @@
       "fri": "Пт",
       "sat": "Сб",
       "sun": "Вс"
+    },
+    "weekBoard": {
+      "open": "Открыть неделю",
+      "back": "К задачам",
+      "backlog": "Бэклог недели",
+      "empty": "Пока пусто",
+      "addTask": "+ Добавить задачу",
+      "localBadge": "Локальная задача",
+      "editTitle": "Локальная задача",
+      "status": "Статус",
+      "statusTodo": "К выполнению",
+      "statusInProgress": "В работе",
+      "statusDone": "Выполнено",
+      "mainProgress": "Основные задачи: выполнено {completed} из {total}",
+      "localProgress": "Локальные задачи: выполнено {completed} из {total}",
+      "overallProgress": "Вся неделя: {percent}%",
+      "archivedHint": "Архивная неделя открыта для просмотра",
+      "notFound": "Неделя не найдена",
+      "loading": "Загрузка недели...",
+      "loadError": "Не удалось загрузить неделю",
+      "saveError": "Не удалось сохранить локальную задачу",
+      "titleRequired": "Введите название",
+      "create": "Создать"
     }
   },
   "projects": {
@@ -878,6 +901,8 @@
     },
     "frequencies": {
       "daily": "Ежедневно",
+      "twicePerWeek": "2 раза в неделю",
+      "thricePerWeek": "3 раза в неделю",
       "weekly": "Еженедельно",
       "monthly": "Ежемесячно",
       "yearly": "Ежегодно",

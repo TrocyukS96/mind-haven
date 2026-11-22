@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   calculateHabitStreak,
+  calculateWeeklyQuotaStreak,
   getHabitMonthDates,
   getHabitRangeDates,
   getHabitWeekDates,
@@ -10,6 +11,8 @@ import {
 import { getHabitCountPresentation } from '@/shared/lib/habit/habit-progress';
 import {
   decodeHabitWeekdays,
+  decodeWeeklyQuota,
+  encodeWeeklyQuota,
   encodeHabitWeekdays,
   isHabitScheduledOn,
 } from '@/shared/lib/habit/habit-weekdays';
@@ -47,6 +50,21 @@ describe('habit weekdays', () => {
   it('stores selected days from Monday through Sunday', () => {
     expect(encodeHabitWeekdays([0, 3, 1])).toBe('days:1,3,0');
     expect(decodeHabitWeekdays('days:1,3,0')).toEqual([1, 3, 0]);
+  });
+
+  it('stores and resolves weekly quotas', () => {
+    expect(encodeWeeklyQuota(2)).toBe('week:2');
+    expect(decodeWeeklyQuota('week:3')).toBe(3);
+    expect(decodeWeeklyQuota('2 раза в неделю')).toBe(2);
+    expect(isHabitScheduledOn('week:2', '2026-09-29')).toBe(true);
+    expect(isHabitScheduledOn('week:2', '2026-10-04')).toBe(true);
+  });
+
+  it('counts a weekly streak after the quota is met on any days', () => {
+    const completed = ['2026-09-28', '2026-09-30', '2026-10-05', '2026-10-07'];
+    expect(calculateWeeklyQuotaStreak(completed, 2, '2026-09-30')).toBe(1);
+    expect(calculateWeeklyQuotaStreak(completed, 2, '2026-10-07')).toBe(2);
+    expect(calculateWeeklyQuotaStreak(['2026-09-28'], 2, '2026-09-30')).toBe(0);
   });
 
   it('keeps only the chosen weekdays open', () => {

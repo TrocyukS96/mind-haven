@@ -63,6 +63,40 @@ export function parseHabitDate(dateStr: string): Date {
   return new Date(year, month - 1, day);
 }
 
+function countCompletedDaysInWeek(completedDays: string[], weekEnd: string): number {
+  const weekday = parseHabitDate(weekEnd).getDay();
+  const daysFromMonday = weekday === 0 ? 6 : weekday - 1;
+  const weekStart = shiftHabitDate(weekEnd, -daysFromMonday);
+  return completedDays.filter((day) => day >= weekStart && day <= weekEnd).length;
+}
+
+export function calculateWeeklyQuotaStreak(
+  completedDays: string[],
+  quota: number,
+  today = getHabitToday()
+): number {
+  const weekday = parseHabitDate(today).getDay();
+  const daysFromMonday = weekday === 0 ? 6 : weekday - 1;
+  const currentWeekStart = shiftHabitDate(today, -daysFromMonday);
+  let weekEnd =
+    countCompletedDaysInWeek(completedDays, today) >= quota
+      ? today
+      : shiftHabitDate(currentWeekStart, -1);
+
+  let streak = 0;
+  for (let index = 0; index < 400 && weekEnd; index += 1) {
+    if (countCompletedDaysInWeek(completedDays, weekEnd) < quota) break;
+
+    streak += 1;
+    const endWeekday = parseHabitDate(weekEnd).getDay();
+    const endDaysFromMonday = endWeekday === 0 ? 6 : endWeekday - 1;
+    const weekStart = shiftHabitDate(weekEnd, -endDaysFromMonday);
+    weekEnd = shiftHabitDate(weekStart, -1);
+  }
+
+  return streak;
+}
+
 export function calculateHabitStreak(
   completedDays: string[],
   today = getHabitToday(),

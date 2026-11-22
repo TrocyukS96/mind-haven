@@ -34,6 +34,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { Link } from '@/i18n/routing';
 import { GripVertical } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
@@ -328,6 +329,15 @@ function TaskSortableColumn({
             <p className="text-xs text-muted-foreground">
               {t('columns.loadMinutes', { minutes: stats.minutes })}
             </p>
+          ) : null}
+          {column.kind === 'week' ? (
+            <Link
+              href={`/tasks/weeks/${column.id}`}
+              className="inline-flex text-xs font-medium text-primary hover:underline"
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              {t('weekBoard.open')}
+            </Link>
           ) : null}
         </div>
         <TaskColumnMenu column={column} />

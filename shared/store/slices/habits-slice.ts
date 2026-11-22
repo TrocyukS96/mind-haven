@@ -14,10 +14,11 @@ import {
   buildHabitStreakEvent,
 } from '@/entities/points/lib/calculate-points';
 import { tryEarnPointsMany } from '@/entities/points/lib/process-point-event';
-import { calculateHabitStreak, getHabitToday } from '@/shared/lib/habit/habit-date';
+import { getHabitToday } from '@/shared/lib/habit/habit-date';
 import { isHabitScheduledOn } from '@/shared/lib/habit/habit-weekdays';
 import {
   applyDayCount,
+  calculateHabitStreakForFrequency,
   completedDaysFromCounts,
   ensureHabitShape,
   isHabitDayMet,
@@ -150,9 +151,7 @@ export const createHabitsSlice: StateCreator<AppStore, [], [], HabitsSlice> = (s
     const completedDays = wasCompleted
       ? habit.completedDays.filter((day) => day !== date)
       : [...habit.completedDays, date];
-    const nextStreak = calculateHabitStreak(completedDays, getHabitToday(), (day) =>
-      isHabitScheduledOn(habit.frequency, day)
-    );
+    const nextStreak = calculateHabitStreakForFrequency(habit.frequency, completedDays, getHabitToday());
 
     set((state) => ({
       habits: state.habits.map((h) =>
@@ -211,9 +210,7 @@ export const createHabitsSlice: StateCreator<AppStore, [], [], HabitsSlice> = (s
 
     const dayCounts = applyDayCount(habit.dayCounts, date, normalizedCount);
     const completedDays = completedDaysFromCounts(dayCounts, habit.targetCount, habit.frequency);
-    const nextStreak = calculateHabitStreak(completedDays, getHabitToday(), (day) =>
-      isHabitScheduledOn(habit.frequency, day)
-    );
+    const nextStreak = calculateHabitStreakForFrequency(habit.frequency, completedDays, getHabitToday());
     const nextHabit: Habit = {
       ...habit,
       dayCounts,

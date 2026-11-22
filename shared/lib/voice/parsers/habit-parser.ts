@@ -15,14 +15,16 @@ IMPORTANT: Reply with ONLY a raw JSON object. Do not use markdown, code blocks, 
 Schema:
 {
   "name": string,
-  "frequency": "daily" | "weekly" | "monthly" | "yearly" | "weekends" | "custom" | null
+  "frequency": "daily" | "twicePerWeek" | "thricePerWeek" | "weekly" | "monthly" | "yearly" | "weekends" | "custom" | null
 }
 
 Rules:
 - "name" is required and must be a concise habit name.
 - "frequency" values:
   - "daily" — every day, ежедневно, каждый день
-  - "weekly" — every week, еженедельно, раз в неделю, 3 или 5 раз в неделю
+  - "twicePerWeek" — 2 times a week, 2 раза в неделю
+  - "thricePerWeek" — 3 times a week, 3 раза в неделю
+  - "weekly" — every week, еженедельно, раз в неделю, 5 раз в неделю
   - "monthly" — every month, ежемесячно, раз в месяц
   - "yearly" — every year, ежегодно, раз в год
   - "weekends" — on weekends, по выходным

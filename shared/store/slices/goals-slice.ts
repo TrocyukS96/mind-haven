@@ -13,7 +13,13 @@ import { isPlannerApiEnabled } from '@/entities/planner/lib/resolve-planner-api'
 import type { Task } from '@/entities/task/model/types';
 import type { GoalFormDraft } from '@/features/goal/lib/map-voice-to-goal-draft';
 import { sortByKanbanOrder } from '@/shared/lib/kanban-utils';
-import type { PlannerData, PlannerOutboxItem } from '@/shared/lib/planner/planner-merge';
+import { goalStepTaskIds } from '@/shared/lib/planner/goal-tasks';
+import {
+  EMPTY_PLANNER_SYNC_CURSOR,
+  type PlannerData,
+  type PlannerOutboxItem,
+  type PlannerSyncCursor,
+} from '@/shared/lib/planner/planner-merge';
 import { StateCreator } from 'zustand';
 import type { AppStore } from '../store-config';
 
@@ -33,11 +39,15 @@ export interface GoalsSlice {
   goalsKanbanColumnOrder: string[];
   plannerApiEnabled: boolean;
   plannerOutbox: PlannerOutboxItem[];
+  plannerSyncCursor: PlannerSyncCursor;
 
   setPlannerApiEnabled: (enabled: boolean) => void;
   hydratePlanner: (data: PlannerData) => void;
   enqueuePlannerOutbox: (input: PlannerOutboxInput) => void;
+  appendPlannerOutbox: (items: PlannerOutboxItem[]) => void;
+  ackPlannerOutbox: (key: string, kind: PlannerOutboxItem['kind']) => void;
   clearPlannerOutbox: (maxSeq: number) => void;
+  setPlannerSyncCursor: (cursor: PlannerSyncCursor) => void;
   addGoal: (goal: Omit<Goal, 'id' | 'progress' | 'category'>) => string;
   updateGoal: (id: string, updates: Partial<Goal>) => void;
   deleteGoal: (id: string) => void;
@@ -96,14 +106,23 @@ function persistGoalUpdate(get: () => AppStore, id: string) {
   trackGoalSave(id, pending);
 }
 
-function persistGoalDelete(get: () => AppStore, id: string) {
+function persistGoalDelete(get: () => AppStore, id: string, taskIds: string[]) {
   if (!isPlannerApiEnabled()) return;
+
+  get().enqueuePlannerOutbox({ kind: 'delete-goal', entityId: id });
+  for (const taskId of taskIds) {
+    get().enqueuePlannerOutbox({ kind: 'delete-task', entityId: taskId });
+  }
 
   const pending = waitForGoalSave(id)
     .then(() => deleteGoalRequest(id))
-    .catch(() => {
-      get().enqueuePlannerOutbox({ kind: 'delete-goal', entityId: id });
-    });
+    .then(() => {
+      get().ackPlannerOutbox(outboxKey('delete-goal', id), 'delete-goal');
+      for (const taskId of taskIds) {
+        get().ackPlannerOutbox(outboxKey('delete-task', taskId), 'delete-task');
+      }
+    })
+    .catch(() => undefined);
 
   trackGoalSave(id, pending);
 }
@@ -145,6 +164,7 @@ export const createGoalsSlice: StateCreator<AppStore, [], [], GoalsSlice> = (set
   goalsKanbanColumnOrder: [],
   plannerApiEnabled: false,
   plannerOutbox: [],
+  plannerSyncCursor: EMPTY_PLANNER_SYNC_CURSOR,
   selectedGoal: null,
   isGoalFormOpen: false,
   goalFormDraft: null,
@@ -181,10 +201,27 @@ export const createGoalsSlice: StateCreator<AppStore, [], [], GoalsSlice> = (set
       };
     }),
 
+  appendPlannerOutbox: (items) =>
+    set((state) => {
+      const byKey = new Map(state.plannerOutbox.map((item) => [item.key, item]));
+      for (const item of items) {
+        const current = byKey.get(item.key);
+        if (!current || item.seq >= current.seq) byKey.set(item.key, item);
+      }
+      return { plannerOutbox: [...byKey.values()] };
+    }),
+
+  ackPlannerOutbox: (key, kind) =>
+    set((state) => ({
+      plannerOutbox: state.plannerOutbox.filter((item) => item.key !== key || item.kind !== kind),
+    })),
+
   clearPlannerOutbox: (maxSeq) =>
     set((state) => ({
       plannerOutbox: state.plannerOutbox.filter((item) => item.seq > maxSeq),
     })),
+
+  setPlannerSyncCursor: (cursor) => set({ plannerSyncCursor: cursor }),
 
   addGoal: (goal) => {
     const id = Date.now().toString();
@@ -243,10 +280,34 @@ export const createGoalsSlice: StateCreator<AppStore, [], [], GoalsSlice> = (set
   },
 
   deleteGoal: (id) => {
+    const current = get();
+    const goal = current.goals.find((item) => item.id === id);
+    const removedTaskIds = goalStepTaskIds(id, current.tasks, goal?.tasks ?? [], current.projects);
+    const removed = new Set(removedTaskIds);
+
     set((state) => ({
-      goals: state.goals.filter((g) => g.id !== id),
+      goals: state.goals.filter((item) => item.id !== id),
+      tasks: state.tasks
+        .filter((task) => !removed.has(task.id))
+        .map((task) => (task.goalId === id ? { ...task, goalId: undefined } : task)),
+      projects: state.projects.map((project) =>
+        project.goalId === id ? { ...project, goalId: undefined } : project
+      ),
+      dailyTasks: Object.fromEntries(
+        Object.entries(state.dailyTasks).map(([day, taskIds]) => [
+          day,
+          (taskIds ?? []).filter((taskId) => !removed.has(taskId)),
+        ])
+      ),
     }));
-    persistGoalDelete(get, id);
+
+    for (const projectId of new Set(
+      current.tasks.filter((task) => removed.has(task.id) && task.projectId).map((task) => task.projectId as string)
+    )) {
+      get().refreshProjectProgress(projectId);
+    }
+
+    persistGoalDelete(get, id, removedTaskIds);
   },
 
   updateGoalProgress: (id, progress) => {

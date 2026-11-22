@@ -14,6 +14,7 @@ import {
   ownedColumnId,
   ownedProjectId,
 } from '@/shared/lib/planner/task-column-service';
+import { isGoalStepTask } from '@/shared/lib/planner/goal-tasks';
 import {
   normalizeColumnOrder,
   planPlannerSync,
@@ -325,7 +326,34 @@ export async function deleteGoal(userId: string, goalId: string): Promise<void> 
     throw new Error('Goal not found');
   }
 
-  await prisma.goal.delete({ where: { id: goalId } });
+  const [tasks, projects] = await Promise.all([
+    prisma.task.findMany({
+      where: { userId, goalId },
+      select: { id: true, goalId: true, projectId: true },
+    }),
+    prisma.project.findMany({
+      where: { userId, goalId },
+      select: { id: true, goalId: true },
+    }),
+  ]);
+  const stepIds = tasks.filter((task) => isGoalStepTask(task, goalId, projects)).map((task) => task.id);
+  const affectedProjectIds = [
+    ...new Set(
+      tasks
+        .filter((task) => stepIds.includes(task.id) && task.projectId)
+        .map((task) => task.projectId as string)
+    ),
+  ];
+
+  await prisma.$transaction(async (tx) => {
+    if (stepIds.length > 0) {
+      await tx.task.deleteMany({ where: { userId, id: { in: stepIds } } });
+    }
+
+    await tx.goal.delete({ where: { id: goalId } });
+  });
+
+  await Promise.all(affectedProjectIds.map((projectId) => refreshProjectProgress(userId, projectId)));
 }
 
 export async function createTask(userId: string, input: Task): Promise<Task> {

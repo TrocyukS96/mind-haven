@@ -8,6 +8,7 @@ import { buildHabitFormValues } from '@/features/habit/lib/habit-form-initial-va
 import type { HabitFrequencyKey } from '@/features/habit/lib/habit-frequency';
 import {
   encodeHabitWeekdays,
+  encodeWeeklyQuota,
   HABIT_WEEKDAY_MESSAGE_KEY,
   HABIT_WEEKDAY_ORDER,
 } from '@/shared/lib/habit/habit-weekdays';
@@ -60,6 +61,8 @@ export function HabitForm({ open, onOpenChange }: Props) {
 
   const frequencyLabels: Record<HabitFrequencyKey, string> = {
     daily: t('frequencies.daily'),
+    twicePerWeek: t('frequencies.twicePerWeek'),
+    thricePerWeek: t('frequencies.thricePerWeek'),
     weekly: t('frequencies.weekly'),
     monthly: t('frequencies.monthly'),
     yearly: t('frequencies.yearly'),
@@ -99,9 +102,18 @@ export function HabitForm({ open, onOpenChange }: Props) {
 
     if (frequency === 'custom' && weekdays.length === 0 || saving) return;
 
+    const storedFrequency =
+      frequency === 'custom'
+        ? encodeHabitWeekdays(weekdays)
+        : frequency === 'twicePerWeek'
+          ? encodeWeeklyQuota(2)
+          : frequency === 'thricePerWeek'
+            ? encodeWeeklyQuota(3)
+            : frequencyLabels[frequency];
+
     const payload = {
       name: name.trim(),
-      frequency: frequency === 'custom' ? encodeHabitWeekdays(weekdays) : frequencyLabels[frequency],
+      frequency: storedFrequency,
       trackingType,
       targetCount: parsedTarget,
     };

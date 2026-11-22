@@ -1,13 +1,30 @@
 import type { Habit } from '@/entities/habit/model/types';
 import { resolveHabitTrackingType } from '@/entities/habit/model/tracking-type';
-import { calculateHabitStreak, getHabitToday } from '@/shared/lib/habit/habit-date';
+import {
+  calculateHabitStreak,
+  calculateWeeklyQuotaStreak,
+  getHabitToday,
+} from '@/shared/lib/habit/habit-date';
 import {
   getHabitPeriodBounds,
   lastLoggedDateInPeriod,
   resolveHabitPeriod,
   sumHabitPeriodCounts,
 } from '@/shared/lib/habit/habit-period';
-import { isHabitScheduledOn } from '@/shared/lib/habit/habit-weekdays';
+import { decodeWeeklyQuota, isHabitScheduledOn } from '@/shared/lib/habit/habit-weekdays';
+
+export function calculateHabitStreakForFrequency(
+  frequency: string,
+  completedDays: string[],
+  today = getHabitToday()
+): number {
+  const quota = decodeWeeklyQuota(frequency);
+  if (quota != null) {
+    return calculateWeeklyQuotaStreak(completedDays, quota, today);
+  }
+
+  return calculateHabitStreak(completedDays, today, (date) => isHabitScheduledOn(frequency, date));
+}
 
 export const HABIT_COUNT_MAX = 1_000_000;
 
@@ -203,6 +220,6 @@ export function realignHabitProgress(
   return {
     dayCounts,
     completedDays,
-    streak: calculateHabitStreak(completedDays, today, (date) => isHabitScheduledOn(frequency, date)),
+    streak: calculateHabitStreakForFrequency(frequency, completedDays, today),
   };
 }

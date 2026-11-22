@@ -13,6 +13,42 @@ export const HABIT_WEEKDAY_MESSAGE_KEY = {
 } as const;
 
 const WEEKDAY_PREFIX = 'days:';
+const WEEKLY_QUOTA_PREFIX = 'week:';
+
+const WEEKLY_QUOTA_ALIASES: Record<string, number> = {
+  '2 times a week': 2,
+  '2 per week': 2,
+  'twice a week': 2,
+  'twiceperweek': 2,
+  '2 раза в неделю': 2,
+  'два раза в неделю': 2,
+  '3 times a week': 3,
+  '3 per week': 3,
+  'threeperweek': 3,
+  '3 раза в неделю': 3,
+  'три раза в неделю': 3,
+};
+
+export function encodeWeeklyQuota(times: number): string {
+  if (!Number.isInteger(times) || times < 1 || times > 7) {
+    throw new Error('Weekly quota must be between 1 and 7');
+  }
+
+  return `${WEEKLY_QUOTA_PREFIX}${times}`;
+}
+
+export function decodeWeeklyQuota(frequency: string | null | undefined): number | null {
+  const normalized = frequency?.trim().toLowerCase() ?? '';
+  if (!normalized) return null;
+
+  if (normalized.startsWith(WEEKLY_QUOTA_PREFIX)) {
+    const times = Number(normalized.slice(WEEKLY_QUOTA_PREFIX.length));
+    if (Number.isInteger(times) && times >= 1 && times <= 7) return times;
+    return null;
+  }
+
+  return WEEKLY_QUOTA_ALIASES[normalized] ?? null;
+}
 
 export function encodeHabitWeekdays(days: number[]): string {
   const selected = new Set(
@@ -43,6 +79,11 @@ export function decodeHabitWeekdays(frequency: string | null | undefined): numbe
 
 export function normalizeStoredHabitFrequency(frequency: string): string {
   const trimmed = frequency.trim();
+  const quota = decodeWeeklyQuota(trimmed);
+  if (quota != null) {
+    return encodeWeeklyQuota(quota);
+  }
+
   if (!trimmed.toLowerCase().startsWith(WEEKDAY_PREFIX)) return trimmed;
 
   const days = decodeHabitWeekdays(trimmed);
@@ -54,6 +95,8 @@ export function normalizeStoredHabitFrequency(frequency: string): string {
 }
 
 export function isHabitScheduledOn(frequency: string | null | undefined, date: string): boolean {
+  if (decodeWeeklyQuota(frequency)) return true;
+
   const days = decodeHabitWeekdays(frequency);
   if (!days) return true;
   return days.includes(parseHabitDate(date).getDay());

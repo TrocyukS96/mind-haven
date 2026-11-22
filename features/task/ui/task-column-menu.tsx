@@ -43,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select';
+import { useRouter } from '@/i18n/routing';
 import { MoreHorizontal } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -51,6 +52,7 @@ import { toast } from 'react-toastify';
 export function TaskColumnMenu({ column }: { column: TaskColumn }) {
   const t = useTranslations('tasks');
   const tCommon = useTranslations('common');
+  const router = useRouter();
   const taskColumns = useStore((state) => state.taskColumns);
   const updateTaskColumn = useStore((state) => state.updateTaskColumn);
   const archiveTaskColumn = useStore((state) => state.archiveTaskColumn);
@@ -185,6 +187,11 @@ export function TaskColumnMenu({ column }: { column: TaskColumn }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
+          {column.kind === 'week' ? (
+            <DropdownMenuItem onSelect={() => router.push(`/tasks/weeks/${column.id}`)}>
+              {t('weekBoard.open')}
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem disabled={isBacklog} onSelect={openRename}>
             {t('columns.rename')}
           </DropdownMenuItem>

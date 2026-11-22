@@ -103,9 +103,12 @@ function persistTaskUpdate(get: () => AppStore, id: string) {
 function persistTaskDelete(get: () => AppStore, id: string) {
     if (!isPlannerApiEnabled()) return;
 
-    void deleteTaskRequest(id).catch(() => {
-        get().enqueuePlannerOutbox({ kind: 'delete-task', entityId: id });
-    });
+    get().enqueuePlannerOutbox({ kind: 'delete-task', entityId: id });
+    void deleteTaskRequest(id)
+        .then(() => {
+            get().ackPlannerOutbox(`task:${id}`, 'delete-task');
+        })
+        .catch(() => undefined);
 }
 
 function persistTaskOrder(get: () => AppStore) {
