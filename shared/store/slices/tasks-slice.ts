@@ -7,6 +7,7 @@ import {
     savePlannerLayoutRequest,
     updateTaskRequest,
 } from '@/entities/planner/api/planner-client';
+import { reorderProjectStepsRequest } from '@/entities/project/api/project-client';
 import { waitForGoalSave } from '@/entities/planner/lib/goal-save-queue';
 import { isPlannerApiEnabled } from '@/entities/planner/lib/resolve-planner-api';
 import { Task, TaskPriority } from '@/entities/task/model/types';
@@ -17,6 +18,11 @@ import {
 } from '@/entities/points/lib/calculate-points';
 import { tryEarnPoints } from '@/entities/points/lib/process-point-event';
 import { sortByKanbanOrder } from '@/shared/lib/kanban-utils';
+import {
+    insertProjectStep,
+    projectStepIdsAfterMove,
+    sortProjectSteps,
+} from '@/shared/lib/planner/project-step-order';
 import { mergeReorderedVisibleColumns, resolveTaskColumnId } from '@/shared/lib/planner/week-column-range';
 import { StateCreator } from 'zustand';
 import { AppStore } from '../store-config';
@@ -57,6 +63,7 @@ export interface TasksSlice {
         visibleOrder?: string[]
     ) => void;
     moveOpenTasksToColumn: (fromColumnId: string, toColumnId: string) => number;
+    reorderProjectSteps: (projectId: string, visibleOrderedIds: string[]) => void;
     openTaskForm: (task?: Task, goalId?: string, deadline?: string, projectId?: string, columnId?: string) => void;
     openTaskFormFromVoice: (draft: TaskFormDraft) => void;
     closeTaskForm: () => void;
@@ -124,6 +131,19 @@ function persistTaskOrder(get: () => AppStore) {
     void reorderPlannerRequest({ tasks }).catch(() => {
         for (const task of get().tasks) {
             get().enqueuePlannerOutbox({ kind: 'upsert-task', entityId: task.id, task });
+        }
+    });
+}
+
+function persistProjectStepOrder(get: () => AppStore, projectId: string, stepIds: string[]) {
+    if (!isPlannerApiEnabled()) return;
+
+    void reorderProjectStepsRequest(projectId, stepIds).catch(() => {
+        for (const id of stepIds) {
+            const task = get().tasks.find((item) => item.id === id);
+            if (task) {
+                get().enqueuePlannerOutbox({ kind: 'upsert-task', entityId: id, task });
+            }
         }
     });
 }
@@ -201,8 +221,11 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
             -1
         );
 
+        const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        const tasksBefore = get().tasks;
+        const inserted = projectId ? insertProjectStep(tasksBefore, projectId, id) : null;
         const newTask: Task = {
-            id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+            id,
             title: title.trim(),
             description: description?.trim() || undefined,
             completed: false,
@@ -215,10 +238,19 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
             createdAt: new Date().toISOString(),
             deadline: deadline ? new Date(deadline).toISOString() : undefined,
             kanbanOrder: maxOrder + 1,
+            stepOrder: inserted?.stepOrder ?? 0,
         };
+        const stepRank = new Map((inserted?.orderedIds ?? []).map((stepId, index) => [stepId, index]));
 
         set((state) => ({
-            tasks: [...state.tasks, newTask],
+            tasks: [
+                ...state.tasks.map((task) => {
+                    const stepOrder = stepRank.get(task.id);
+                    if (stepOrder === undefined || task.stepOrder === stepOrder) return task;
+                    return { ...task, stepOrder };
+                }),
+                newTask,
+            ],
         }));
 
         if (deadline) {
@@ -270,6 +302,13 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
             })
         );
         persistNewTask(get, newTask);
+        if (projectId && inserted) {
+            const shifted = inserted.orderedIds.some((stepId, index) => {
+                if (stepId === newTask.id) return false;
+                return (tasksBefore.find((task) => task.id === stepId)?.stepOrder ?? 0) !== index;
+            });
+            if (shifted) persistProjectStepOrder(get, projectId, inserted.orderedIds);
+        }
     },
 
     toggleTask: (id) => {
@@ -394,8 +433,30 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
     },
 
     updateTask: (id, updates: Partial<Task>) => {
+        const tasksBefore = get().tasks;
+        const current = tasksBefore.find((task) => task.id === id);
+        let nextUpdates = updates;
+        let inserted: ReturnType<typeof insertProjectStep> | null = null;
+        if (
+            current &&
+            updates.projectId &&
+            updates.projectId !== current.projectId &&
+            updates.stepOrder === undefined
+        ) {
+            inserted = insertProjectStep(tasksBefore, updates.projectId, id);
+            nextUpdates = { ...updates, stepOrder: inserted.stepOrder };
+        }
+        const stepRank = inserted
+            ? new Map(inserted.orderedIds.map((stepId, index) => [stepId, index]))
+            : null;
+
         set((state) => ({
-            tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+            tasks: state.tasks.map((task) => {
+                if (task.id === id) return { ...task, ...nextUpdates };
+                const stepOrder = stepRank?.get(task.id);
+                if (stepOrder === undefined || task.stepOrder === stepOrder) return task;
+                return { ...task, stepOrder };
+            }),
         }));
 
         if (updates.deadline) {
@@ -414,6 +475,13 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
         }
 
         persistTaskUpdate(get, id);
+        if (updates.projectId && inserted) {
+            const shifted = inserted.orderedIds.some((stepId, index) => {
+                if (stepId === id) return false;
+                return (tasksBefore.find((task) => task.id === stepId)?.stepOrder ?? 0) !== index;
+            });
+            if (shifted) persistProjectStepOrder(get, updates.projectId, inserted.orderedIds);
+        }
     },
 
     moveTaskToColumn: (taskId, columnId, targetIndex, visibleOrder) => {
@@ -533,6 +601,41 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
 
         if (moved > 0) persistTaskOrder(get);
         return moved;
+    },
+
+    reorderProjectSteps: (projectId, visibleOrderedIds) => {
+        const projectTasks = sortProjectSteps(get().tasks.filter((task) => task.projectId === projectId));
+        const nextIds = projectStepIdsAfterMove(
+            projectTasks.map((task) => task.id),
+            visibleOrderedIds
+        );
+        if (nextIds.length === 0) return;
+        const unchanged = nextIds.every(
+            (id, index) => projectTasks[index]?.id === id && (projectTasks[index]?.stepOrder ?? 0) === index
+        );
+        if (unchanged) return;
+
+        const rank = new Map(nextIds.map((id, index) => [id, index]));
+        set((state) => {
+            const patches = new Map<string, Partial<Task>>();
+            for (const [id, stepOrder] of rank) {
+                const task = state.tasks.find((item) => item.id === id);
+                if (task && task.stepOrder !== stepOrder) patches.set(id, { stepOrder });
+            }
+
+            return {
+                tasks: state.tasks.map((task) => {
+                    const stepOrder = rank.get(task.id);
+                    if (task.projectId !== projectId || stepOrder === undefined || task.stepOrder === stepOrder) {
+                        return task;
+                    }
+                    return { ...task, stepOrder };
+                }),
+                goals: patchGoalTasks(state.goals, patches),
+            };
+        });
+
+        persistProjectStepOrder(get, projectId, nextIds);
     },
 
     reorderTasksKanbanColumns: (columnKeys) => {

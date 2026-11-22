@@ -263,6 +263,7 @@ model Task {
   priority         String    @default("medium")
   type             String    @default("backlog")
   kanbanOrder      Int       @default(0)
+  stepOrder        Int       @default(0)
   estimatedMinutes Int?
   createdAt        DateTime  @default(now())
   completedAt      DateTime?

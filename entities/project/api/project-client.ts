@@ -48,6 +48,15 @@ export async function createProjectNoteRequest(projectId: string, content: strin
   return payload.note;
 }
 
+export async function reorderProjectStepsRequest(projectId: string, stepIds: string[]): Promise<void> {
+  const response = await fetch(`/api/projects/${projectId}/steps/reorder`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ stepIds }),
+  });
+  await parseResponse<{ ok: true }>(response);
+}
+
 export async function deleteProjectNoteRequest(projectId: string, noteId: string): Promise<void> {
   const response = await fetch(`/api/projects/${projectId}/notes/${noteId}`, { method: 'DELETE' });
   if (response.status === 404) return;

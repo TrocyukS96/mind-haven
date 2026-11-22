@@ -107,6 +107,7 @@ function mapBoardTask(row: {
   priority: string;
   type: string;
   kanbanOrder: number;
+  stepOrder?: number;
   estimatedMinutes: number | null;
   createdAt: Date;
   completedAt: Date | null;
@@ -129,6 +130,7 @@ function mapBoardTask(row: {
     deadline: row.deadline?.toISOString(),
     overdue: row.overdue,
     kanbanOrder: row.kanbanOrder,
+    stepOrder: row.stepOrder ?? 0,
   };
 }
 

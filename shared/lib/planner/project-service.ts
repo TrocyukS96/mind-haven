@@ -244,4 +244,41 @@ export function computeProjectProgressFromTasks(tasks: { completed: boolean }[])
   return calculateCompletionProgress(tasks);
 }
 
+export async function reorderProjectSteps(userId: string, projectId: string, stepIds: string[]): Promise<void> {
+  if (!SAFE_ID.test(projectId)) throw new Error('Project not found');
+
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, userId },
+    select: { id: true },
+  });
+  if (!project) throw new Error('Project not found');
+
+  const rows = await prisma.task.findMany({
+    where: { userId, projectId },
+    select: { id: true, stepOrder: true },
+  });
+  const owned = new Set(rows.map((row) => row.id));
+  const seen = new Set<string>();
+  const requested: string[] = [];
+
+  for (const id of stepIds) {
+    if (typeof id !== 'string' || !owned.has(id) || seen.has(id)) continue;
+    seen.add(id);
+    requested.push(id);
+  }
+
+  const ordered = [...requested, ...rows.map((row) => row.id).filter((id) => !seen.has(id))];
+  const current = new Map(rows.map((row) => [row.id, row.stepOrder]));
+  if (ordered.every((id, index) => current.get(id) === index)) return;
+
+  await prisma.$transaction(
+    ordered.map((id, stepOrder) =>
+      prisma.task.updateMany({
+        where: { id, userId, projectId },
+        data: { stepOrder },
+      })
+    )
+  );
+}
+
 export { tasksForProject };

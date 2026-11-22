@@ -17,4 +17,5 @@ export interface Task {
   deadline?: string;
   overdue?: boolean;
   kanbanOrder?: number;
+  stepOrder?: number;
 }

@@ -669,6 +669,7 @@ export function sanitizeTask(task: Task, validGoalIds?: Set<string>): Task | nul
     deadline: deadline ? deadline.toISOString() : undefined,
     overdue: Boolean(task.overdue),
     kanbanOrder: clampOrder(task.kanbanOrder),
+    stepOrder: clampOrder(task.stepOrder),
   };
 }
 

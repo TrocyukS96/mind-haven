@@ -1,8 +1,9 @@
 'use client';
 
-import { TaskCard } from '@/entities/task/ui/TaskCard';
 import { Link, useRouter } from '@/i18n/routing';
+import { ProjectStepsList } from '@/features/project/ui/project-steps-list';
 import { tasksForProject } from '@/shared/lib/planner/calculate-progress';
+import { sortProjectSteps } from '@/shared/lib/planner/project-step-order';
 import { getDateLocale } from '@/shared/lib/date-locale';
 import { cn } from '@/shared/lib/utils';
 import { useStoreHydrated } from '@/shared/hooks/use-store-hydrated';
@@ -38,6 +39,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
   const addProjectNote = useStore((s) => s.addProjectNote);
   const removeProjectNote = useStore((s) => s.removeProjectNote);
   const updateProject = useStore((s) => s.updateProject);
+  const reorderProjectSteps = useStore((s) => s.reorderProjectSteps);
   const deleteProject = useStore((s) => s.deleteProject);
   const archiveProject = useStore((s) => s.archiveProject);
   const [stepDraft, setStepDraft] = useState('');
@@ -47,10 +49,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
 
   const projectTasks = useMemo(() => {
     if (!project) return [];
-    return tasksForProject(tasks, project.id).sort((a, b) => {
-      if (a.completed !== b.completed) return a.completed ? 1 : -1;
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    });
+    return sortProjectSteps(tasksForProject(tasks, project.id));
   }, [project, tasks]);
 
   const visibleSteps = projectTasks.filter((step) => {
@@ -219,13 +218,10 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
             {visibleSteps.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">{t('noSteps')}</p>
             ) : (
-              <ul className="space-y-1">
-                {visibleSteps.map((step) => (
-                  <li key={step.id}>
-                    <TaskCard task={step} variant="step" showMeta />
-                  </li>
-                ))}
-              </ul>
+              <ProjectStepsList
+                steps={visibleSteps}
+                onReorder={(orderedIds) => reorderProjectSteps(project.id, orderedIds)}
+              />
             )}
           </div>
         </section>

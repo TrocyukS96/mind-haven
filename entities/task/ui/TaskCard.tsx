@@ -150,11 +150,19 @@ export function TaskCard({
   return (
     <>
       {isStep ? (
-        <div className="group relative flex w-full items-center gap-2 rounded-lg py-1 transition-colors hover:bg-muted/50">
+        <div
+          className={cn(
+            'group relative flex w-full items-center gap-2 rounded-lg py-1 transition-colors hover:bg-muted/50',
+            sortable && 'cursor-grab active:cursor-grabbing'
+          )}
+          {...(sortable?.listeners ?? {})}
+        >
+          <KanbanItemDragHandle className="touch-none" />
           <Checkbox
             checked={task.completed}
             onCheckedChange={() => toggleTask(task.id)}
-            className="ml-1.5 h-4 w-4 shrink-0 cursor-pointer"
+            onPointerDown={stopCardDrag}
+            className={cn('h-4 w-4 shrink-0 cursor-pointer', !sortable && 'ml-1.5')}
           />
           <div className="min-w-0 flex-1">
             <span

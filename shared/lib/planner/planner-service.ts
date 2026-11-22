@@ -45,6 +45,7 @@ function mapTask(row: {
   priority: string;
   type: string;
   kanbanOrder: number;
+  stepOrder?: number;
   estimatedMinutes: number | null;
   createdAt: Date;
   completedAt: Date | null;
@@ -67,6 +68,7 @@ function mapTask(row: {
     deadline: row.deadline?.toISOString(),
     overdue: row.overdue,
     kanbanOrder: row.kanbanOrder,
+    stepOrder: row.stepOrder ?? 0,
   };
 }
 
@@ -227,6 +229,7 @@ function buildTaskData(
     priority: task.priority,
     type: task.type,
     kanbanOrder: task.kanbanOrder ?? 0,
+    stepOrder: task.stepOrder ?? 0,
     estimatedMinutes:
       task.estimatedMinutes !== undefined ? Math.max(0, Math.round(task.estimatedMinutes)) : null,
     createdAt: new Date(task.createdAt),
