@@ -1,16 +1,19 @@
 import { hasMinRole, isAdminRole } from '@/entities/user';
 import {
   FEATURES,
+  resolveFeatureEnabled,
   type FeatureKey,
 } from '@/shared/config/features';
 import type { AccessContext, AccessResult } from './types';
 
 export function canAccess(
   context: AccessContext,
-  feature: FeatureKey
+  feature: FeatureKey,
+  nodeEnv: string | undefined = process.env.NODE_ENV
 ): AccessResult {
   const definition = FEATURES[feature];
-  const isGloballyEnabled = context.globalFeatureFlags[feature] ?? definition.defaultEnabled;
+  const stored = context.globalFeatureFlags[feature] ?? definition.defaultEnabled;
+  const isGloballyEnabled = resolveFeatureEnabled(feature, stored, nodeEnv);
 
   if (!isGloballyEnabled && !isAdminRole(context.role)) {
     return { allowed: false, reason: 'disabled' };
@@ -44,9 +47,10 @@ export function canAccess(
 
 export function canAccessFeature(
   context: AccessContext,
-  feature: FeatureKey
+  feature: FeatureKey,
+  nodeEnv: string | undefined = process.env.NODE_ENV
 ): boolean {
-  return canAccess(context, feature).allowed;
+  return canAccess(context, feature, nodeEnv).allowed;
 }
 
 export function getAccessibleFeatures(

@@ -45,6 +45,19 @@ model User {
   journalEntries JournalEntry[]
   journalTags    JournalTag[]
   habits         Habit[]
+  challenges               Challenge[]
+  challengeRewards         ChallengeReward[]
+  challengeTriggers        ChallengeTrigger[]
+  challengeHabits          ChallengeHabit[]
+  challengeRestrictions    ChallengeRestriction[]
+  challengeCustomDebts     ChallengeCustomDebt[]
+  challengeXpActivities    ChallengeXpActivity[]
+  challengeActivityLogs    ChallengeActivityLog[]
+  challengeXpTransactions  ChallengeXpTransaction[]
+  challengeRewardPurchases ChallengeRewardPurchase[]
+  challengeDays            ChallengeDay[]
+  challengeDebtItems       ChallengeDebtItem[]
+  challengePauses          ChallengePause[]
   financeAccounts FinanceAccount[]
   financeTransactions FinanceTransaction[]
   tables         CustomTable[]
@@ -365,7 +378,8 @@ model Habit {
   dayCounts     Json     @default("{}")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challengeHabits ChallengeHabit[]
 
   @@index([userId])
 }
@@ -524,4 +538,347 @@ model EnergyCheckInAnswer {
 
   @@index([checkInId])
   @@index([questionId])
+}
+
+enum ChallengeStatus {
+  active
+  paused
+  completed
+  archived
+}
+
+enum ChallengeDayStatus {
+  pending
+  successful
+  failed
+  skipped
+}
+
+enum ChallengeRestrictionKind {
+  core_behavior
+  custom
+}
+
+enum ChallengeDebtSource {
+  habit
+  restriction
+  custom
+}
+
+enum ChallengeDebtState {
+  pending
+  satisfied
+  missed
+  not_applicable
+  bypassed
+}
+
+enum ChallengeXpUnit {
+  repetitions
+  minutes
+  kilometers
+  completion
+}
+
+enum ChallengeXpReason {
+  activity_grant
+  reward_purchase
+  streak_reset
+  activity_reversal
+  adjustment
+}
+
+model Challenge {
+  id               String          @id @default(cuid())
+  userId           String
+  title            String
+  description      String          @default("")
+  unwantedBehavior String
+  behaviorPreset   String?
+  yearsStruggling  Int?
+  importance       Int
+  targetDays          Int
+  startsAt            DateTime
+  abstinenceStartedAt DateTime
+  status              ChallengeStatus @default(active)
+  currentStreak    Int             @default(0)
+  bestStreak       Int             @default(0)
+  timezone         String
+  xpBalance        Int             @default(0)
+  xpEarnedTotal    Int             @default(0)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rewards          ChallengeReward[]
+  triggers         ChallengeTrigger[]
+  habits           ChallengeHabit[]
+  restrictions     ChallengeRestriction[]
+  customDebts      ChallengeCustomDebt[]
+  xpActivities     ChallengeXpActivity[]
+  activityLogs     ChallengeActivityLog[]
+  xpTransactions   ChallengeXpTransaction[]
+  purchases        ChallengeRewardPurchase[]
+  days             ChallengeDay[]
+  debtItems        ChallengeDebtItem[]
+  pauses           ChallengePause[]
+
+  // One active challenge per user is enforced by partial unique index
+  // Challenge_userId_active_key in the ascent migration. Prisma 6.12 cannot declare it.
+  @@index([userId])
+  @@index([userId, status])
+}
+
+model ChallengeReward {
+  id           String   @id @default(cuid())
+  userId       String
+  challengeId  String
+  title        String
+  description  String   @default("")
+  icon         String?
+  xpCost       Int
+  active       Boolean  @default(true)
+  available    Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge    Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  restrictions ChallengeRestriction[]
+  purchases    ChallengeRewardPurchase[]
+
+  @@index([userId])
+  @@index([challengeId, sortOrder])
+}
+
+model ChallengeTrigger {
+  id          String    @id @default(cuid())
+  userId      String
+  challengeId String
+  title       String
+  description String    @default("")
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([challengeId, sortOrder])
+}
+
+model ChallengeHabit {
+  id             String    @id @default(cuid())
+  userId         String
+  challengeId    String
+  habitId        String
+  required       Boolean   @default(true)
+  sortOrder      Int       @default(0)
+  completionRule String    @default("as_habit")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge      Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  habit          Habit     @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, habitId])
+  @@index([userId])
+  @@index([habitId])
+}
+
+model ChallengeRestriction {
+  id                        String                   @id @default(cuid())
+  userId                    String
+  challengeId               String
+  title                     String
+  description               String                   @default("")
+  kind                      ChallengeRestrictionKind
+  unlockAfterSuccessfulDays Int                      @default(0)
+  rewardId                  String?
+  required                  Boolean                  @default(true)
+  bypassable                Boolean                  @default(false)
+  active                    Boolean                  @default(true)
+  sortOrder                 Int                      @default(0)
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+  user                      User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge                 Challenge                @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  reward                    ChallengeReward?         @relation(fields: [rewardId], references: [id], onDelete: Restrict)
+  purchases                 ChallengeRewardPurchase[]
+
+  @@index([userId])
+  @@index([challengeId, sortOrder])
+  @@index([rewardId])
+}
+
+model ChallengeCustomDebt {
+  id          String    @id @default(cuid())
+  userId      String
+  challengeId String
+  title       String
+  description String    @default("")
+  required    Boolean   @default(true)
+  active      Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([challengeId, sortOrder])
+}
+
+model ChallengeXpActivity {
+  id               String          @id @default(cuid())
+  userId           String
+  challengeId      String
+  title            String
+  actionType       String
+  unit             ChallengeXpUnit
+  xpPerGrant       Int
+  quantityPerGrant Decimal         @db.Decimal(12, 3)
+  minQuantity      Decimal         @db.Decimal(12, 3)
+  active           Boolean         @default(true)
+  sortOrder        Int             @default(0)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge        Challenge       @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  logs             ChallengeActivityLog[]
+
+  @@index([userId])
+  @@index([challengeId, sortOrder])
+}
+
+model ChallengeActivityLog {
+  id             String              @id @default(cuid())
+  userId         String
+  challengeId    String
+  activityId     String
+  localDate      String
+  quantity       Decimal             @db.Decimal(12, 3)
+  xpGranted      Int
+  idempotencyKey String
+  reversedAt     DateTime?
+  createdAt      DateTime            @default(now())
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge      Challenge           @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  activity       ChallengeXpActivity @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  transactions   ChallengeXpTransaction[]
+
+  @@unique([userId, idempotencyKey])
+  @@index([challengeId, localDate])
+  @@index([activityId])
+}
+
+model ChallengeRewardPurchase {
+  id               String    @id @default(cuid())
+  userId           String
+  challengeId      String
+  rewardId         String
+  restrictionId    String?
+  xpSpent          Int
+  grantsBypass     Boolean   @default(false)
+  permissionUsed   Boolean   @default(false)
+  permissionUsedAt DateTime?
+  usedOnLocalDate  String?
+  idempotencyKey   String
+  purchasedAt      DateTime  @default(now())
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge        Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  reward           ChallengeReward @relation(fields: [rewardId], references: [id], onDelete: Restrict)
+  restriction      ChallengeRestriction? @relation(fields: [restrictionId], references: [id], onDelete: Restrict)
+  transaction      ChallengeXpTransaction?
+
+  @@unique([userId, idempotencyKey])
+  @@index([challengeId, purchasedAt])
+  @@index([rewardId])
+  @@index([restrictionId])
+}
+
+model ChallengeXpTransaction {
+  id               String            @id @default(cuid())
+  userId           String
+  challengeId      String
+  amount           Int
+  lifetimeDelta    Int               @default(0)
+  reason           ChallengeXpReason
+  balanceAfter     Int
+  earnedTotalAfter Int
+  idempotencyKey   String
+  localDate        String?
+  sourceId         String?
+  activityLogId    String?
+  purchaseId       String?           @unique
+  note             String            @default("")
+  createdAt        DateTime          @default(now())
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge        Challenge         @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  activityLog      ChallengeActivityLog? @relation(fields: [activityLogId], references: [id], onDelete: Restrict)
+  purchase         ChallengeRewardPurchase? @relation(fields: [purchaseId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, idempotencyKey])
+  @@index([challengeId, createdAt])
+  @@index([activityLogId])
+}
+
+model ChallengeDay {
+  id              String             @id @default(cuid())
+  userId          String
+  challengeId     String
+  localDate       String
+  status          ChallengeDayStatus @default(pending)
+  obligationsMet  Boolean            @default(false)
+  debtClosed      Boolean            @default(false)
+  failureReason   String?
+  settledAt       DateTime?
+  streakAfter     Int?
+  bestStreakAfter Int?
+  xpBalanceAfter  Int?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge       Challenge          @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, localDate])
+  @@index([userId, localDate])
+}
+
+model ChallengeDebtItem {
+  id              String              @id @default(cuid())
+  userId          String
+  challengeId     String
+  localDate       String
+  source          ChallengeDebtSource
+  sourceId        String
+  title           String
+  required        Boolean
+  state           ChallengeDebtState
+  confirmedByUser Boolean             @default(false)
+  confirmedAt     DateTime?
+  sortOrder       Int                 @default(0)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge       Challenge           @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, localDate, source, sourceId])
+  @@index([userId, localDate])
+}
+
+model ChallengePause {
+  id                 String    @id @default(cuid())
+  userId             String
+  challengeId        String
+  startedAt          DateTime
+  startedOnLocalDate String
+  endedAt            DateTime?
+  endedOnLocalDate   String?
+  createdAt          DateTime  @default(now())
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge          Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  // At most one open pause per challenge: partial unique index ChallengePause_one_open_key.
+  @@index([userId])
+  @@index([challengeId, startedAt])
 }

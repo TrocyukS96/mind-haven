@@ -193,7 +193,36 @@ export async function deleteHabit(userId: string, habitId: string): Promise<void
     throw new Error('Habit not found');
   }
 
+  await assertHabitNotInChallenge(habitId);
   await prisma.habit.delete({ where: { id: habitId } });
+}
+
+function isMissingAscentTable(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === 'P2021'
+  );
+}
+
+async function assertHabitNotInChallenge(habitId: string): Promise<void> {
+  try {
+    const link = await prisma.challengeHabit.findFirst({
+      where: { habitId },
+      select: { id: true },
+    });
+
+    if (link) {
+      throw new Error('Habit is used by an ascent challenge');
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Habit is used by an ascent challenge') {
+      throw error;
+    }
+    if (isMissingAscentTable(error)) return;
+    throw error;
+  }
 }
 
 export async function toggleHabitDay(

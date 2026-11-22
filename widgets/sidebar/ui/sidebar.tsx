@@ -13,6 +13,7 @@ import {
   Footprints,
   Home,
   Leaf,
+  Mountain,
   PanelLeftClose,
   Shield,
   Sprout,
@@ -30,7 +31,7 @@ const primaryItems: {
   id: string;
   labelKey: string;
   icon: typeof Home;
-  href: '/' | '/goals' | '/projects' | '/tasks' | '/habits' | '/journal' | '/rewards';
+  href: '/' | '/goals' | '/projects' | '/tasks' | '/habits' | '/ascent' | '/journal' | '/rewards';
   feature: FeatureKey;
 }[] = [
   { id: 'dashboard', labelKey: 'dashboard', icon: Home, href: '/', feature: 'dashboard' },
@@ -38,6 +39,7 @@ const primaryItems: {
   { id: 'projects', labelKey: 'projects', icon: Briefcase, href: '/projects', feature: 'projects' },
   { id: 'tasks', labelKey: 'tasks', icon: Footprints, href: '/tasks', feature: 'tasks' },
   { id: 'habits', labelKey: 'habits', icon: Leaf, href: '/habits', feature: 'habits' },
+  { id: 'ascent', labelKey: 'ascent', icon: Mountain, href: '/ascent', feature: 'ascent' },
   { id: 'journal', labelKey: 'journal', icon: BookOpen, href: '/journal', feature: 'journal' },
   { id: 'rewards', labelKey: 'rewards', icon: Apple, href: '/rewards', feature: 'gamification' },
 ];

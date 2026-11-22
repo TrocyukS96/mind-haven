@@ -7,6 +7,7 @@ export const FEATURE_KEYS = [
   'tasks',
   'journal',
   'habits',
+  'ascent',
   'finance',
   'tables',
   'energy',
@@ -84,6 +85,14 @@ export const FEATURES: Record<FeatureKey, FeatureDefinition> = {
     requiresSubscription: false,
     adminToggleable: true,
     defaultEnabled: true,
+  },
+  ascent: {
+    key: 'ascent',
+    category: 'core',
+    minRole: 'USER',
+    requiresSubscription: false,
+    adminToggleable: true,
+    defaultEnabled: false,
   },
   finance: {
     key: 'finance',
@@ -174,14 +183,25 @@ export const NAV_FEATURE_KEYS: FeatureKey[] = [
   'tasks',
   'journal',
   'habits',
+  'ascent',
   'finance',
 ];
 
 /** Features hidden from navigation and direct page access (code kept for later). */
-export const UI_HIDDEN_FEATURES: ReadonlySet<FeatureKey> = new Set([
-  'tables',
-  'gamification',
-]);
+export const UI_HIDDEN_FEATURES: ReadonlySet<FeatureKey> = new Set(['tables', 'gamification']);
+
+/**
+ * Ascent stays off in production until the stored flag is enabled.
+ * `next dev` opens it locally without writing that flag to the database.
+ */
+export function resolveFeatureEnabled(
+  feature: FeatureKey,
+  stored: boolean,
+  nodeEnv: string | undefined
+): boolean {
+  if (feature === 'ascent' && nodeEnv === 'development') return true;
+  return stored;
+}
 
 export function getDefaultFeatureFlags(): Record<FeatureKey, boolean> {
   return Object.fromEntries(

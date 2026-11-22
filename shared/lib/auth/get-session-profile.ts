@@ -1,26 +1,10 @@
 import { isUserBanned, type AuthProfile } from '@/entities/user';
-import type { FeatureKey } from '@/shared/config/features';
+import { FEATURE_KEYS, type FeatureKey } from '@/shared/config/features';
 import { auth } from '@/shared/lib/auth/auth';
 import { prisma } from '@/shared/lib/db';
 
 function isFeatureKey(value: string): value is FeatureKey {
-  return [
-    'dashboard',
-    'goals',
-    'tasks',
-    'journal',
-    'habits',
-    'finance',
-    'energy',
-    'gamification',
-    'tables',
-    'analytics',
-    'ai_assistant',
-    'profile',
-    'admin_panel',
-    'admin_feature_settings',
-    'admin_manage_admins',
-  ].includes(value);
+  return FEATURE_KEYS.includes(value as FeatureKey);
 }
 
 export async function getSessionProfile(): Promise<AuthProfile> {
