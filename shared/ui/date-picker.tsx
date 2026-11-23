@@ -11,6 +11,9 @@ import { getDateLocale } from '@/shared/lib/date-locale';
 import { cn } from '@/shared/lib/utils';
 import { useLocale, useTranslations } from 'next-intl';
 
+/** Year dropdown otherwise ends at the current year. Deadlines may be set through 2100. */
+const MAX_SELECTABLE_MONTH = new Date(2100, 11, 1);
+
 interface Props {
   value: string;
   label?: string;
@@ -68,6 +71,7 @@ export function DatePicker({
             locale={dateLocale}
             selected={date ? new Date(date) : undefined}
             captionLayout="dropdown"
+            endMonth={MAX_SELECTABLE_MONTH}
             onSelect={(valueDate: Date | undefined) => {
               if (valueDate) {
                 setDate(valueDate);
