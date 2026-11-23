@@ -219,7 +219,7 @@ describe('ascent setup', () => {
     expect(history.challenge.xpBalance).toBe(0);
   });
 
-  it('starts the abstinence clock earlier without marking the previous day successful', async () => {
+  it('closes an earlier abstinence day without judging debt that did not exist yet', async () => {
     const store = createMemoryAscentStore();
     await saveHabit(store, 'habit-daily-1', 'Ежедневно');
     const created = await setupChallenge(
@@ -232,10 +232,14 @@ describe('ascent setup', () => {
     expect(formatLocalDate(created.challenge.startsAt, ZONE)).toBe('2026-11-22');
     expect(created.challenge.abstinenceStartedAt.toISOString()).toBe('2026-11-21T15:30:00.000Z');
     const today = await getToday(store, USER, NOW);
-    expect(today.currentStreak).toBe(0);
+    expect(today.currentStreak).toBe(1);
+    expect(today.bestStreak).toBe(1);
     expect(today.clock.startedAt).toBe('2026-11-21T15:30:00.000Z');
+    expect(today.preview.status).toBe('pending');
     const history = await getHistory(store, USER, created.challenge.id, NOW);
-    expect(history.days.some((day) => day.localDate === '2026-11-21')).toBe(false);
+    expect(history.days.map((day) => [day.localDate, day.status])).toEqual([['2026-11-21', 'successful']]);
+    const again = await getToday(store, USER, NOW);
+    expect(again.currentStreak).toBe(1);
 
     await expect(
       setupChallenge(store, OTHER, payload({ abstinenceDate: '2026-11-22', abstinenceTime: '18:00', habitIds: [] }), NOW)

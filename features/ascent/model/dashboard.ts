@@ -103,8 +103,8 @@ export function buildChallengeMonth(input: {
   while (cursor <= end) {
     const status = settled.get(cursor);
     let kind: ChallengeDayKind;
-    if (cursor < input.startsOn) kind = 'before-start';
-    else if (status === 'successful' || status === 'failed' || status === 'skipped') kind = status;
+    if (status === 'successful' || status === 'failed' || status === 'skipped') kind = status;
+    else if (cursor < input.startsOn) kind = 'before-start';
     else if (cursor > input.localDate) kind = 'future';
     else if (cursor === input.localDate && input.challengeStatus === 'active') kind = 'current';
     else if (input.challengeStatus === 'active' && cursor < input.localDate) kind = 'unsettled';

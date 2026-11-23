@@ -152,7 +152,7 @@ export function TaskCard({
       {isStep ? (
         <div
           className={cn(
-            'group relative flex w-full items-center gap-2 rounded-lg py-1 transition-colors hover:bg-muted/50',
+            'group relative flex w-full items-start gap-2 rounded-lg py-1 transition-colors hover:bg-muted/50',
             sortable && 'cursor-grab active:cursor-grabbing'
           )}
           {...(sortable?.listeners ?? {})}
@@ -167,7 +167,7 @@ export function TaskCard({
           <div className="min-w-0 flex-1">
             <span
               className={cn(
-                'block truncate text-sm',
+                'block break-words text-sm leading-snug',
                 task.completed && 'text-muted-foreground line-through'
               )}
             >

@@ -344,7 +344,7 @@ export async function updateChallenge(store: AscentStore, userId: string, challe
           mentioned: true,
         });
       }
-      const updated = await tx.updateChallenge(challenge.id, {
+      let updated = await tx.updateChallenge(challenge.id, {
         title: has(body, 'title') ? assertTitle(text(body.title, 'invalid_title', ASCENT_LIMITS.titleMax)) : challenge.title,
         description: optionalText(body, 'description', challenge.description),
         unwantedBehavior: has(body, 'unwantedBehavior')
@@ -357,6 +357,12 @@ export async function updateChallenge(store: AscentStore, userId: string, challe
           : challenge.importance,
         ...(abstinenceStartedAt ? { abstinenceStartedAt } : {}),
       });
+      if (
+        abstinenceStartedAt &&
+        abstinenceStartedAt.getTime() !== challenge.abstinenceStartedAt.getTime()
+      ) {
+        updated = await persistSettlement(tx, updated, now);
+      }
       return { challenge: updated };
     })
   );

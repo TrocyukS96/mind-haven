@@ -498,7 +498,7 @@ describe('ascent challenge API', () => {
     });
   });
 
-  it('corrects the abstinence clock without awarding days or changing the record', async () => {
+  it('closes elapsed abstinence days when the clock is moved earlier', async () => {
     const store = createMemoryAscentStore();
     const created = await start(store);
     const updated = await updateChallenge(
@@ -510,12 +510,13 @@ describe('ascent challenge API', () => {
     );
     expect(updated.challenge.abstinenceStartedAt.toISOString()).toBe('2026-11-19T15:30:00.000Z');
     expect(updated.challenge.startsAt.toISOString()).toBe(created.challenge.startsAt.toISOString());
-    expect(updated.challenge.currentStreak).toBe(0);
-    expect(updated.challenge.bestStreak).toBe(0);
+    expect(updated.challenge.currentStreak).toBe(1);
+    expect(updated.challenge.bestStreak).toBe(1);
     const today = await getToday(store, USER, OPEN);
+    expect(today.currentStreak).toBe(1);
     expect(today.clock.startedAt).toBe('2026-11-19T15:30:00.000Z');
     const history = await getHistory(store, USER, created.challenge.id, OPEN);
-    expect(history.days).toEqual([]);
+    expect(history.days.map((day) => [day.localDate, day.status])).toEqual([['2026-11-19', 'successful']]);
   });
 
   it('locks the abstinence clock after a reset and after a recorded violation', async () => {

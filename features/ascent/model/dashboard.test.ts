@@ -76,6 +76,20 @@ describe('ascent dashboard presentation', () => {
     expect(cells.filter((cell) => cell.kind === 'successful')).toHaveLength(1);
   });
 
+  it('keeps a declared abstinence day visible before the challenge start', () => {
+    const cells = buildChallengeMonth({
+      month: '2026-11',
+      localDate: '2026-11-23',
+      startsOn: '2026-11-23',
+      challengeStatus: 'active',
+      days: [{ localDate: '2026-11-22', status: 'successful' }],
+    });
+    const byDate = new Map(cells.filter((cell) => cell.date).map((cell) => [cell.date, cell.kind]));
+    expect(byDate.get('2026-11-21')).toBe('before-start');
+    expect(byDate.get('2026-11-22')).toBe('successful');
+    expect(byDate.get('2026-11-23')).toBe('current');
+  });
+
   it('does not paint days after a completed challenge as successful', () => {
     const cells = buildChallengeMonth({
       month: '2026-11',

@@ -194,12 +194,19 @@ export async function persistSettlement(
     appliedKeys(store, challenge.id),
     loadObligations(store, challenge),
   ]);
-  const settledDates = days.filter((day) => day.status !== 'pending').map((day) => day.localDate);
+  const settled = days.filter((day) => day.status !== 'pending');
+  const settledDates = settled.map((day) => day.localDate);
+  const challengeOn = formatLocalDate(challenge.startsAt, challenge.timezone);
+  const abstinenceOn = formatLocalDate(challenge.abstinenceStartedAt, challenge.timezone);
+  const today = formatLocalDate(now, challenge.timezone);
+  const credit =
+    today >= challengeOn && abstinenceOn < challengeOn && settled.every((day) => day.status !== 'failed');
   const result = settleElapsedDays({
     state: toAscentState(challenge, keys),
     challengeId: challenge.id,
     timezone: challenge.timezone,
-    startsOn: formatLocalDate(challenge.startsAt, challenge.timezone),
+    startsOn: credit ? abstinenceOn : challengeOn,
+    creditBefore: credit ? challengeOn : undefined,
     targetDays: challenge.targetDays,
     now,
     settledDates,

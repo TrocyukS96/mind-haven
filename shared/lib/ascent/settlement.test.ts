@@ -211,6 +211,45 @@ describe('streak settlement', () => {
     expect(closed.state.bestStreak).toBe(1);
   });
 
+  it('counts local days before the challenge start as declared abstinence', () => {
+    const result = settleElapsedDays({
+      ...base,
+      startsOn: '2026-11-21',
+      creditBefore: '2026-11-22',
+      state: blank(),
+      now: atMinsk('2026-11-22T10:00:00.000Z'),
+      evaluate: () => {
+        throw new Error('debt must not be judged before the challenge starts');
+      },
+    });
+
+    expect(result.days.map((day) => [day.localDate, day.status, day.items])).toEqual([
+      ['2026-11-21', 'successful', []],
+    ]);
+    expect(result.state.currentStreak).toBe(1);
+    expect(result.state.bestStreak).toBe(1);
+    expect(result.completed).toBe(false);
+  });
+
+  it('inserts missing abstinence days ahead of an already closed challenge day', () => {
+    const result = settleElapsedDays({
+      ...base,
+      startsOn: '2026-11-20',
+      creditBefore: '2026-11-23',
+      state: blank({ currentStreak: 1, bestStreak: 1 }),
+      settledDates: ['2026-11-22'],
+      now: atMinsk('2026-11-23T10:00:00.000Z'),
+      evaluate: () => {
+        throw new Error('the open day is not closed yet');
+      },
+    });
+
+    expect(result.days.map((day) => day.localDate)).toEqual(['2026-11-20', '2026-11-21']);
+    expect(result.days.every((day) => day.status === 'successful' && day.items.length === 0)).toBe(true);
+    expect(result.state.currentStreak).toBe(3);
+    expect(result.state.bestStreak).toBe(3);
+  });
+
   it('resets a multi-day streak, keeps the record, and does not move old debt forward', () => {
     const result = settleElapsedDays({
       ...base,

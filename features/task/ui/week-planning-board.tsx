@@ -13,8 +13,25 @@ import {
   parseCardKey,
   weekBoardProgress,
 } from '@/shared/lib/planner/week-board';
+import {
+  findLane,
+  laneDropId,
+  parseLaneId,
+  placeCardInLanes,
+  resolveLane,
+} from '@/features/task/lib/week-lane-dnd';
 import { toDateInputValue } from '@/shared/lib/planner/week-column-range';
 import { useStore } from '@/shared/store/store-config';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/ui/alert-dialog';
 import { Button } from '@/shared/ui/button';
 import { Checkbox } from '@/shared/ui/checkbox';
 import {
@@ -24,6 +41,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu';
 import { Input } from '@/shared/ui/input';
 import { KanbanItemDragHandle, KanbanItemSortableProvider } from '@/shared/ui/kanban-item-sortable';
 import { Label } from '@/shared/ui/label';
@@ -40,27 +63,32 @@ import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
+  MeasuringStrategy,
   PointerSensor,
-  closestCorners,
+  closestCenter,
+  getFirstCollision,
+  pointerWithin,
+  rectIntersection,
+  useDndContext,
   useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
 import {
   SortableContext,
-  arrayMove,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ListChecks } from 'lucide-react';
+import { ListChecks, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'react-toastify';
-import { useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
+import { useCallback, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
 
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 const PRIORITIES: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
@@ -82,36 +110,6 @@ interface WeekPlanningBoardProps {
   onUpdate: (taskId: string, input: Partial<WeekLocalTask>) => Promise<void>;
   onDelete: (taskId: string) => Promise<void>;
   onLayout: (patch: WeekLayoutPatch) => void;
-}
-
-function laneDropId(lane: string) {
-  return `col:${lane}`;
-}
-
-function parseLaneId(id: string): string | null {
-  return id.startsWith('col:') ? id.slice(4) : null;
-}
-
-function findLane(lanes: Record<string, string[]>, itemId: string): string | null {
-  for (const [lane, ids] of Object.entries(lanes)) {
-    if (ids.includes(itemId)) return lane;
-  }
-  return null;
-}
-
-function resolveLane(
-  overId: string,
-  lanes: Record<string, string[]>,
-  overData?: { columnKey?: string }
-): string | null {
-  return parseLaneId(overId) ?? findLane(lanes, overId) ?? overData?.columnKey ?? null;
-}
-
-function insertIndex(overId: string, items: string[], activeId: string): number {
-  if (parseLaneId(overId)) return items.length;
-  const overIndex = items.indexOf(overId);
-  if (overIndex >= 0) return overIndex;
-  return items.filter((id) => id !== activeId).length;
 }
 
 function statusLabelKey(status: WeekLocalStatus) {
@@ -164,6 +162,28 @@ export function WeekPlanningBoard({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  const collisionDetection = useCallback<CollisionDetection>((args) => {
+    // Pointer position, so a task can leave a full day for the backlog or another day.
+    const pointerCollisions = pointerWithin(args);
+    const collisions = pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args);
+    const overId = getFirstCollision(collisions, 'id');
+    if (overId == null) return [];
+
+    const lane = parseLaneId(String(overId));
+    if (!lane) return [{ id: overId }];
+
+    const itemIds = itemsRef.current[lane] ?? [];
+    if (itemIds.length === 0) return [{ id: laneDropId(lane) }];
+
+    const closestItem = closestCenter({
+      ...args,
+      droppableContainers: args.droppableContainers.filter((container) =>
+        itemIds.includes(String(container.id))
+      ),
+    });
+    return closestItem.length > 0 ? closestItem : [{ id: laneDropId(lane) }];
+  }, []);
+
   const handleDragStart = ({ active }: DragStartEvent) => {
     if (readOnly) return;
     itemsRef.current = items;
@@ -173,36 +193,41 @@ export function WeekPlanningBoard({
   const handleDragOver = ({ active, over }: DragOverEvent) => {
     if (readOnly || !over) return;
     const activeItemId = String(active.id);
-    const overId = String(over.id);
-    if (activeItemId === overId || !parseCardKey(activeItemId)) return;
+    if (!parseCardKey(activeItemId)) return;
 
-    const current = itemsRef.current;
-    const activeLane = findLane(current, activeItemId);
-    const overLane = resolveLane(overId, current, over.data.current as { columnKey?: string } | undefined);
-    if (!activeLane || !overLane || !current[overLane]) return;
-
-    const activeItems = [...current[activeLane]];
-    const activeIndex = activeItems.indexOf(activeItemId);
-    if (activeIndex < 0) return;
-
-    let next = current;
-    if (activeLane === overLane) {
-      const overIndex = insertIndex(overId, activeItems, activeItemId);
-      if (activeIndex === overIndex) return;
-      next = { ...current, [activeLane]: arrayMove(activeItems, activeIndex, overIndex) };
-    } else {
-      const overItems = [...current[overLane]];
-      activeItems.splice(activeIndex, 1);
-      overItems.splice(insertIndex(overId, overItems, activeItemId), 0, activeItemId);
-      next = { ...current, [activeLane]: activeItems, [overLane]: overItems };
-    }
+    const next = placeCardInLanes(
+      itemsRef.current,
+      activeItemId,
+      String(over.id),
+      over.data.current as { columnKey?: string } | undefined
+    );
+    if (!next) return;
     itemsRef.current = next;
     setDragItems(next);
   };
 
-  const handleDragEnd = ({ active }: DragEndEvent) => {
-    const current = itemsRef.current;
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
     const activeItemId = String(active.id);
+    if (!readOnly && over && parseCardKey(activeItemId)) {
+      const overId = String(over.id);
+      const currentLane = findLane(itemsRef.current, activeItemId);
+      const overLane = resolveLane(
+        overId,
+        itemsRef.current,
+        over.data.current as { columnKey?: string } | undefined
+      );
+      if (currentLane && overLane && currentLane !== overLane) {
+        const placed = placeCardInLanes(
+          itemsRef.current,
+          activeItemId,
+          overId,
+          over.data.current as { columnKey?: string } | undefined
+        );
+        if (placed) itemsRef.current = placed;
+      }
+    }
+
+    const current = itemsRef.current;
     setDragItems(null);
     setActiveId(null);
     if (readOnly || !parseCardKey(activeItemId) || !findLane(current, activeItemId)) return;
@@ -258,7 +283,8 @@ export function WeekPlanningBoard({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={collisionDetection}
+      measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -328,24 +354,28 @@ function WeekLane({
   onCreate: WeekPlanningBoardProps['onCreate'];
 }) {
   const t = useTranslations('tasks');
+  const { over } = useDndContext();
   const { setNodeRef, isOver } = useDroppable({
     id: laneDropId(lane),
     data: { type: 'column', columnKey: lane },
     disabled: readOnly,
   });
+  const overId = over ? String(over.id) : null;
+  const isItemOver = isOver || (overId !== null && itemIds.includes(overId));
   const plannedDate = lane === WEEK_BACKLOG_LANE ? null : lane;
 
   return (
     <section
+      ref={setNodeRef}
       className={cn(
         'flex w-72 shrink-0 flex-col gap-3 rounded-xl border border-border/60 bg-card/50 p-3 sm:w-80',
         today && 'border-primary/50',
-        isOver && 'border-primary bg-primary/5'
+        isItemOver && 'border-primary bg-primary/5'
       )}
     >
       <LaneTitle lane={lane} count={itemIds.length} />
       <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-        <div ref={setNodeRef} className={cn('min-h-24 flex-1 space-y-2 rounded-lg', isOver && 'bg-primary/5')}>
+        <div className={cn('min-h-24 flex-1 space-y-2 rounded-lg', isItemOver && 'bg-primary/5')}>
           {itemIds.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">{t('weekBoard.empty')}</p>
           ) : (
@@ -466,8 +496,10 @@ function WeekLocalCard({
   onDelete: WeekPlanningBoardProps['onDelete'];
 }) {
   const t = useTranslations('tasks');
+  const tCommon = useTranslations('common');
   const tPriorities = useTranslations('priorities');
   const [open, setOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const done = task.status === 'done';
   const priorityStyle = getTaskPriorityStyle(task.priority);
 
@@ -503,6 +535,35 @@ function WeekLocalCard({
               </span>
             </span>
           </button>
+          {readOnly ? null : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0 text-muted-foreground"
+                  aria-label={t('weekBoard.taskActions')}
+                  onPointerDown={stopDrag}
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onSelect={() => setOpen(true)}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  {tCommon('edit')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onSelect={() => setDeleteOpen(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {tCommon('delete')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5 pl-1">
           <span className={cn('rounded-full border px-2 py-0.5 text-[11px]', priorityStyle.badge)}>
@@ -521,6 +582,29 @@ function WeekLocalCard({
         onUpdate={onUpdate}
         onDelete={onDelete}
       />
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('deleteTaskTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('deleteTaskDescription', { title: task.title })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground"
+              onClick={() => {
+                void onDelete(task.id)
+                  .then(() => setDeleteOpen(false))
+                  .catch(() => undefined);
+              }}
+            >
+              {tCommon('delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

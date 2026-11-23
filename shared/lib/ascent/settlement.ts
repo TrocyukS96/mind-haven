@@ -108,6 +108,14 @@ function settledDay(
   };
 }
 
+const DECLARED_ABSTINENCE: DayEvaluation = {
+  status: 'successful',
+  debtClosed: true,
+  obligationsMet: true,
+  failureReason: null,
+  items: [],
+};
+
 /**
  * Closes every local date from the day after the latest settled date through yesterday.
  * Today stays open, so the result does not depend on a browser tab staying open.
@@ -115,6 +123,8 @@ function settledDay(
  * Dates already settled are ignored, so the same date cannot reset or increment twice.
  * The personal record is only raised, never lowered.
  * After the streak reaches `targetDays` the challenge completes and later dates are left untouched.
+ * `creditBefore` marks declared abstinence: those local dates close successfully without debt.
+ * Missing credited dates that sit before an already settled day are closed first, in order.
  */
 export function settleElapsedDays(input: {
   state: AscentState;
@@ -125,6 +135,8 @@ export function settleElapsedDays(input: {
   now: Date;
   settledDates: readonly string[];
   pauseWindows?: readonly PauseWindow[];
+  /** Local dates strictly before this one are declared abstinence, not challenge debt. */
+  creditBefore?: string;
   evaluate?: (localDate: string, streakAtStart: number) => DayEvaluation;
 }): SettlementResult {
   assertAscentInvariants(input.state);
@@ -145,20 +157,60 @@ export function settleElapsedDays(input: {
   const latest = latestDate(input.settledDates);
   let cursor = latest ? shiftIsoDate(latest, 1) : startsOn;
   if (cursor < startsOn) cursor = startsOn;
-  if (cursor > yesterday) {
-    return { state, days: [], xpMutations: [], completed: false };
-  }
+  const creditEnd = input.creditBefore ? shiftIsoDate(assertIsoDate(input.creditBefore), -1) : null;
 
   const days: SettledDay[] = [];
   const xpMutations: XpMutation[] = [];
 
+  const alreadyClosed = (localDate: string) =>
+    hasAppliedKey(state, ascentKey(input.challengeId, `day:${localDate}`)) || input.settledDates.includes(localDate);
+
+  const recordSuccess = (localDate: string, evaluation: DayEvaluation): boolean => {
+    const dayKey = ascentKey(input.challengeId, `day:${localDate}`);
+    const streakAtStart = state.currentStreak;
+    const currentStreak = state.currentStreak + 1;
+    const bestStreak = Math.max(state.bestStreak, currentStreak);
+    state = withAppliedKey({ ...state, currentStreak, bestStreak }, dayKey);
+    days.push(settledDay(localDate, 'successful', evaluation, streakAtStart, state));
+    if (currentStreak >= input.targetDays) {
+      state = { ...state, status: 'completed', pauseStartedOn: null };
+      return true;
+    }
+    return false;
+  };
+
+  if (creditEnd && creditEnd >= startsOn) {
+    const beforeForward = shiftIsoDate(cursor, -1);
+    const end = beforeForward < creditEnd ? beforeForward : creditEnd;
+    if (end >= startsOn) {
+      for (const localDate of eachLocalDate(startsOn, end)) {
+        if (localDate > yesterday || alreadyClosed(localDate)) continue;
+        if (recordSuccess(localDate, DECLARED_ABSTINENCE)) {
+          assertAscentInvariants(state);
+          return { state, days, xpMutations, completed: true };
+        }
+      }
+    }
+  }
+
+  if (cursor > yesterday) {
+    assertAscentInvariants(state);
+    return { state, days, xpMutations, completed: false };
+  }
+
   for (const localDate of eachLocalDate(cursor, yesterday)) {
     const dayKey = ascentKey(input.challengeId, `day:${localDate}`);
-    if (hasAppliedKey(state, dayKey) || input.settledDates.includes(localDate)) {
-      continue;
-    }
+    if (alreadyClosed(localDate)) continue;
 
     const streakAtStart = state.currentStreak;
+
+    if (creditEnd && localDate <= creditEnd) {
+      if (recordSuccess(localDate, DECLARED_ABSTINENCE)) {
+        assertAscentInvariants(state);
+        return { state, days, xpMutations, completed: true };
+      }
+      continue;
+    }
 
     if (isSkippedDate(localDate, state, windows)) {
       state = withAppliedKey(state, dayKey);
@@ -168,13 +220,7 @@ export function settleElapsedDays(input: {
 
     const evaluation = evaluationFor(input.evaluate, localDate, streakAtStart);
     if (evaluation.status === 'successful') {
-      const currentStreak = state.currentStreak + 1;
-      const bestStreak = Math.max(state.bestStreak, currentStreak);
-      state = withAppliedKey({ ...state, currentStreak, bestStreak }, dayKey);
-      days.push(settledDay(localDate, 'successful', evaluation, streakAtStart, state));
-
-      if (currentStreak >= input.targetDays) {
-        state = { ...state, status: 'completed', pauseStartedOn: null };
+      if (recordSuccess(localDate, evaluation)) {
         assertAscentInvariants(state);
         return { state, days, xpMutations, completed: true };
       }

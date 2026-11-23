@@ -45,7 +45,8 @@ export function AscentCalendar({ localDate, startsOn, challengeStatus, days }: A
     year: 'numeric',
     timeZone: 'UTC',
   });
-  const firstMonth = startsOn.slice(0, 7);
+  const earliest = days.reduce((min, day) => (day.localDate < min ? day.localDate : min), startsOn);
+  const firstMonth = earliest.slice(0, 7);
   const lastMonth = localDate.slice(0, 7);
 
   return (

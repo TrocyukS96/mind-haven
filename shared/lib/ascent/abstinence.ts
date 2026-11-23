@@ -13,6 +13,7 @@ import {
  * `running.startedAt` is not the original challenge start after a failed day,
  * and it is not derived from the count of successful days.
  * Today can advance the clock before the server closes it and increments the streak.
+ * Local dates that already ended before the challenge start close as declared abstinence.
  */
 export interface AscentClock {
   mode: 'countdown' | 'running' | 'broken' | 'frozen';

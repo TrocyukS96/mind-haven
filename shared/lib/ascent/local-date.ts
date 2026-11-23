@@ -190,7 +190,8 @@ export function localDateTime(isoDate: string, time: string, timeZone: string): 
 
 /**
  * Wall-clock abstinence start. It may be earlier than the challenge start.
- * It cannot be in the future, and it cannot be used to invent closed days.
+ * It cannot be in the future. Local dates that already ended before the
+ * challenge start are later closed as declared abstinence, without debt.
  */
 export function resolveAbstinenceStartedAt(input: {
   now: Date;
