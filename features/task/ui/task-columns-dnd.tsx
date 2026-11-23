@@ -3,12 +3,16 @@
 import { TaskCard } from '@/entities/task/ui/TaskCard';
 import type { Task } from '@/entities/task/model/types';
 import type { TaskColumn } from '@/entities/task-column/model/types';
-import { TaskColumnMenu } from '@/features/task/ui/task-column-menu';
 import {
-  getColumnId,
-  parseColumnId,
-  sortByKanbanOrder,
-} from '@/shared/lib/kanban-utils';
+  columnDropId,
+  findColumnId,
+  parseColumnDropId,
+  placeTaskInColumns,
+  resolveOverColumnId,
+  type ColumnItemsMap,
+} from '@/features/task/lib/task-column-dnd';
+import { TaskColumnMenu } from '@/features/task/ui/task-column-menu';
+import { getColumnId, parseColumnId, sortByKanbanOrder } from '@/shared/lib/kanban-utils';
 import { resolveTaskColumnId } from '@/shared/lib/planner/week-column-range';
 import { KanbanItemSortableProvider } from '@/shared/ui/kanban-item-sortable';
 import { cn } from '@/shared/lib/utils';
@@ -16,11 +20,17 @@ import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
+  MeasuringStrategy,
   PointerSensor,
-  closestCorners,
+  closestCenter,
+  getFirstCollision,
+  pointerWithin,
+  rectIntersection,
+  useDndContext,
   useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
@@ -37,9 +47,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Link } from '@/i18n/routing';
 import { GripVertical } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-
-type ColumnItemsMap = Record<string, string[]>;
+import { useCallback, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 
 function buildColumnItems(
   tasks: Task[],
@@ -52,28 +60,6 @@ function buildColumnItems(
     ).map((task) => task.id);
     return map;
   }, {});
-}
-
-function findColumnId(columnItems: ColumnItemsMap, itemId: string): string | null {
-  for (const [columnId, itemIds] of Object.entries(columnItems)) {
-    if (itemIds.includes(itemId)) return columnId;
-  }
-  return null;
-}
-
-function resolveOverColumnId(
-  overId: string,
-  columnItems: ColumnItemsMap,
-  overData?: { columnKey?: string }
-): string | null {
-  return parseColumnId(overId) ?? findColumnId(columnItems, overId) ?? overData?.columnKey ?? null;
-}
-
-function resolveItemInsertIndex(overId: string, items: string[], activeItemId: string): number {
-  if (parseColumnId(overId)) return items.length;
-  const overIndex = items.indexOf(overId);
-  if (overIndex >= 0) return overIndex;
-  return items.filter((id) => id !== activeItemId).length;
 }
 
 function columnStats(tasks: Task[], columnId: string, resolveColumns: TaskColumn[]) {
@@ -117,6 +103,44 @@ export function TaskColumnsDndBoard({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  const collisionDetection = useCallback<CollisionDetection>((args) => {
+    const activeId = String(args.active.id);
+    const activeType =
+      (args.active.data.current as { type?: 'column' | 'item' } | undefined)?.type ??
+      (parseColumnId(activeId) ? 'column' : 'item');
+
+    if (activeType === 'column') {
+      return closestCenter({
+        ...args,
+        droppableContainers: args.droppableContainers.filter((container) =>
+          Boolean(parseColumnId(String(container.id)))
+        ),
+      });
+    }
+
+    // Pointer position, so an empty week column between filled columns can accept a task.
+    const containers = args.droppableContainers.filter(
+      (container) => !parseColumnId(String(container.id))
+    );
+    const scoped = { ...args, droppableContainers: containers };
+    const pointerCollisions = pointerWithin(scoped);
+    const collisions = pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(scoped);
+    const overId = getFirstCollision(collisions, 'id');
+    if (overId == null) return [];
+
+    const overColumnId = parseColumnDropId(String(overId));
+    if (!overColumnId) return [{ id: overId }];
+
+    const itemIds = columnItemsRef.current[overColumnId] ?? [];
+    if (itemIds.length === 0) return [{ id: columnDropId(overColumnId) }];
+
+    const closestItem = closestCenter({
+      ...args,
+      droppableContainers: containers.filter((container) => itemIds.includes(String(container.id))),
+    });
+    return closestItem.length > 0 ? closestItem : [{ id: columnDropId(overColumnId) }];
+  }, []);
+
   const handleDragStart = ({ active }: DragStartEvent) => {
     columnItemsRef.current = columnItems;
     const activeData = active.data.current as { type?: 'column' | 'item' } | undefined;
@@ -129,36 +153,13 @@ export function TaskColumnsDndBoard({
     const activeData = active.data.current as { type?: 'column' | 'item' } | undefined;
     if (activeData?.type !== 'item') return;
 
-    const activeItemId = String(active.id);
-    const overId = String(over.id);
-    if (activeItemId === overId) return;
-
-    const current = columnItemsRef.current;
-    const activeColumnId = findColumnId(current, activeItemId);
-    if (!activeColumnId) return;
-    const overColumnId = resolveOverColumnId(
-      overId,
-      current,
+    const next = placeTaskInColumns(
+      columnItemsRef.current,
+      String(active.id),
+      String(over.id),
       over.data.current as { columnKey?: string } | undefined
     );
-    if (!overColumnId || !current[overColumnId]) return;
-
-    const activeItems = [...current[activeColumnId]];
-    const activeIndex = activeItems.indexOf(activeItemId);
-    if (activeIndex < 0) return;
-
-    let next = current;
-    if (activeColumnId === overColumnId) {
-      const overIndex = resolveItemInsertIndex(overId, activeItems, activeItemId);
-      if (overIndex < 0 || activeIndex === overIndex) return;
-      next = { ...current, [activeColumnId]: arrayMove(activeItems, activeIndex, overIndex) };
-    } else {
-      const overItems = [...current[overColumnId]];
-      activeItems.splice(activeIndex, 1);
-      overItems.splice(resolveItemInsertIndex(overId, overItems, activeItemId), 0, activeItemId);
-      next = { ...current, [activeColumnId]: activeItems, [overColumnId]: overItems };
-    }
-
+    if (!next) return;
     columnItemsRef.current = next;
     setDragItems(next);
   };
@@ -185,6 +186,24 @@ export function TaskColumnsDndBoard({
     }
 
     if (activeData?.type === 'item') {
+      if (overId) {
+        const currentColumn = findColumnId(columnItemsRef.current, currentActiveId);
+        const overColumn = resolveOverColumnId(
+          overId,
+          columnItemsRef.current,
+          over?.data.current as { columnKey?: string } | undefined
+        );
+        if (currentColumn && overColumn && currentColumn !== overColumn) {
+          const placed = placeTaskInColumns(
+            columnItemsRef.current,
+            currentActiveId,
+            overId,
+            over?.data.current as { columnKey?: string } | undefined
+          );
+          if (placed) columnItemsRef.current = placed;
+        }
+      }
+
       const finalColumnId = findColumnId(columnItemsRef.current, currentActiveId);
       const targetIndex = finalColumnId
         ? (columnItemsRef.current[finalColumnId]?.indexOf(currentActiveId) ?? -1)
@@ -221,7 +240,8 @@ export function TaskColumnsDndBoard({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={collisionDetection}
+      measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -276,6 +296,7 @@ function TaskSortableColumn({
 }) {
   const t = useTranslations('tasks');
   const tCommon = useTranslations('common');
+  const { over } = useDndContext();
   const {
     attributes,
     listeners,
@@ -283,14 +304,24 @@ function TaskSortableColumn({
     transform,
     transition,
     isDragging,
+    isOver: isColumnOver,
   } = useSortable({
     id: getColumnId(column.id),
     data: { type: 'column', columnKey: column.id },
   });
-  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
-    id: getColumnId(column.id),
+  const { setNodeRef: setDroppableRef, isOver: isDropOver } = useDroppable({
+    id: columnDropId(column.id),
     data: { type: 'column', columnKey: column.id },
   });
+  const setColumnNode = useCallback(
+    (node: HTMLElement | null) => {
+      setNodeRef(node);
+      setDroppableRef(node);
+    },
+    [setDroppableRef, setNodeRef]
+  );
+  const overId = over ? String(over.id) : null;
+  const isItemOver = isDropOver || (overId !== null && itemIds.includes(overId));
 
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -299,13 +330,13 @@ function TaskSortableColumn({
 
   return (
     <div
-      ref={setNodeRef}
+      ref={setColumnNode}
       style={style}
       className={cn(
         'flex w-72 shrink-0 flex-col gap-3 rounded-xl border border-border/60 bg-card/50 p-3 sm:w-80 sm:p-4',
         column.kind === 'week' && 'border-primary/40',
         isDragging && 'border-primary opacity-60',
-        isOver && 'border-primary bg-primary/5'
+        (isColumnOver || isItemOver) && 'border-primary bg-primary/5'
       )}
     >
       <div className="flex items-start gap-2">
@@ -343,10 +374,7 @@ function TaskSortableColumn({
         <TaskColumnMenu column={column} />
       </div>
       <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-        <div
-          ref={setDroppableRef}
-          className={cn('min-h-24 flex-1 space-y-2 rounded-lg', isOver && 'bg-primary/5')}
-        >
+        <div className={cn('min-h-24 flex-1 space-y-2 rounded-lg', isItemOver && 'bg-primary/5')}>
           {itemIds.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">{t('kanbanEmptyColumn')}</p>
           ) : (
@@ -382,7 +410,11 @@ function SortableTaskCard({
 
   return (
     <KanbanItemSortableProvider value={{ attributes, listeners, isDragging }}>
-      <div ref={setNodeRef} style={style} className={cn('min-w-0', isDragging && 'opacity-40')}>
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={cn('min-w-0 touch-none', isDragging && 'opacity-40')}
+      >
         {children}
       </div>
     </KanbanItemSortableProvider>
