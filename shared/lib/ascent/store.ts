@@ -222,8 +222,21 @@ export interface NewTransaction {
  * Persistence port for the ascent service. Production uses Prisma.
  * Tests use the in-memory store, including its transaction queue.
  */
+export interface SettlementGraph {
+  days: DayRecord[];
+  transactions: TransactionRecord[];
+  purchases: PurchaseRecord[];
+  links: HabitLinkRecord[];
+  habits: HabitRecord[];
+  restrictions: RestrictionRecord[];
+  customs: CustomDebtRecord[];
+  debtItems: DebtItemRecord[];
+}
+
 export interface AscentStore {
   transaction<T>(fn: (store: AscentStore) => Promise<T>): Promise<T>;
+
+  readSettlement(challengeId: string): Promise<SettlementGraph>;
 
   lockChallenge(userId: string, challengeId: string): Promise<ChallengeRecord | null>;
   findChallenge(userId: string, challengeId: string): Promise<ChallengeRecord | null>;

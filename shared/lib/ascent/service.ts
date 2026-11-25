@@ -25,6 +25,7 @@ import {
 } from '@/shared/lib/ascent/rules';
 import {
   appliedKeys,
+  captureChallenge,
   guard,
   lockActive,
   lockOwned,
@@ -153,10 +154,10 @@ async function challengeDetail(store: AscentStore, challenge: ChallengeRecord) {
     store.listCustomDebts(challenge.id),
     store.listActivities(challenge.id),
   ]);
-  const habits = [];
-  for (const link of links) {
-    const habit = await store.findHabit(link.habitId);
-    habits.push({
+  const habitRows = await Promise.all(links.map((link) => store.findHabit(link.habitId)));
+  const habits = links.map((link, index) => {
+    const habit = habitRows[index];
+    return {
       ...link,
       habit: habit
         ? {
@@ -167,8 +168,8 @@ async function challengeDetail(store: AscentStore, challenge: ChallengeRecord) {
             targetCount: habit.targetCount,
           }
         : null,
-    });
-  }
+    };
+  });
 
   return { challenge, rewards, triggers, habits, restrictions, customDebts, activities };
 }
@@ -299,12 +300,24 @@ export async function createChallenge(store: AscentStore, userId: string, input:
 }
 
 export async function getChallenge(store: AscentStore, userId: string, challengeId: string, now = new Date()) {
-  return store.transaction((tx) =>
-    guard(async () => {
-      const challenge = await lockOwned(tx, userId, challengeId, now);
-      return challengeDetail(tx, challenge);
-    })
-  );
+  return guard(async () => {
+    const row = await store.findChallenge(userId, challengeId);
+    if (!row) throw new AscentRuleError('not_found');
+    if (row.status === 'active') {
+      const captured = await captureChallenge(store, row, now);
+      if (captured.settlementDirty) {
+        return store.transaction((tx) =>
+          guard(async () => {
+            const challenge = await lockOwned(tx, userId, challengeId, now);
+            return challengeDetail(tx, challenge);
+          })
+        );
+      }
+    } else if (row.status !== 'completed' && row.status !== 'archived') {
+      throw new AscentRuleError('challenge_not_active');
+    }
+    return challengeDetail(store, row);
+  });
 }
 
 export async function updateChallenge(store: AscentStore, userId: string, challengeId: string, input: unknown, now = new Date()) {
@@ -1101,78 +1114,124 @@ function clockFromDays(
 }
 
 export async function getToday(store: AscentStore, userId: string, now = new Date()) {
-  return store.transaction((tx) =>
-    guard(async () => {
-      const active = await tx.findActiveChallenge(userId);
-      if (!active) throw new AscentRuleError('not_found');
-      const challenge = await lockOwned(tx, userId, active.id, now);
-      const restrictions = (await tx.listRestrictions(challenge.id)).filter((item) => item.active);
-      if (challenge.status !== 'active') {
-        const localDate = formatLocalDate(now, challenge.timezone);
-        const preview: TodayPreview = {
-          status: 'pending',
-          debtClosed: true,
-          obligationsMet: true,
-          failureReason: null,
-        };
-        return {
-          challenge,
-          localDate,
-          currentStreak: challenge.currentStreak,
-          bestStreak: challenge.bestStreak,
-          xpBalance: challenge.xpBalance,
-          xpEarnedTotal: challenge.xpEarnedTotal,
-          debt: [] as DebtItemRecord[],
-          restrictions,
-          preview,
-          clock: clockFromDays(challenge, await tx.listDays(challenge.id), now, false),
-        };
-      }
+  return guard(async () => {
+    const active = await store.findActiveChallenge(userId);
+    if (!active) throw new AscentRuleError('not_found');
+    const captured = await captureChallenge(store, active, now);
+    if (!captured.settlementDirty && !captured.openDirty && captured.open) {
+      return {
+        challenge: active,
+        localDate: captured.open.localDate,
+        currentStreak: active.currentStreak,
+        bestStreak: active.bestStreak,
+        xpBalance: active.xpBalance,
+        xpEarnedTotal: active.xpEarnedTotal,
+        debt: captured.open.debt,
+        restrictions: captured.graph.restrictions.filter((item) => item.active),
+        preview: {
+          status: captured.open.evaluation.status,
+          debtClosed: captured.open.evaluation.debtClosed,
+          obligationsMet: captured.open.evaluation.obligationsMet,
+          failureReason: captured.open.evaluation.failureReason,
+        },
+        clock: clockFromDays(active, captured.graph.days, now, captured.open.evaluation.status === 'failed'),
+      };
+    }
+    return store.transaction((tx) => loadToday(tx, userId, now));
+  });
+}
 
-      const open = await syncOpenDay(tx, challenge, now);
+async function loadToday(store: AscentStore, userId: string, now: Date) {
+  return guard(async () => {
+    const active = await store.findActiveChallenge(userId);
+    if (!active) throw new AscentRuleError('not_found');
+    const challenge = await lockOwned(store, userId, active.id, now);
+    const restrictions = (await store.listRestrictions(challenge.id)).filter((item) => item.active);
+    if (challenge.status !== 'active') {
+      const localDate = formatLocalDate(now, challenge.timezone);
+      const preview: TodayPreview = {
+        status: 'pending',
+        debtClosed: true,
+        obligationsMet: true,
+        failureReason: null,
+      };
       return {
         challenge,
-        localDate: open.localDate,
+        localDate,
         currentStreak: challenge.currentStreak,
         bestStreak: challenge.bestStreak,
         xpBalance: challenge.xpBalance,
         xpEarnedTotal: challenge.xpEarnedTotal,
-        debt: open.debt,
+        debt: [] as DebtItemRecord[],
         restrictions,
-        preview: {
-          status: open.evaluation.status,
-          debtClosed: open.evaluation.debtClosed,
-          obligationsMet: open.evaluation.obligationsMet,
-          failureReason: open.evaluation.failureReason,
-        },
-        clock: clockFromDays(challenge, await tx.listDays(challenge.id), now, open.evaluation.status === 'failed'),
+        preview,
+        clock: clockFromDays(challenge, await store.listDays(challenge.id), now, false),
       };
-    })
-  );
+    }
+
+    const open = await syncOpenDay(store, challenge, now);
+    return {
+      challenge,
+      localDate: open.localDate,
+      currentStreak: challenge.currentStreak,
+      bestStreak: challenge.bestStreak,
+      xpBalance: challenge.xpBalance,
+      xpEarnedTotal: challenge.xpEarnedTotal,
+      debt: open.debt,
+      restrictions,
+      preview: {
+        status: open.evaluation.status,
+        debtClosed: open.evaluation.debtClosed,
+        obligationsMet: open.evaluation.obligationsMet,
+        failureReason: open.evaluation.failureReason,
+      },
+      clock: clockFromDays(challenge, await store.listDays(challenge.id), now, open.evaluation.status === 'failed'),
+    };
+  });
 }
 
 export async function getHistory(store: AscentStore, userId: string, challengeId: string | null, now = new Date()) {
-  return store.transaction((tx) =>
-    guard(async () => {
-      const challenge = await resolveChallenge(tx, userId, challengeId, now);
-      let openDayFailed = false;
-      if (challenge.status === 'active' && now.getTime() >= challenge.startsAt.getTime()) {
-        const open = await syncOpenDay(tx, challenge, now);
-        openDayFailed = open.evaluation.status === 'failed';
-      }
-      const days = await tx.listDays(challenge.id);
-      const debt = await tx.listDebtItems(challenge.id);
+  return guard(async () => {
+    const row = challengeId ? await store.findChallenge(userId, challengeId) : await store.findActiveChallenge(userId);
+    if (!row) throw new AscentRuleError('not_found');
+    const captured = await captureChallenge(store, row, now);
+    if (!captured.settlementDirty && !captured.openDirty) {
+      const openDayFailed =
+        row.status === 'active' &&
+        now.getTime() >= row.startsAt.getTime() &&
+        captured.open?.evaluation.status === 'failed';
       return {
-        challenge,
-        localDate: formatLocalDate(now, challenge.timezone),
-        clock: clockFromDays(challenge, days, now, openDayFailed),
-        days: days.map((day) => ({
+        challenge: row,
+        localDate: formatLocalDate(now, row.timezone),
+        clock: clockFromDays(row, captured.graph.days, now, openDayFailed),
+        days: captured.graph.days.map((day) => ({
           ...day,
-          debt: debt.filter((item) => item.localDate === day.localDate),
+          debt: captured.graph.debtItems.filter((item) => item.localDate === day.localDate),
         })),
       };
-    })
-  );
+    }
+    return store.transaction((tx) =>
+      guard(async () => {
+        const challenge = await resolveChallenge(tx, userId, challengeId, now);
+        let openDayFailed = false;
+        if (challenge.status === 'active' && now.getTime() >= challenge.startsAt.getTime()) {
+          const open = await syncOpenDay(tx, challenge, now);
+          openDayFailed = open.evaluation.status === 'failed';
+        }
+        const days = await tx.listDays(challenge.id);
+        const debt = await tx.listDebtItems(challenge.id);
+        return {
+          challenge,
+          localDate: formatLocalDate(now, challenge.timezone),
+          clock: clockFromDays(challenge, days, now, openDayFailed),
+          days: days.map((day) => ({
+            ...day,
+            debt: debt.filter((item) => item.localDate === day.localDate),
+          })),
+        };
+      })
+    );
+  });
 }
 
 async function writeManualDebt(store: AscentStore, userId: string, item: DebtItemRecord, confirmed: boolean, now: Date) {

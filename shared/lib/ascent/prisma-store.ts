@@ -50,6 +50,17 @@ import {
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
+let ascentWrites: Promise<void> = Promise.resolve();
+
+function enqueueAscentWrite<T>(fn: () => Promise<T>): Promise<T> {
+  const run = ascentWrites.then(fn, fn);
+  ascentWrites = run.then(
+    () => undefined,
+    () => undefined
+  );
+  return run;
+}
+
 function asNumber(value: Prisma.Decimal | number | string): number {
   return Number(value);
 }
@@ -116,7 +127,44 @@ export class PrismaAscentStore implements AscentStore {
   transaction<T>(fn: (store: AscentStore) => Promise<T>): Promise<T> {
     if (this.nested) return fn(this);
     const client = this.db as PrismaClient;
-    return client.$transaction((tx) => fn(new PrismaAscentStore(tx, true)), { timeout: 15_000 });
+    return enqueueAscentWrite(async () => {
+      await client.$connect();
+      return client.$transaction((tx) => fn(new PrismaAscentStore(tx, true)), {
+        maxWait: 20_000,
+        timeout: 30_000,
+      });
+    });
+  }
+
+  async readSettlement(challengeId: string) {
+    const [days, transactions, purchases, links, restrictions, customs, debtItems] = await Promise.all([
+      this.listDays(challengeId),
+      this.listTransactions(challengeId),
+      this.listPurchases(challengeId),
+      this.listHabitLinks(challengeId),
+      this.listRestrictions(challengeId),
+      this.listCustomDebts(challengeId),
+      this.listDebtItems(challengeId),
+    ]);
+    const habits =
+      links.length === 0
+        ? []
+        : (
+            await this.db.habit.findMany({
+              where: { id: { in: links.map((link) => link.habitId) } },
+            })
+          ).map((row) => ({
+            id: row.id,
+            userId: row.userId,
+            name: row.name,
+            frequency: row.frequency,
+            streak: row.streak,
+            completedDays: textList(row.completedDays),
+            trackingType: row.trackingType,
+            targetCount: row.targetCount,
+            dayCounts: countMap(row.dayCounts),
+          }));
+    return { days, transactions, purchases, links, habits, restrictions, customs, debtItems };
   }
 
   async lockChallenge(userId: string, challengeId: string): Promise<ChallengeRecord | null> {

@@ -21,7 +21,7 @@ import type {
 } from '@/shared/lib/ascent/records';
 import { settleElapsedDays, type SettlementResult } from '@/shared/lib/ascent/settlement';
 import { assertAscentInvariants } from '@/shared/lib/ascent/state';
-import { StoreConflict, type AscentStore } from '@/shared/lib/ascent/store';
+import { StoreConflict, type AscentStore, type SettlementGraph } from '@/shared/lib/ascent/store';
 
 export function rethrowStore(error: unknown): never {
   if (!(error instanceof StoreConflict)) throw error;
@@ -83,22 +83,64 @@ export function toAscentState(challenge: ChallengeRecord, keys: readonly string[
   return state;
 }
 
-async function loadObligations(store: AscentStore, challenge: ChallengeRecord): Promise<ObligationSnapshot> {
-  const [links, restrictions, customs, debtItems, purchases] = await Promise.all([
-    store.listHabitLinks(challenge.id),
-    store.listRestrictions(challenge.id),
-    store.listCustomDebts(challenge.id),
-    store.listDebtItems(challenge.id),
-    store.listPurchases(challenge.id),
-  ]);
+function snapshotFrom(graph: SettlementGraph, userId: string): ObligationSnapshot {
   const habits = new Map<string, HabitRecord>();
-
-  for (const link of links) {
-    const habit = await store.findHabit(link.habitId);
-    if (habit && habit.userId === challenge.userId) habits.set(habit.id, habit);
+  for (const habit of graph.habits) {
+    if (habit.userId === userId) habits.set(habit.id, habit);
   }
+  return {
+    links: graph.links,
+    habits,
+    restrictions: graph.restrictions,
+    customs: graph.customs,
+    debtItems: graph.debtItems,
+    purchases: graph.purchases,
+  };
+}
 
-  return { links, habits, restrictions, customs, debtItems, purchases };
+function keysFromGraph(graph: SettlementGraph, challengeId: string): string[] {
+  return [
+    ...graph.transactions.map((item) => item.idempotencyKey),
+    ...graph.purchases.map((item) => item.idempotencyKey),
+    ...graph.days.map((item) => ascentKey(challengeId, `day:${item.localDate}`)),
+  ];
+}
+
+async function loadObligations(store: AscentStore, challenge: ChallengeRecord): Promise<ObligationSnapshot> {
+  return snapshotFrom(await store.readSettlement(challenge.id), challenge.userId);
+}
+
+function computeSettlement(challenge: ChallengeRecord, graph: SettlementGraph, now: Date): SettlementResult {
+  const snapshot = snapshotFrom(graph, challenge.userId);
+  const settled = graph.days.filter((day) => day.status !== 'pending');
+  const settledDates = settled.map((day) => day.localDate);
+  const challengeOn = formatLocalDate(challenge.startsAt, challenge.timezone);
+  const abstinenceOn = formatLocalDate(challenge.abstinenceStartedAt, challenge.timezone);
+  const today = formatLocalDate(now, challenge.timezone);
+  const credit = today >= challengeOn && abstinenceOn < challengeOn && settled.every((day) => day.status !== 'failed');
+  return settleElapsedDays({
+    state: toAscentState(challenge, keysFromGraph(graph, challenge.id)),
+    challengeId: challenge.id,
+    timezone: challenge.timezone,
+    startsOn: credit ? abstinenceOn : challengeOn,
+    creditBefore: credit ? challengeOn : undefined,
+    targetDays: challenge.targetDays,
+    now,
+    settledDates,
+    evaluate: (localDate, streakAtStart) => evaluateSnapshot(snapshot, localDate, streakAtStart, true),
+  });
+}
+
+function settlementIsDirty(challenge: ChallengeRecord, result: SettlementResult): boolean {
+  return !(
+    result.days.length === 0 &&
+    result.xpMutations.length === 0 &&
+    result.state.status === challenge.status &&
+    result.state.currentStreak === challenge.currentStreak &&
+    result.state.bestStreak === challenge.bestStreak &&
+    result.state.xpBalance === challenge.xpBalance &&
+    result.state.xpEarnedTotal === challenge.xpEarnedTotal
+  );
 }
 
 function restrictionFlags(
@@ -189,38 +231,18 @@ export async function persistSettlement(
   if (challenge.status === 'completed' || challenge.status === 'archived') return challenge;
   if (challenge.status !== 'active') throw new AscentRuleError('challenge_not_active');
 
-  const [days, keys, snapshot] = await Promise.all([
-    store.listDays(challenge.id),
-    appliedKeys(store, challenge.id),
-    loadObligations(store, challenge),
-  ]);
-  const settled = days.filter((day) => day.status !== 'pending');
-  const settledDates = settled.map((day) => day.localDate);
-  const challengeOn = formatLocalDate(challenge.startsAt, challenge.timezone);
-  const abstinenceOn = formatLocalDate(challenge.abstinenceStartedAt, challenge.timezone);
-  const today = formatLocalDate(now, challenge.timezone);
-  const credit =
-    today >= challengeOn && abstinenceOn < challengeOn && settled.every((day) => day.status !== 'failed');
-  const result = settleElapsedDays({
-    state: toAscentState(challenge, keys),
-    challengeId: challenge.id,
-    timezone: challenge.timezone,
-    startsOn: credit ? abstinenceOn : challengeOn,
-    creditBefore: credit ? challengeOn : undefined,
-    targetDays: challenge.targetDays,
-    now,
-    settledDates,
-    evaluate: (localDate, streakAtStart) => evaluateSnapshot(snapshot, localDate, streakAtStart, true),
-  });
-
-  return writeSettlement(store, challenge, now, result);
+  const graph = await store.readSettlement(challenge.id);
+  const result = computeSettlement(challenge, graph, now);
+  if (!settlementIsDirty(challenge, result)) return challenge;
+  return writeSettlement(store, challenge, now, result, graph.debtItems);
 }
 
 async function writeSettlement(
   store: AscentStore,
   challenge: ChallengeRecord,
   now: Date,
-  result: SettlementResult
+  result: SettlementResult,
+  debtItems: readonly DebtItemRecord[]
 ): Promise<ChallengeRecord> {
   for (const day of result.days) {
     try {
@@ -259,9 +281,10 @@ async function writeSettlement(
     }
 
     const written = new Set(day.items.map((item) => `${item.source}:${item.sourceId}`));
-    const existing = await store.listDebtItems(challenge.id, day.localDate);
+    const existing = debtItems.filter((item) => item.localDate === day.localDate);
     for (const stale of existing) {
       if (written.has(`${stale.source}:${stale.sourceId}`)) continue;
+      if (stale.state === 'not_applicable' && !stale.required) continue;
       await store.updateDebtItem(stale.id, { state: 'not_applicable', required: false });
     }
   }
@@ -311,19 +334,86 @@ export interface OpenDay {
   debt: DebtItemRecord[];
 }
 
-export async function syncOpenDay(store: AscentStore, challenge: ChallengeRecord, now: Date): Promise<OpenDay> {
+function sameOpenDebt(previous: DebtItemRecord, item: DayEvaluation['items'][number], now: Date): boolean {
+  const confirmedAt = item.confirmedByUser ? (previous.confirmedAt ?? now) : null;
+  return (
+    previous.title === item.title &&
+    previous.required === item.required &&
+    previous.state === item.state &&
+    previous.confirmedByUser === item.confirmedByUser &&
+    previous.sortOrder === item.sortOrder &&
+    (previous.confirmedAt?.getTime() ?? null) === (confirmedAt?.getTime() ?? null)
+  );
+}
+
+function staleCleared(stale: DebtItemRecord): boolean {
+  return stale.state === 'not_applicable' && !stale.required && !stale.confirmedByUser && stale.confirmedAt == null;
+}
+
+function projectOpenDay(snapshot: ObligationSnapshot, challenge: ChallengeRecord, now: Date): { dirty: boolean; open: OpenDay } {
   const localDate = formatLocalDate(now, challenge.timezone);
   const startsOn = formatLocalDate(challenge.startsAt, challenge.timezone);
   if (localDate < startsOn) {
     return {
-      localDate,
-      evaluation: evaluateDay({ streakAtStart: challenge.currentStreak, finalize: false }),
-      debt: [],
+      dirty: false,
+      open: {
+        localDate,
+        evaluation: evaluateDay({ streakAtStart: challenge.currentStreak, finalize: false }),
+        debt: [],
+      },
     };
   }
 
-  const snapshot = await loadObligations(store, challenge);
   const evaluation = evaluateSnapshot(snapshot, localDate, challenge.currentStreak, false);
+  const existing = snapshot.debtItems.filter((item) => item.localDate === localDate);
+  const seen = new Set<string>();
+  let dirty = false;
+  for (const item of evaluation.items) {
+    seen.add(`${item.source}:${item.sourceId}`);
+    const previous = existing.find((debt) => debt.source === item.source && debt.sourceId === item.sourceId);
+    if (!previous || !sameOpenDebt(previous, item, now)) dirty = true;
+  }
+  for (const stale of existing) {
+    if (seen.has(`${stale.source}:${stale.sourceId}`)) continue;
+    if (!staleCleared(stale)) dirty = true;
+  }
+  return { dirty, open: { localDate, evaluation, debt: existing } };
+}
+
+export interface ChallengeCapture {
+  graph: SettlementGraph;
+  settlementDirty: boolean;
+  openDirty: boolean;
+  open: OpenDay | null;
+}
+
+export async function captureChallenge(
+  store: AscentStore,
+  challenge: ChallengeRecord,
+  now: Date
+): Promise<ChallengeCapture> {
+  const graph = await store.readSettlement(challenge.id);
+  if (challenge.status === 'completed' || challenge.status === 'archived') {
+    return { graph, settlementDirty: false, openDirty: false, open: null };
+  }
+  if (challenge.status !== 'active') throw new AscentRuleError('challenge_not_active');
+
+  const result = computeSettlement(challenge, graph, now);
+  const projected = projectOpenDay(snapshotFrom(graph, challenge.userId), challenge, now);
+  return {
+    graph,
+    settlementDirty: settlementIsDirty(challenge, result),
+    openDirty: projected.dirty,
+    open: projected.open,
+  };
+}
+
+export async function syncOpenDay(store: AscentStore, challenge: ChallengeRecord, now: Date): Promise<OpenDay> {
+  const snapshot = await loadObligations(store, challenge);
+  const projected = projectOpenDay(snapshot, challenge, now);
+  if (!projected.dirty) return projected.open;
+
+  const { localDate, evaluation } = projected.open;
   const existing = snapshot.debtItems.filter((item) => item.localDate === localDate);
   const seen = new Set<string>();
 
@@ -331,6 +421,7 @@ export async function syncOpenDay(store: AscentStore, challenge: ChallengeRecord
     const key = `${item.source}:${item.sourceId}`;
     seen.add(key);
     const previous = existing.find((debt) => debt.source === item.source && debt.sourceId === item.sourceId);
+    if (previous && sameOpenDebt(previous, item, now)) continue;
     await store.upsertDebtItem({
       userId: challenge.userId,
       challengeId: challenge.id,
@@ -348,6 +439,7 @@ export async function syncOpenDay(store: AscentStore, challenge: ChallengeRecord
 
   for (const stale of existing) {
     if (seen.has(`${stale.source}:${stale.sourceId}`)) continue;
+    if (staleCleared(stale)) continue;
     await store.updateDebtItem(stale.id, {
       state: 'not_applicable',
       required: false,

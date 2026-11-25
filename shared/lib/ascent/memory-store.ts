@@ -93,6 +93,24 @@ export class MemoryAscentStore implements AscentStore {
     return this.findChallenge(userId, challengeId);
   }
 
+  async readSettlement(challengeId: string) {
+    const [days, transactions, purchases, links, restrictions, customs, debtItems] = await Promise.all([
+      this.listDays(challengeId),
+      this.listTransactions(challengeId),
+      this.listPurchases(challengeId),
+      this.listHabitLinks(challengeId),
+      this.listRestrictions(challengeId),
+      this.listCustomDebts(challengeId),
+      this.listDebtItems(challengeId),
+    ]);
+    const habits = [];
+    for (const link of links) {
+      const habit = await this.findHabit(link.habitId);
+      if (habit) habits.push(habit);
+    }
+    return { days, transactions, purchases, links, habits, restrictions, customs, debtItems };
+  }
+
   async findChallenge(userId: string, challengeId: string): Promise<ChallengeRecord | null> {
     const row = this.challenges.find((item) => item.id === challengeId && item.userId === userId);
     return row ? snap(row) : null;
