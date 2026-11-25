@@ -32,8 +32,8 @@ export async function POST(request: Request) {
   const body = (await request.json()) as FinanceTransactionInput;
 
   try {
-    const transaction = await createFinanceTransaction(session.user.id, body);
-    return NextResponse.json({ transaction }, { status: 201 });
+    const result = await createFinanceTransaction(session.user.id, body);
+    return NextResponse.json({ transaction: result.value, books: result.books }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to create transaction';
     return NextResponse.json({ error: message }, { status: 400 });

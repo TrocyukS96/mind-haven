@@ -1,6 +1,6 @@
 'use client';
 
-import type { FinanceAccount, FinanceTransaction } from '@/entities/finance/model/types';
+import type { FinanceBooks, FinanceTransaction, FinanceTransfer } from '@/entities/finance/model/types';
 import { CURRENCY_SYMBOLS, getCategoryDefinition } from '@/entities/finance/model/categories';
 import { convertCurrency } from '@/entities/finance/lib/currency-converter';
 import { useFinanceSync } from '@/features/finance/hooks/use-finance-sync';
@@ -11,13 +11,18 @@ import { FinanceVoiceButton } from '@/features/finance/ui/FinanceVoiceButton';
 import { AccountDeleteButton } from '@/features/finance/ui/AccountDeleteButton';
 import { AccountSettingsModal } from '@/features/finance/ui/AccountSettingsModal';
 import { useStoreHydrated } from '@/shared/hooks/use-store-hydrated';
+import { isRegularAccount } from '@/shared/lib/finance/capital-ledger';
+import { CapitalTab } from '@/features/finance/ui/capital/CapitalTab';
+import { TransferDialog } from '@/features/finance/ui/capital/TransferDialog';
 import {
   filterTransactionsByPeriod,
   getAccountBalanceConverted,
   getCategoryBreakdown,
   getCategoryBreakdownConverted,
+  getDefaultAccountId,
   getPeriodRange,
   getTotalBalanceConverted,
+  overviewTransactions,
 } from '@/shared/store/slices/finance-slice';
 import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
@@ -42,23 +47,20 @@ import {
   Wallet,
   Pencil,
   Settings,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
 
 interface FinancePageProps {
-  initialAccounts?: FinanceAccount[] | null;
-  initialTransactions?: FinanceTransaction[] | null;
+  initialBooks?: FinanceBooks | null;
 }
 
-export function FinancePage({
-  initialAccounts = null,
-  initialTransactions = null,
-}: FinancePageProps) {
+export function FinancePage({ initialBooks = null }: FinancePageProps) {
   const hydrated = useStoreHydrated();
-  useFinanceSync({ initialAccounts, initialTransactions });
+  useFinanceSync({ initialBooks });
   const { rates, loading: ratesLoading, error: ratesError } = useExchangeRates();
 
   const {
@@ -86,21 +88,35 @@ export function FinancePage({
   const [referenceDate, setReferenceDate] = useState(new Date());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [tab, setTab] = useState<'overview' | 'capital'>('overview');
+  const [transfer, setTransfer] = useState<FinanceTransfer | null | false>(false);
 
-  const selectedAccount = financeAccounts.find((a) => a.id === selectedAccountId) ?? null;
+  const regularAccounts = useMemo(
+    () => financeAccounts.filter((account) => isRegularAccount(account)),
+    [financeAccounts]
+  );
+  const activeAccounts = financeAccounts.filter((account) => !account.archivedAt);
+
+  useEffect(() => {
+    if (!selectedAccountId) return;
+    const selected = financeAccounts.find((account) => account.id === selectedAccountId);
+    if (selected && isRegularAccount(selected)) return;
+    setSelectedAccountId(getDefaultAccountId(financeAccounts));
+  }, [financeAccounts, selectedAccountId, setSelectedAccountId]);
+
+  const selectedAccount = regularAccounts.find((a) => a.id === selectedAccountId) ?? null;
   const displaySymbol = CURRENCY_SYMBOLS[displayCurrency] ?? displayCurrency;
 
-  const accountTransactions = useMemo(
-    () =>
-      selectedAccountId
-        ? financeTransactions.filter((tx) => tx.accountId === selectedAccountId)
-        : financeTransactions,
-    [financeTransactions, selectedAccountId]
-  );
+  const scopedTransactions = useMemo(() => {
+    const overview = overviewTransactions(financeTransactions, financeAccounts);
+    return selectedAccountId
+      ? overview.filter((tx) => tx.accountId === selectedAccountId)
+      : overview;
+  }, [financeTransactions, financeAccounts, selectedAccountId]);
 
   const periodTransactions = useMemo(
-    () => filterTransactionsByPeriod(accountTransactions, financePeriod, referenceDate),
-    [accountTransactions, financePeriod, referenceDate]
+    () => filterTransactionsByPeriod(scopedTransactions, financePeriod, referenceDate),
+    [scopedTransactions, financePeriod, referenceDate]
   );
 
   const breakdown = useMemo(() => {
@@ -108,7 +124,7 @@ export function FinancePage({
       return getCategoryBreakdown(periodTransactions, financeViewType);
     }
 
-    const accountsForConversion = selectedAccount ? [selectedAccount] : financeAccounts;
+    const accountsForConversion = selectedAccount ? [selectedAccount] : regularAccounts;
 
     return getCategoryBreakdownConverted(
       periodTransactions,
@@ -122,7 +138,7 @@ export function FinancePage({
     financeViewType,
     rates,
     selectedAccount,
-    financeAccounts,
+    regularAccounts,
     displayCurrency,
   ]);
 
@@ -134,17 +150,22 @@ export function FinancePage({
   const totalBalance = useMemo(() => {
     if (!rates) {
       if (selectedAccount) return selectedAccount.balance;
-      const currencies = new Set(financeAccounts.map((a) => a.currency));
+      const currencies = new Set(regularAccounts.map((a) => a.currency));
       if (currencies.size > 1) return null;
-      return financeAccounts.reduce((sum, a) => sum + a.balance, 0);
+      return regularAccounts.reduce((sum, a) => sum + a.balance, 0);
     }
 
     if (selectedAccount) {
       return getAccountBalanceConverted(selectedAccount, displayCurrency, rates);
     }
 
-    return getTotalBalanceConverted(financeAccounts, displayCurrency, rates);
-  }, [financeAccounts, selectedAccount, displayCurrency, rates]);
+    return getTotalBalanceConverted(regularAccounts, displayCurrency, rates);
+  }, [regularAccounts, selectedAccount, displayCurrency, rates]);
+
+  const totalFunds = useMemo(() => {
+    if (!rates) return null;
+    return getTotalBalanceConverted(activeAccounts, displayCurrency, rates);
+  }, [activeAccounts, displayCurrency, rates]);
 
   const { start, end } = getPeriodRange(financePeriod, referenceDate);
   const periodLabel =
@@ -200,7 +221,7 @@ export function FinancePage({
     return filterTransactionsByPeriod(otherTransactions, financePeriod, referenceDate).length > 0;
   }, [financeTransactions, selectedAccountId, financeViewType, financePeriod, referenceDate]);
 
-  const recentTransactions = visibleTransactions.slice(0, 10);
+  const recentTransactions = visibleTransactions.filter((transaction) => !transaction.capitalFlow).slice(0, 10);
 
   if (!hydrated) {
     return (
@@ -208,23 +229,6 @@ export function FinancePage({
         <div className="h-10 w-64 rounded bg-muted" />
         <div className="h-48 rounded bg-muted" />
         <div className="h-64 rounded bg-muted" />
-      </div>
-    );
-  }
-
-  if (financeAccounts.length === 0) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1>{t('title')}</h1>
-          <p className="mt-2 text-muted-foreground">{t('subtitle')}</p>
-        </div>
-        <EmptyState title={t('noAccounts')} description={t('noAccountsDescription')}>
-          <Button onClick={() => openAccountForm()} className="mt-2">
-            <Plus size={20} />
-            {t('createAccount')}
-          </Button>
-        </EmptyState>
       </div>
     );
   }
@@ -246,6 +250,10 @@ export function FinancePage({
             <Wallet size={18} />
             {t('newAccount')}
           </Button>
+          <Button variant="outline" onClick={() => setTransfer(null)}>
+            <ArrowLeftRight size={18} />
+            {t('capital.transfer')}
+          </Button>
           <Button
             variant="default"
             onClick={() => openTransactionForm('expense')}
@@ -260,6 +268,27 @@ export function FinancePage({
           </Button>
         </div>
       </div>
+
+      <SegmentedControl
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: 'overview', label: t('tabs.overview') },
+          { value: 'capital', label: t('tabs.capital') },
+        ]}
+      />
+
+      {tab === 'capital' ? (
+        <CapitalTab onOpenTransfer={(next) => setTransfer(next ?? null)} />
+      ) : regularAccounts.length === 0 ? (
+        <EmptyState title={t('noAccounts')} description={t('noAccountsDescription')}>
+          <Button onClick={() => openAccountForm()} className="mt-2">
+            <Plus size={20} />
+            {t('createAccount')}
+          </Button>
+        </EmptyState>
+      ) : (
+      <>
 
       <Card className="overflow-hidden border-0 bg-gradient-to-br from-emerald-700 to-emerald-900 text-white">
         <CardContent className="p-6">
@@ -279,8 +308,13 @@ export function FinancePage({
                   })} ${displaySymbol}`
                 )}
               </p>
-              {!selectedAccountId && financeAccounts.length > 1 && rates && (
+              {!selectedAccountId && regularAccounts.length > 1 && rates && (
                 <p className="mt-1 text-xs opacity-70">{t('balanceConvertedHint')}</p>
+              )}
+              {!selectedAccountId && totalFunds != null && activeAccounts.length > regularAccounts.length && (
+                <p className="mt-1 text-xs opacity-80">
+                  {t('totalFunds')}: {totalFunds.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {displaySymbol}
+                </p>
               )}
             </div>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[14rem]">
@@ -300,7 +334,7 @@ export function FinancePage({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('allAccounts')}</SelectItem>
-                    {financeAccounts.map((account) => {
+                    {regularAccounts.map((account) => {
                       const symbol = CURRENCY_SYMBOLS[account.currency] ?? account.currency;
                       return (
                         <SelectItem key={account.id} value={account.id}>
@@ -510,7 +544,17 @@ export function FinancePage({
         </div>
       )}
 
+      </>
+      )}
+
       <AccountSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <TransferDialog
+        open={transfer !== false}
+        transfer={transfer || null}
+        onOpenChange={(open) => {
+          if (!open) setTransfer(false);
+        }}
+      />
     </div>
   );
 }

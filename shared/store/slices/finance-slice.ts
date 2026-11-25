@@ -1,53 +1,78 @@
 import type {
+  AccountPurpose,
   CategoryBreakdownItem,
   FinanceAccount,
   FinanceAccountInput,
+  FinanceAccountPurposeChange,
+  FinanceBooks,
+  FinanceCapitalGoal,
   FinanceCurrency,
   FinancePeriod,
   FinanceTransaction,
   FinanceTransactionInput,
+  FinanceTransfer,
   TransactionType,
 } from '@/entities/finance/model/types';
 import { convertCurrency } from '@/entities/finance/lib/currency-converter';
 import type { ExchangeRatesMap } from '@/shared/lib/finance/nbrb-exchange-service';
 import {
+  archiveFinanceAccountRequest,
+  archiveFinanceGoalRequest,
+  celebrateFinanceGoalRequest,
+  createCapitalMovementRequest,
   createFinanceAccountRequest,
+  createFinanceGoalRequest,
   createFinanceTransactionRequest,
+  createFinanceTransferRequest,
   deleteFinanceAccountRequest,
+  deleteFinanceGoalRequest,
   deleteFinanceTransactionRequest,
+  deleteFinanceTransferRequest,
   setDefaultFinanceAccountRequest,
+  updateCapitalMovementRequest,
   updateFinanceAccountRequest,
+  updateFinanceGoalRequest,
   updateFinanceTransactionRequest,
+  updateFinanceTransferRequest,
 } from '@/entities/finance/api/finance-client';
 import { shouldUseFinanceApi } from '@/entities/finance/lib/resolve-finance-api';
 import type { TransactionFormDraft } from '@/features/finance/lib/map-voice-to-finance-draft';
+import {
+  archiveAccount,
+  archiveGoal,
+  celebrateGoal,
+  createAccount,
+  createCapitalMovement,
+  createGoal,
+  createRegularTransaction,
+  createTransfer,
+  deleteAccount,
+  deleteGoal,
+  deleteTransaction,
+  deleteTransfer,
+  isRegularAccount,
+  rebalance,
+  setDefaultAccount,
+  updateAccount,
+  updateCapitalMovement,
+  updateGoal,
+  updateRegularTransaction,
+  updateTransfer,
+  type CapitalMovementInput,
+  type GoalInput,
+  type LedgerResult,
+  type TransferInput,
+} from '@/shared/lib/finance/capital-ledger';
+import { normalizeBooks } from '@/shared/lib/finance/finance-books';
 import { StateCreator } from 'zustand';
 import type { AppStore } from '../store-config';
-
-function recalculateAccountBalance(
-  account: FinanceAccount,
-  transactions: FinanceTransaction[]
-): number {
-  const accountTxs = transactions.filter((t) => t.accountId === account.id);
-  return accountTxs.reduce((balance, tx) => {
-    if (tx.type === 'income') return balance + tx.amount;
-    return balance - tx.amount;
-  }, account.initialBalance);
-}
-
-function withUpdatedBalances(
-  accounts: FinanceAccount[],
-  transactions: FinanceTransaction[]
-): FinanceAccount[] {
-  return accounts.map((account) => ({
-    ...account,
-    balance: recalculateAccountBalance(account, transactions),
-  }));
-}
 
 export interface FinanceSlice {
   financeAccounts: FinanceAccount[];
   financeTransactions: FinanceTransaction[];
+  financeTransfers: FinanceTransfer[];
+  financePurposeChanges: FinanceAccountPurposeChange[];
+  financeCapitalGoals: FinanceCapitalGoal[];
   financeApiEnabled: boolean;
   selectedAccountId: string | null;
   financePeriod: FinancePeriod;
@@ -55,25 +80,37 @@ export interface FinanceSlice {
   displayCurrency: FinanceCurrency;
   isAccountFormOpen: boolean;
   editingAccountId: string | null;
+  accountFormPurpose: AccountPurpose;
   isTransactionFormOpen: boolean;
   transactionFormType: TransactionType;
   editingTransactionId: string | null;
   transactionFormDraft: TransactionFormDraft | null;
 
   setFinanceApiEnabled: (enabled: boolean) => void;
-  hydrateFinance: (data: { accounts: FinanceAccount[]; transactions: FinanceTransaction[] }) => void;
+  hydrateFinance: (data: Partial<FinanceBooks>) => void;
   setSelectedAccountId: (id: string | null) => void;
   setFinancePeriod: (period: FinancePeriod) => void;
   setFinanceViewType: (type: TransactionType) => void;
   setDisplayCurrency: (currency: FinanceCurrency) => void;
-  addFinanceAccount: (input: FinanceAccountInput) => Promise<void>;
+  addFinanceAccount: (input: FinanceAccountInput & { date?: string }) => Promise<void>;
   updateFinanceAccount: (id: string, input: FinanceAccountInput) => Promise<void>;
   setDefaultFinanceAccount: (id: string | null) => Promise<void>;
   deleteFinanceAccount: (id: string) => Promise<void>;
+  archiveFinanceAccount: (id: string) => Promise<void>;
   addFinanceTransaction: (input: FinanceTransactionInput) => Promise<void>;
   updateFinanceTransaction: (id: string, input: FinanceTransactionInput) => Promise<void>;
   deleteFinanceTransaction: (id: string) => Promise<void>;
-  openAccountForm: () => void;
+  addFinanceTransfer: (input: TransferInput) => Promise<void>;
+  updateFinanceTransfer: (id: string, input: TransferInput) => Promise<void>;
+  deleteFinanceTransfer: (id: string) => Promise<void>;
+  addCapitalMovement: (input: CapitalMovementInput) => Promise<void>;
+  updateCapitalMovement: (id: string, input: CapitalMovementInput) => Promise<void>;
+  addCapitalGoal: (input: GoalInput) => Promise<void>;
+  updateCapitalGoal: (id: string, input: GoalInput) => Promise<void>;
+  archiveCapitalGoal: (id: string) => Promise<void>;
+  deleteCapitalGoal: (id: string) => Promise<void>;
+  celebrateCapitalGoal: (id: string) => Promise<void>;
+  openAccountForm: (purpose?: AccountPurpose) => void;
   openAccountFormForEdit: (id: string) => void;
   closeAccountForm: () => void;
   openTransactionForm: (type: TransactionType) => void;
@@ -85,6 +122,9 @@ export interface FinanceSlice {
 export const createFinanceSlice: StateCreator<AppStore, [], [], FinanceSlice> = (set, get) => ({
   financeAccounts: [],
   financeTransactions: [],
+  financeTransfers: [],
+  financePurposeChanges: [],
+  financeCapitalGoals: [],
   financeApiEnabled: false,
   selectedAccountId: null,
   financePeriod: 'week',
@@ -92,6 +132,7 @@ export const createFinanceSlice: StateCreator<AppStore, [], [], FinanceSlice> = 
   displayCurrency: 'BYN',
   isAccountFormOpen: false,
   editingAccountId: null,
+  accountFormPurpose: 'REGULAR',
   isTransactionFormOpen: false,
   transactionFormType: 'expense',
   editingTransactionId: null,
@@ -99,12 +140,13 @@ export const createFinanceSlice: StateCreator<AppStore, [], [], FinanceSlice> = 
 
   setFinanceApiEnabled: (enabled) => set({ financeApiEnabled: enabled }),
 
-  hydrateFinance: ({ accounts, transactions }) =>
+  hydrateFinance: (data) => {
+    const books = rebalance(normalizeBooks(data));
     set({
-      financeAccounts: withUpdatedBalances(accounts, transactions),
-      financeTransactions: transactions,
-      selectedAccountId: getDefaultAccountId(accounts),
-    }),
+      ...booksToState(books),
+      selectedAccountId: getDefaultAccountId(books.accounts),
+    });
+  },
 
   setSelectedAccountId: (id) => set({ selectedAccountId: id }),
   setFinancePeriod: (period) => set({ financePeriod: period }),
@@ -112,187 +154,120 @@ export const createFinanceSlice: StateCreator<AppStore, [], [], FinanceSlice> = 
   setDisplayCurrency: (currency) => set({ displayCurrency: currency }),
 
   addFinanceAccount: async (input) => {
-    if (await shouldUseFinanceApi()) {
-      const saved = await createFinanceAccountRequest(input);
-      set((state) => ({
-        financeAccounts: [...state.financeAccounts, saved],
-        selectedAccountId:
-          state.financeAccounts.length === 0 ? saved.id : state.selectedAccountId,
-      }));
-      return;
-    }
-
-    const localAccount: FinanceAccount = {
-      id: `local-${Date.now()}`,
-      name: input.name,
-      currency: input.currency,
-      initialBalance: input.initialBalance ?? 0,
-      balance: input.initialBalance ?? 0,
-      isDefault: get().financeAccounts.length === 0,
-    };
-
-    set((state) => ({
-      financeAccounts: [...state.financeAccounts, localAccount],
-      selectedAccountId:
-        state.financeAccounts.length === 0 ? localAccount.id : state.selectedAccountId,
-    }));
+    await commitFinance(get, set, () => createFinanceAccountRequest(input), (books) =>
+      createAccount(books, input)
+    );
   },
 
   updateFinanceAccount: async (id, input) => {
-    if (await shouldUseFinanceApi()) {
-      const saved = await updateFinanceAccountRequest(id, input);
-      set((state) => {
-        const accounts = state.financeAccounts.map((a) => (a.id === id ? saved : a));
-        return {
-          financeAccounts: withUpdatedBalances(accounts, state.financeTransactions),
-        };
-      });
-      return;
-    }
-
-    set((state) => {
-      const accounts = state.financeAccounts.map((a) =>
-        a.id === id
-          ? {
-              ...a,
-              name: input.name,
-              currency: input.currency,
-              initialBalance: input.initialBalance ?? 0,
-            }
-          : a
-      );
-      return {
-        financeAccounts: withUpdatedBalances(accounts, state.financeTransactions),
-      };
-    });
+    await commitFinance(get, set, () => updateFinanceAccountRequest(id, input), (books) =>
+      updateAccount(books, id, input)
+    );
   },
 
   setDefaultFinanceAccount: async (id) => {
-    if (id && !get().financeAccounts.some((account) => account.id === id)) {
-      return;
-    }
-
-    if (await shouldUseFinanceApi()) {
-      await setDefaultFinanceAccountRequest(id);
-    }
-
-    set((state) => ({
-      financeAccounts: state.financeAccounts.map((account) => ({
-        ...account,
-        isDefault: id != null && account.id === id,
-      })),
-      selectedAccountId: id,
-    }));
+    if (id && !get().financeAccounts.some((account) => account.id === id)) return;
+    await commitFinance(get, set, () => setDefaultFinanceAccountRequest(id), (books) =>
+      setDefaultAccount(books, id)
+    );
+    set({ selectedAccountId: id });
   },
 
   deleteFinanceAccount: async (id) => {
-    if (await shouldUseFinanceApi()) {
-      await deleteFinanceAccountRequest(id);
-    }
+    await commitFinance(get, set, () => deleteFinanceAccountRequest(id), (books) =>
+      deleteAccount(books, id)
+    );
+  },
 
-    set((state) => {
-      const accounts = state.financeAccounts.filter((a) => a.id !== id);
-      const transactions = state.financeTransactions.filter((t) => t.accountId !== id);
-      const selectedAccountId =
-        state.selectedAccountId === id ? getDefaultAccountId(accounts) : state.selectedAccountId;
-
-      return {
-        financeAccounts: withUpdatedBalances(accounts, transactions),
-        financeTransactions: transactions,
-        selectedAccountId,
-        editingAccountId: state.editingAccountId === id ? null : state.editingAccountId,
-        isAccountFormOpen:
-          state.editingAccountId === id ? false : state.isAccountFormOpen,
-      };
-    });
+  archiveFinanceAccount: async (id) => {
+    await commitFinance(get, set, () => archiveFinanceAccountRequest(id), (books) =>
+      archiveAccount(books, id)
+    );
   },
 
   addFinanceTransaction: async (input) => {
-    if (await shouldUseFinanceApi()) {
-      const saved = await createFinanceTransactionRequest(input);
-      set((state) => {
-        const transactions = [saved, ...state.financeTransactions];
-        return {
-          financeTransactions: transactions,
-          financeAccounts: withUpdatedBalances(state.financeAccounts, transactions),
-        };
-      });
-      return;
-    }
-
-    const localTx: FinanceTransaction = {
-      id: `local-${Date.now()}`,
-      accountId: input.accountId,
-      type: input.type,
-      amount: input.amount,
-      category: input.category,
-      description: input.description ?? '',
-      date: input.date,
-    };
-
-    set((state) => {
-      const transactions = [localTx, ...state.financeTransactions];
-      return {
-        financeTransactions: transactions,
-        financeAccounts: withUpdatedBalances(state.financeAccounts, transactions),
-      };
-    });
+    await commitFinance(get, set, () => createFinanceTransactionRequest(input), (books) =>
+      createRegularTransaction(books, input)
+    );
   },
 
   updateFinanceTransaction: async (id, input) => {
-    if (await shouldUseFinanceApi()) {
-      const saved = await updateFinanceTransactionRequest(id, input);
-      set((state) => {
-        const transactions = state.financeTransactions.map((t) => (t.id === id ? saved : t));
-        return {
-          financeTransactions: transactions,
-          financeAccounts: withUpdatedBalances(state.financeAccounts, transactions),
-        };
-      });
-      return;
-    }
-
-    set((state) => {
-      const transactions = state.financeTransactions.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              accountId: input.accountId,
-              type: input.type,
-              amount: input.amount,
-              category: input.category,
-              description: input.description ?? '',
-              date: input.date,
-            }
-          : t
-      );
-      return {
-        financeTransactions: transactions,
-        financeAccounts: withUpdatedBalances(state.financeAccounts, transactions),
-      };
-    });
+    await commitFinance(get, set, () => updateFinanceTransactionRequest(id, input), (books) =>
+      updateRegularTransaction(books, id, input)
+    );
   },
 
   deleteFinanceTransaction: async (id) => {
-    if (await shouldUseFinanceApi()) {
-      await deleteFinanceTransactionRequest(id);
-    }
-
-    set((state) => {
-      const transactions = state.financeTransactions.filter((t) => t.id !== id);
-      return {
-        financeTransactions: transactions,
-        financeAccounts: withUpdatedBalances(state.financeAccounts, transactions),
-      };
-    });
+    await commitFinance(get, set, () => deleteFinanceTransactionRequest(id), (books) =>
+      deleteTransaction(books, id)
+    );
   },
 
-  openAccountForm: () => set({ isAccountFormOpen: true, editingAccountId: null }),
+  addFinanceTransfer: async (input) => {
+    await commitFinance(get, set, () => createFinanceTransferRequest(input), (books) =>
+      createTransfer(books, input)
+    );
+  },
+
+  updateFinanceTransfer: async (id, input) => {
+    await commitFinance(get, set, () => updateFinanceTransferRequest(id, input), (books) =>
+      updateTransfer(books, id, input)
+    );
+  },
+
+  deleteFinanceTransfer: async (id) => {
+    await commitFinance(get, set, () => deleteFinanceTransferRequest(id), (books) =>
+      deleteTransfer(books, id)
+    );
+  },
+
+  addCapitalMovement: async (input) => {
+    await commitFinance(get, set, () => createCapitalMovementRequest(input), (books) =>
+      createCapitalMovement(books, input)
+    );
+  },
+
+  updateCapitalMovement: async (id, input) => {
+    await commitFinance(get, set, () => updateCapitalMovementRequest(id, input), (books) =>
+      updateCapitalMovement(books, id, input)
+    );
+  },
+
+  addCapitalGoal: async (input) => {
+    await commitFinance(get, set, () => createFinanceGoalRequest(input), (books) =>
+      createGoal(books, input)
+    );
+  },
+
+  updateCapitalGoal: async (id, input) => {
+    await commitFinance(get, set, () => updateFinanceGoalRequest(id, input), (books) =>
+      updateGoal(books, id, input)
+    );
+  },
+
+  archiveCapitalGoal: async (id) => {
+    await commitFinance(get, set, () => archiveFinanceGoalRequest(id), (books) =>
+      archiveGoal(books, id)
+    );
+  },
+
+  deleteCapitalGoal: async (id) => {
+    await commitFinance(get, set, () => deleteFinanceGoalRequest(id), (books) => deleteGoal(books, id));
+  },
+
+  celebrateCapitalGoal: async (id) => {
+    await commitFinance(get, set, () => celebrateFinanceGoalRequest(id), (books) =>
+      celebrateGoal(books, id)
+    );
+  },
+
+  openAccountForm: (purpose = 'REGULAR') =>
+    set({ isAccountFormOpen: true, editingAccountId: null, accountFormPurpose: purpose }),
   openAccountFormForEdit: (id) => {
     const account = get().financeAccounts.find((a) => a.id === id);
     if (!account) return;
 
-    set({ isAccountFormOpen: true, editingAccountId: id });
+    set({ isAccountFormOpen: true, editingAccountId: id, accountFormPurpose: account.purpose ?? 'REGULAR' });
   },
   closeAccountForm: () => set({ isAccountFormOpen: false, editingAccountId: null }),
 
@@ -306,7 +281,7 @@ export const createFinanceSlice: StateCreator<AppStore, [], [], FinanceSlice> = 
 
   openTransactionFormForEdit: (id) => {
     const transaction = get().financeTransactions.find((t) => t.id === id);
-    if (!transaction) return;
+    if (!transaction || (transaction.type !== 'income' && transaction.type !== 'expense')) return;
 
     set({
       isTransactionFormOpen: true,
@@ -332,8 +307,79 @@ export const createFinanceSlice: StateCreator<AppStore, [], [], FinanceSlice> = 
     }),
 });
 
+function booksFromState(state: FinanceSlice): FinanceBooks {
+  return {
+    accounts: state.financeAccounts,
+    transactions: state.financeTransactions,
+    transfers: state.financeTransfers,
+    purposeChanges: state.financePurposeChanges,
+    goals: state.financeCapitalGoals,
+  };
+}
+
+function booksToState(books: FinanceBooks) {
+  return {
+    financeAccounts: books.accounts,
+    financeTransactions: books.transactions,
+    financeTransfers: books.transfers,
+    financePurposeChanges: books.purposeChanges,
+    financeCapitalGoals: books.goals,
+  };
+}
+
+async function commitFinance<T>(
+  get: () => AppStore,
+  set: (partial: Partial<AppStore> | ((state: AppStore) => Partial<AppStore>)) => void,
+  remote: () => Promise<FinanceBooks>,
+  local: (books: FinanceBooks) => LedgerResult<T>
+) {
+  if (await shouldUseFinanceApi()) {
+    const books = await remote();
+    set((state) => ({
+      ...booksToState(rebalance(normalizeBooks(books))),
+      selectedAccountId: keepSelection(state.selectedAccountId, books.accounts),
+    }));
+    return;
+  }
+
+  const result = local(booksFromState(get()));
+  set((state) => ({
+    ...booksToState(result.books),
+    selectedAccountId: keepSelection(state.selectedAccountId, result.books.accounts),
+  }));
+}
+
+function keepSelection(selectedId: string | null, accounts: FinanceAccount[]): string | null {
+  if (selectedId && accounts.some((account) => account.id === selectedId && isRegularAccount(account))) {
+    return selectedId;
+  }
+  return getDefaultAccountId(accounts);
+}
+
 export function getDefaultAccountId(accounts: FinanceAccount[]): string | null {
-  return accounts.find((account) => account.isDefault)?.id ?? null;
+  return (
+    accounts.find((account) => account.isDefault && isRegularAccount(account))?.id ?? null
+  );
+}
+
+export function overviewTransactions(
+  transactions: FinanceTransaction[],
+  accounts: FinanceAccount[]
+): FinanceTransaction[] {
+  const regularIds = new Set(accounts.filter(isRegularAccount).map((account) => account.id));
+  const regular = transactions.filter(
+    (transaction) =>
+      (transaction.type === 'income' || transaction.type === 'expense') &&
+      regularIds.has(transaction.accountId)
+  );
+  const purchases = transactions
+    .filter((transaction) => transaction.type === 'capital_out' && transaction.expenseCategory)
+    .map((transaction) => ({
+      ...transaction,
+      type: 'expense' as const,
+      category: transaction.expenseCategory ?? transaction.category,
+    }));
+  return [...regular, ...purchases];
 }
 
 export function getPeriodRange(period: FinancePeriod, referenceDate = new Date()): {

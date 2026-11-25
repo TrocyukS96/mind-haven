@@ -21,8 +21,8 @@ export async function PATCH(request: Request, context: RouteContext) {
   const body = (await request.json()) as FinanceTransactionInput;
 
   try {
-    const transaction = await updateFinanceTransaction(session.user.id, id, body);
-    return NextResponse.json({ transaction });
+    const result = await updateFinanceTransaction(session.user.id, id, body);
+    return NextResponse.json({ transaction: result.value, books: result.books });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update transaction';
     return NextResponse.json({ error: message }, { status: 400 });
@@ -39,8 +39,8 @@ export async function DELETE(_request: Request, context: RouteContext) {
   const { id } = await context.params;
 
   try {
-    await deleteFinanceTransaction(session.user.id, id);
-    return NextResponse.json({ ok: true });
+    const result = await deleteFinanceTransaction(session.user.id, id);
+    return NextResponse.json({ ok: true, books: result.books });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to delete transaction';
     return NextResponse.json({ error: message }, { status: 400 });

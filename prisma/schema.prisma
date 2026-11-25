@@ -60,6 +60,9 @@ model User {
   challengePauses          ChallengePause[]
   financeAccounts FinanceAccount[]
   financeTransactions FinanceTransaction[]
+  financeTransfers FinanceTransfer[]
+  financePurposeChanges FinanceAccountPurposeChange[]
+  financeCapitalGoals FinanceCapitalGoal[]
   tables         CustomTable[]
   dailyTasks     DailyTask[]
   subscription   Subscription?
@@ -385,38 +388,131 @@ model Habit {
   @@index([userId])
 }
 
+enum FinanceAccountPurpose {
+  REGULAR
+  CAPITAL
+}
+
 model FinanceAccount {
-  id             String               @id @default(cuid())
+  id             String                     @id @default(cuid())
   userId         String
   name           String
-  currency       String               @default("BYN")
-  initialBalance Decimal              @default(0) @db.Decimal(14, 2)
-  isDefault      Boolean              @default(false)
+  currency       String                     @default("BYN")
+  initialBalance Decimal                    @default(0) @db.Decimal(14, 2)
+  isDefault      Boolean                    @default(false)
+  purpose        FinanceAccountPurpose      @default(REGULAR)
+  icon           String?
+  archivedAt     DateTime?
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  user           User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions   FinanceTransaction[]
+  purposeChanges FinanceAccountPurposeChange[]
+  transfersFrom  FinanceTransfer[]          @relation("TransferFromAccount")
+  transfersTo    FinanceTransfer[]          @relation("TransferToAccount")
+
+  @@index([userId])
+  @@index([userId, purpose])
+}
+
+model FinanceTransfer {
+  id             String               @id @default(cuid())
+  userId         String
+  idempotencyKey String
+  fromAccountId  String
+  toAccountId    String
+  debitAmount    Decimal              @db.Decimal(14, 2)
+  creditAmount   Decimal              @db.Decimal(14, 2)
+  exchangeRate   Decimal?             @db.Decimal(18, 8)
+  feeAmount      Decimal              @default(0) @db.Decimal(14, 2)
+  date           DateTime             @db.Date
+  comment        String               @default("")
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions   FinanceTransaction[]
+  fromAccount    FinanceAccount       @relation("TransferFromAccount", fields: [fromAccountId], references: [id], onDelete: Restrict)
+  toAccount      FinanceAccount       @relation("TransferToAccount", fields: [toAccountId], references: [id], onDelete: Restrict)
+  legs           FinanceTransaction[]
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, date])
+}
+
+model FinanceTransaction {
+  id                    String           @id @default(cuid())
+  userId                String
+  accountId             String
+  type                  String
+  amount                Decimal          @db.Decimal(14, 2)
+  category              String
+  description           String           @default("")
+  date                  DateTime         @db.Date
+  capitalFlow           String?
+  capitalKind           String?
+  transferId            String?
+  transferLeg           String?
+  source                String?
+  expenseCategory       String?
+  idempotencyKey        String?
+  counterpartyAccountId String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account               FinanceAccount   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  transfer              FinanceTransfer? @relation(fields: [transferId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId])
+  @@index([accountId])
+  @@index([userId, date])
+  @@index([transferId])
+}
+
+model FinanceAccountPurposeChange {
+  id              String                 @id @default(cuid())
+  userId          String
+  accountId       String
+  fromPurpose     FinanceAccountPurpose?
+  toPurpose       FinanceAccountPurpose
+  balanceAtChange Decimal                @db.Decimal(14, 2)
+  effectiveDate   DateTime               @db.Date
+  createdAt       DateTime               @default(now())
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account         FinanceAccount         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([userId, accountId, effectiveDate])
+}
+
+model FinanceCapitalGoal {
+  id            String    @id @default(cuid())
+  userId        String
+  name          String
+  goalType      String
+  targetAmount  Decimal   @db.Decimal(14, 2)
+  currency      String
+  startDate     DateTime  @db.Date
+  endDate       DateTime  @db.Date
+  description   String    @default("")
+  archivedAt    DateTime?
+  celebratedAt  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
-model FinanceTransaction {
-  id          String         @id @default(cuid())
-  userId      String
-  accountId   String
-  type        String
-  amount      Decimal        @db.Decimal(14, 2)
-  category    String
-  description String         @default("")
-  date        DateTime       @db.Date
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  account     FinanceAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+model ExchangeRateHistory {
+  id        String   @id @default(cuid())
+  rateDate  DateTime @db.Date
+  currency  String
+  scale     Int
+  rate      Decimal  @db.Decimal(18, 8)
+  source    String
+  createdAt DateTime @default(now())
 
-  @@index([userId])
-  @@index([accountId])
-  @@index([userId, date])
+  @@unique([rateDate, currency])
+  @@index([currency, rateDate])
 }
 
 model CustomTable {

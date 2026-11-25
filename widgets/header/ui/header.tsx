@@ -38,7 +38,7 @@ export function Header({
   return (
     <header
       className={cn(
-        'z-30 grid shrink-0 items-center gap-2 px-3 sm:gap-3 sm:px-6',
+        'z-30 grid shrink-0 items-center gap-2 px-3 sm:gap-3 sm:px-4',
         'grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]',
         overlay ? 'sticky top-0 h-14 sm:h-16' : 'sticky top-0 min-h-14 py-2 sm:min-h-16',
         showSurface

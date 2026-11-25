@@ -270,11 +270,11 @@ export function TaskColumnsDndBoard({
       </div>
       <DragOverlay dropAnimation={null}>
         {activeTask ? (
-          <div className="w-72 cursor-grabbing opacity-95 shadow-xl">
+          <div className="w-80 cursor-grabbing opacity-95 shadow-xl sm:w-96">
             <TaskCard task={activeTask} showGoalTitle showProjectTitle showType={false} />
           </div>
         ) : activeColumn ? (
-          <div className="w-72 rounded-xl border border-primary bg-card px-4 py-3 text-sm font-semibold shadow-xl">
+          <div className="w-80 rounded-xl border border-primary bg-card px-4 py-3 text-sm font-semibold shadow-xl sm:w-96">
             {activeColumn.title}
           </div>
         ) : null}
@@ -333,7 +333,7 @@ function TaskSortableColumn({
       ref={setColumnNode}
       style={style}
       className={cn(
-        'flex w-72 shrink-0 flex-col gap-3 rounded-xl border border-border/60 bg-card/50 p-3 sm:w-80 sm:p-4',
+        'flex w-80 shrink-0 flex-col gap-3 rounded-xl border border-border/60 bg-card/50 p-3 sm:w-96 sm:p-4',
         column.kind === 'week' && 'border-primary/40',
         isDragging && 'border-primary opacity-60',
         (isColumnOver || isItemOver) && 'border-primary bg-primary/5'

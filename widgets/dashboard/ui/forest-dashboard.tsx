@@ -59,7 +59,7 @@ export function ForestDashboard() {
     return (
       <div>
         <div className="-mt-14 h-[calc(3.5rem+1rem+16rem)] animate-pulse bg-muted sm:-mt-16 sm:h-[calc(4rem+1.5rem+20rem)] lg:h-[calc(4rem+2rem+20rem)]" />
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-3 px-4 py-6 sm:grid-cols-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 gap-3 px-3 py-6 sm:grid-cols-4 sm:px-4">
           <div className="h-24 animate-pulse rounded-2xl bg-muted" />
           <div className="h-24 animate-pulse rounded-2xl bg-muted" />
           <div className="h-24 animate-pulse rounded-2xl bg-muted" />
@@ -100,7 +100,7 @@ export function ForestDashboard() {
       <section className="relative -mt-14 h-[calc(3.5rem+1rem+16rem)] overflow-hidden sm:-mt-16 sm:h-[calc(4rem+1.5rem+20rem)] lg:h-[calc(4rem+2rem+20rem)]">
         <ForestBackdrop />
         <div className="absolute inset-0 bg-gradient-to-r from-background/70 from-0% via-background/40 via-[20%] to-transparent to-[48%]" />
-        <div className="relative mx-auto flex h-full max-w-7xl flex-col px-4 sm:px-6 lg:px-8">
+        <div className="relative flex h-full flex-col px-3 sm:px-4">
           <div className="mt-auto flex h-64 flex-col justify-center space-y-3 sm:h-80">
             <p className="text-sm text-foreground/80">{name ? t('greeting', { name }) : t('greetingGuest')}</p>
             <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t('heroTitle')}</h1>
@@ -111,7 +111,7 @@ export function ForestDashboard() {
         </div>
       </section>
 
-      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="space-y-6 px-3 py-6 sm:px-4">
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat icon={Sprout} value={treeCount} label={t('statsTrees', { count: treeCount })} />
         <Stat icon={Footprints} value={completedSteps} label={t('statsSteps', { count: completedSteps })} />

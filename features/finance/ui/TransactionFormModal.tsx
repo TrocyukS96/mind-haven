@@ -45,7 +45,11 @@ export function TransactionFormModal({ open, onOpenChange }: Props) {
         <div className="max-h-[calc(100vh-10rem)] overflow-y-auto px-6 py-5">
           <TransactionForm
             key={formKey}
-            type={editingTransaction?.type ?? transactionFormDraft?.type ?? transactionFormType}
+            type={
+              editingTransaction?.type === 'income' || editingTransaction?.type === 'expense'
+                ? editingTransaction.type
+                : (transactionFormDraft?.type ?? transactionFormType)
+            }
             transaction={editingTransaction}
             onSuccess={() => closeTransactionForm()}
           />

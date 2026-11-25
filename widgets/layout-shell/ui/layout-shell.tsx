@@ -50,7 +50,7 @@ export function LayoutShell({ children }: LayoutShellProps) {
       />
       <div
         className={cn(
-          'flex min-h-screen flex-col transition-[padding] duration-200 ease-in-out',
+          'flex min-h-screen min-w-0 flex-col transition-[padding] duration-200 ease-in-out',
           !desktopSidebarCollapsed && 'lg:pl-72'
         )}
       >
@@ -62,9 +62,12 @@ export function LayoutShell({ children }: LayoutShellProps) {
         />
         <main
           id="app-main"
-          className={cn('flex-1', isHome ? 'overflow-visible' : 'overflow-auto p-4 sm:p-6 lg:p-8')}
+          className={cn(
+            'min-w-0 flex-1',
+            isHome ? 'overflow-visible' : 'overflow-auto px-3 py-4 sm:px-4 sm:py-5'
+          )}
         >
-          {isHome ? children : <div className="mx-auto max-w-7xl">{children}</div>}
+          {children}
         </main>
       </div>
     </div>

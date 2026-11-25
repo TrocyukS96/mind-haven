@@ -17,8 +17,8 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Invalid account' }, { status: 400 });
     }
 
-    await setDefaultFinanceAccount(session.user.id, accountId);
-    return NextResponse.json({ ok: true });
+    const result = await setDefaultFinanceAccount(session.user.id, accountId);
+    return NextResponse.json({ ok: true, books: result.books });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update default account';
     return NextResponse.json({ error: message }, { status: 400 });

@@ -10,7 +10,7 @@ export function AscentWizardPage({ authenticated }: { authenticated: boolean }) 
 
   if (!authenticated) {
     return (
-      <div className="mx-auto max-w-lg">
+      <div className="max-w-lg">
         <Card>
           <CardHeader>
             <CardTitle>{t('signInTitle')}</CardTitle>

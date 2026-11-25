@@ -32,8 +32,8 @@ export async function POST(request: Request) {
   const body = (await request.json()) as FinanceAccountInput;
 
   try {
-    const account = await createFinanceAccount(session.user.id, body);
-    return NextResponse.json({ account }, { status: 201 });
+    const result = await createFinanceAccount(session.user.id, body);
+    return NextResponse.json({ account: result.value, books: result.books }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to create account';
     return NextResponse.json({ error: message }, { status: 400 });

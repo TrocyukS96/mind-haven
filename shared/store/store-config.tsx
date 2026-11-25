@@ -10,6 +10,9 @@ import { createAppSlice, AppSlice } from './slices/app-slice';
 import { createTasksSlice, TasksSlice } from './slices/tasks-slice';
 import { createPointsSlice, PointsSlice } from './slices/points-slice';
 import { createFinanceSlice, FinanceSlice } from './slices/finance-slice';
+import { normalizePersistedFinanceState } from '@/shared/lib/finance/finance-books';
+import { rebalance } from '@/shared/lib/finance/capital-ledger';
+import type { FinanceAccount, FinanceBooks, FinanceCapitalGoal, FinanceAccountPurposeChange, FinanceTransaction, FinanceTransfer } from '@/entities/finance/model/types';
 import { createEnergySlice, EnergySlice } from './slices/energy-slice';
 import { createActivitySlice, ActivitySlice } from './slices/activity-slice';
 import { createProjectsSlice, ProjectsSlice } from './slices/projects-slice';
@@ -33,6 +36,33 @@ export const useStore = create<AppStore>()(
       }),
       {
         name: 'mindhaven-storage',
+        version: 1,
+        migrate: (persistedState) => {
+          const state = normalizePersistedFinanceState(
+            (persistedState ?? {}) as Record<string, unknown>
+          ) as Record<string, unknown> & {
+            financeAccounts: FinanceAccount[];
+            financeTransactions: FinanceTransaction[];
+            financeTransfers: FinanceTransfer[];
+            financePurposeChanges: FinanceAccountPurposeChange[];
+            financeCapitalGoals: FinanceCapitalGoal[];
+          };
+          const books: FinanceBooks = rebalance({
+            accounts: state.financeAccounts ?? [],
+            transactions: state.financeTransactions ?? [],
+            transfers: state.financeTransfers ?? [],
+            purposeChanges: state.financePurposeChanges ?? [],
+            goals: state.financeCapitalGoals ?? [],
+          });
+          return {
+            ...state,
+            financeAccounts: books.accounts,
+            financeTransactions: books.transactions,
+            financeTransfers: books.transfers,
+            financePurposeChanges: books.purposeChanges,
+            financeCapitalGoals: books.goals,
+          };
+        },
         partialize: (state) => {
           const {
             journalApiEnabled: _journalApiEnabled,
@@ -53,6 +83,7 @@ export const useStore = create<AppStore>()(
             editingHabit: _editingHabit,
             habitFormDraft: _habitFormDraft,
             isAccountFormOpen: _isAccountFormOpen,
+            accountFormPurpose: _accountFormPurpose,
             isTransactionFormOpen: _isTransactionFormOpen,
             editingTransactionId: _editingTransactionId,
             transactionFormDraft: _transactionFormDraft,

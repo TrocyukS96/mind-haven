@@ -1,330 +1,153 @@
-import type { FinanceCurrency } from '@/entities/finance/model/types';
-import { FINANCE_CURRENCIES } from '@/entities/finance/model/categories';
 import type {
   FinanceAccount,
   FinanceAccountInput,
+  FinanceBooks,
   FinanceTransaction,
   FinanceTransactionInput,
-  TransactionType,
 } from '@/entities/finance/model/types';
-import { prisma } from '@/shared/lib/db';
-import { Decimal } from '@prisma/client/runtime/library';
+import {
+  archiveAccount,
+  archiveGoal,
+  celebrateGoal,
+  createAccount,
+  createCapitalMovement,
+  createGoal,
+  createRegularTransaction,
+  createTransfer,
+  deleteAccount,
+  deleteGoal,
+  deleteTransaction,
+  deleteTransfer,
+  setAccountPurpose,
+  setDefaultAccount,
+  updateAccount,
+  updateCapitalMovement,
+  updateGoal,
+  updateRegularTransaction,
+  updateTransfer,
+  type CapitalMovementInput,
+  type GoalInput,
+  type LedgerResult,
+  type TransferInput,
+} from './capital-ledger';
+import { getFinanceBooks, runFinanceCommand } from './finance-books-store';
 
-function decimalToNumber(value: Decimal | number): number {
-  return typeof value === 'number' ? value : Number(value.toString());
-}
+export { getFinanceBooks };
 
-function parseDateString(value: string): Date {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    throw new Error('Invalid date format');
-  }
-  return new Date(`${value}T00:00:00.000Z`);
-}
-
-function computeBalance(
-  initialBalance: number,
-  transactions: { type: string; amount: number }[]
-): number {
-  return transactions.reduce((balance, tx) => {
-    if (tx.type === 'income') return balance + tx.amount;
-    return balance - tx.amount;
-  }, initialBalance);
-}
-
-export interface FinanceAccountDbRow {
-  id: string;
-  userId: string;
-  name: string;
-  currency: string;
-  initialBalance: Decimal;
-  isDefault: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  transactions?: { type: string; amount: Decimal }[];
-}
-
-export interface FinanceTransactionDbRow {
-  id: string;
-  userId: string;
-  accountId: string;
-  type: string;
-  amount: Decimal;
-  category: string;
-  description: string;
-  date: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export function mapAccountFromDb(row: FinanceAccountDbRow): FinanceAccount {
-  const initialBalance = decimalToNumber(row.initialBalance);
-  const txs = (row.transactions ?? []).map((t) => ({
-    type: t.type,
-    amount: decimalToNumber(t.amount),
-  }));
-
-  return {
-    id: row.id,
-    name: row.name,
-    currency: row.currency as FinanceAccount['currency'],
-    initialBalance,
-    balance: computeBalance(initialBalance, txs),
-    isDefault: row.isDefault,
-  };
-}
-
-export function mapTransactionFromDb(row: FinanceTransactionDbRow): FinanceTransaction {
-  return {
-    id: row.id,
-    accountId: row.accountId,
-    type: row.type as TransactionType,
-    amount: decimalToNumber(row.amount),
-    category: row.category as FinanceTransaction['category'],
-    description: row.description,
-    date: row.date.toISOString().slice(0, 10),
-  };
-}
-
-function normalizeAccountInput(input: FinanceAccountInput): FinanceAccountInput {
-  const name = input.name.trim();
-  if (!name) throw new Error('Account name is required');
-
-  const currency = input.currency?.trim() as FinanceCurrency;
-  if (!currency || !FINANCE_CURRENCIES.includes(currency)) {
-    throw new Error('Currency is required');
-  }
-
-  const initialBalance = input.initialBalance ?? 0;
-  if (initialBalance < 0) throw new Error('Initial balance cannot be negative');
-
-  return { name, currency, initialBalance };
-}
-
-function normalizeTransactionInput(input: FinanceTransactionInput): FinanceTransactionInput {
-  const accountId = input.accountId?.trim();
-  if (!accountId) throw new Error('Account is required');
-
-  const type = input.type;
-  if (type !== 'expense' && type !== 'income') {
-    throw new Error('Invalid transaction type');
-  }
-
-  const amount = Number(input.amount);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    throw new Error('Amount must be greater than zero');
-  }
-
-  const category = input.category?.trim();
-  if (!category) throw new Error('Category is required');
-
-  const date = input.date?.trim();
-  if (!date) throw new Error('Date is required');
-  parseDateString(date);
-
-  return {
-    accountId,
-    type,
-    amount,
-    category: category as FinanceTransactionInput['category'],
-    description: input.description?.trim() ?? '',
-    date,
-  };
+async function run<T>(
+  userId: string,
+  command: (books: FinanceBooks) => LedgerResult<T>
+): Promise<LedgerResult<T>> {
+  return runFinanceCommand(userId, command);
 }
 
 export async function getFinanceAccounts(userId: string): Promise<FinanceAccount[]> {
-  const rows = await prisma.financeAccount.findMany({
-    where: { userId },
-    include: { transactions: { select: { type: true, amount: true } } },
-    orderBy: { createdAt: 'asc' },
-  });
-
-  return rows.map(mapAccountFromDb);
+  const books = await getFinanceBooks(userId);
+  return books.accounts;
 }
 
 export async function getFinanceTransactions(userId: string): Promise<FinanceTransaction[]> {
-  const rows = await prisma.financeTransaction.findMany({
-    where: { userId },
-    orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
-  });
-
-  return rows.map(mapTransactionFromDb);
+  const books = await getFinanceBooks(userId);
+  return books.transactions;
 }
 
-export async function createFinanceAccount(
-  userId: string,
-  input: FinanceAccountInput
-): Promise<FinanceAccount> {
-  const data = normalizeAccountInput(input);
+export async function getFinanceData(userId: string): Promise<FinanceBooks> {
+  return getFinanceBooks(userId);
+}
 
-  const existingCount = await prisma.financeAccount.count({ where: { userId } });
-
-  const row = await prisma.financeAccount.create({
-    data: {
-      userId,
-      name: data.name,
-      currency: data.currency,
-      initialBalance: data.initialBalance ?? 0,
-      isDefault: existingCount === 0,
-    },
-    include: { transactions: { select: { type: true, amount: true } } },
-  });
-
-  return mapAccountFromDb(row);
+export async function createFinanceAccount(userId: string, input: FinanceAccountInput) {
+  return run(userId, (books) => createAccount(books, input));
 }
 
 export async function updateFinanceAccount(
   userId: string,
   accountId: string,
   input: FinanceAccountInput
-): Promise<FinanceAccount> {
-  const data = normalizeAccountInput(input);
-
-  const existing = await prisma.financeAccount.findFirst({
-    where: { id: accountId, userId },
-    select: { id: true },
-  });
-
-  if (!existing) throw new Error('Account not found');
-
-  const row = await prisma.financeAccount.update({
-    where: { id: accountId },
-    data: {
-      name: data.name,
-      currency: data.currency,
-      initialBalance: data.initialBalance ?? 0,
-    },
-    include: { transactions: { select: { type: true, amount: true } } },
-  });
-
-  return mapAccountFromDb(row);
+) {
+  return run(userId, (books) => updateAccount(books, accountId, input));
 }
 
-export async function setDefaultFinanceAccount(
+export async function setDefaultFinanceAccount(userId: string, accountId: string | null) {
+  return run(userId, (books) => setDefaultAccount(books, accountId));
+}
+
+export async function deleteFinanceAccount(userId: string, accountId: string) {
+  return run(userId, (books) => deleteAccount(books, accountId));
+}
+
+export async function archiveFinanceAccount(userId: string, accountId: string) {
+  return run(userId, (books) => archiveAccount(books, accountId));
+}
+
+export async function setFinanceAccountPurpose(
   userId: string,
-  accountId: string | null
-): Promise<void> {
-  if (accountId) {
-    const existing = await prisma.financeAccount.findFirst({
-      where: { id: accountId, userId },
-      select: { id: true },
-    });
-
-    if (!existing) throw new Error('Account not found');
-  }
-
-  await prisma.$transaction([
-    prisma.financeAccount.updateMany({
-      where: { userId },
-      data: { isDefault: false },
-    }),
-    ...(accountId
-      ? [
-          prisma.financeAccount.update({
-            where: { id: accountId },
-            data: { isDefault: true },
-          }),
-        ]
-      : []),
-  ]);
+  accountId: string,
+  purpose: FinanceAccount['purpose'],
+  date: string
+) {
+  return run(userId, (books) => setAccountPurpose(books, accountId, purpose, date));
 }
 
-export async function deleteFinanceAccount(userId: string, accountId: string): Promise<void> {
-  const existing = await prisma.financeAccount.findFirst({
-    where: { id: accountId, userId },
-    select: { id: true },
-  });
-
-  if (!existing) throw new Error('Account not found');
-
-  await prisma.financeAccount.delete({ where: { id: accountId } });
-}
-
-export async function createFinanceTransaction(
-  userId: string,
-  input: FinanceTransactionInput
-): Promise<FinanceTransaction> {
-  const data = normalizeTransactionInput(input);
-
-  const account = await prisma.financeAccount.findFirst({
-    where: { id: data.accountId, userId },
-    select: { id: true },
-  });
-
-  if (!account) throw new Error('Account not found');
-
-  const row = await prisma.financeTransaction.create({
-    data: {
-      userId,
-      accountId: data.accountId,
-      type: data.type,
-      amount: data.amount,
-      category: data.category,
-      description: data.description ?? '',
-      date: parseDateString(data.date),
-    },
-  });
-
-  return mapTransactionFromDb(row);
-}
-
-export async function deleteFinanceTransaction(
-  userId: string,
-  transactionId: string
-): Promise<void> {
-  const existing = await prisma.financeTransaction.findFirst({
-    where: { id: transactionId, userId },
-    select: { id: true },
-  });
-
-  if (!existing) throw new Error('Transaction not found');
-
-  await prisma.financeTransaction.delete({ where: { id: transactionId } });
+export async function createFinanceTransaction(userId: string, input: FinanceTransactionInput) {
+  return run(userId, (books) => createRegularTransaction(books, input));
 }
 
 export async function updateFinanceTransaction(
   userId: string,
   transactionId: string,
   input: FinanceTransactionInput
-): Promise<FinanceTransaction> {
-  const data = normalizeTransactionInput(input);
-
-  const existing = await prisma.financeTransaction.findFirst({
-    where: { id: transactionId, userId },
-    select: { id: true },
-  });
-
-  if (!existing) throw new Error('Transaction not found');
-
-  const account = await prisma.financeAccount.findFirst({
-    where: { id: data.accountId, userId },
-    select: { id: true },
-  });
-
-  if (!account) throw new Error('Account not found');
-
-  const row = await prisma.financeTransaction.update({
-    where: { id: transactionId },
-    data: {
-      accountId: data.accountId,
-      type: data.type,
-      amount: data.amount,
-      category: data.category,
-      description: data.description ?? '',
-      date: parseDateString(data.date),
-    },
-  });
-
-  return mapTransactionFromDb(row);
+) {
+  return run(userId, (books) => updateRegularTransaction(books, transactionId, input));
 }
 
-export async function getFinanceData(userId: string): Promise<{
-  accounts: FinanceAccount[];
-  transactions: FinanceTransaction[];
-}> {
-  const [accounts, transactions] = await Promise.all([
-    getFinanceAccounts(userId),
-    getFinanceTransactions(userId),
-  ]);
+export async function deleteFinanceTransaction(userId: string, transactionId: string) {
+  return run(userId, (books) => deleteTransaction(books, transactionId));
+}
 
-  return { accounts, transactions };
+export async function createFinanceTransfer(userId: string, input: TransferInput) {
+  return run(userId, (books) => createTransfer(books, input));
+}
+
+export async function updateFinanceTransfer(
+  userId: string,
+  transferId: string,
+  input: TransferInput
+) {
+  return run(userId, (books) => updateTransfer(books, transferId, input));
+}
+
+export async function deleteFinanceTransfer(userId: string, transferId: string) {
+  return run(userId, (books) => deleteTransfer(books, transferId));
+}
+
+export async function createCapitalMovementRecord(userId: string, input: CapitalMovementInput) {
+  return run(userId, (books) => createCapitalMovement(books, input));
+}
+
+export async function updateCapitalMovementRecord(
+  userId: string,
+  transactionId: string,
+  input: CapitalMovementInput
+) {
+  return run(userId, (books) => updateCapitalMovement(books, transactionId, input));
+}
+
+export async function createFinanceGoal(userId: string, input: GoalInput) {
+  return run(userId, (books) => createGoal(books, input));
+}
+
+export async function updateFinanceGoal(userId: string, goalId: string, input: GoalInput) {
+  return run(userId, (books) => updateGoal(books, goalId, input));
+}
+
+export async function archiveFinanceGoal(userId: string, goalId: string) {
+  return run(userId, (books) => archiveGoal(books, goalId));
+}
+
+export async function deleteFinanceGoal(userId: string, goalId: string) {
+  return run(userId, (books) => deleteGoal(books, goalId));
+}
+
+export async function celebrateFinanceGoal(userId: string, goalId: string) {
+  return run(userId, (books) => celebrateGoal(books, goalId));
 }

@@ -131,7 +131,7 @@ export function AscentSettings() {
 
   if (status === 'loading') {
     return (
-      <div className="mx-auto max-w-3xl space-y-4" aria-busy="true">
+      <div className="space-y-4" aria-busy="true">
         <p className="sr-only">{t('settings.loading')}</p>
         <div className="h-10 w-56 animate-pulse rounded-md bg-muted" />
         <div className="h-48 animate-pulse rounded-xl bg-muted" />
@@ -141,7 +141,7 @@ export function AscentSettings() {
 
   if (status === 'error' || !desk) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4">
+      <div className="space-y-4">
         <SettingsHeader />
         {status === 'error' ? (
           <Card>
@@ -167,7 +167,7 @@ export function AscentSettings() {
   });
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <SettingsHeader />
       <div className="flex justify-end">
         <Button variant="outline" asChild><Link href="/ascent/shop">{t('settings.openShop')}</Link></Button>

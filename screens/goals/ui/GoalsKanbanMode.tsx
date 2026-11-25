@@ -32,6 +32,7 @@ export function GoalsKanbanMode({ goals }: GoalsKanbanModeProps) {
         columnOrder={goalsKanbanColumnOrder}
         onColumnReorder={reorderGoalsKanbanColumns}
         onItemMove={moveGoalInKanban}
+        columnTrack="20rem"
       />
     </div>
   );

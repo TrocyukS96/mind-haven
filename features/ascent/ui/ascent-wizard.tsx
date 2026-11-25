@@ -297,7 +297,7 @@ export function AscentWizard() {
 
   if (phase === 'loading' || (phase === 'form' && !draft)) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4" aria-busy="true">
+      <div className="space-y-4" aria-busy="true">
         <div className="h-8 w-56 animate-pulse rounded-md bg-muted" />
         <div className="h-16 animate-pulse rounded-xl bg-muted" />
         <div className="h-80 animate-pulse rounded-xl bg-muted" />
@@ -311,7 +311,7 @@ export function AscentWizard() {
   const stepTitles = [t('steps.goal'), t('steps.rewards'), t('steps.triggers'), t('steps.habits'), t('steps.rules')];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <div>
         <h1>{t('title')}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{t('progress', { step: step + 1, total: 5 })}</p>

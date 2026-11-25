@@ -38,6 +38,8 @@ import { cn } from '@/shared/lib/utils';
 import { KanbanItemSortableProvider } from '@/shared/ui/kanban-item-sortable';
 import { useTranslations } from 'next-intl';
 
+const DEFAULT_COLUMN_TRACK = 'minmax(22rem, 1fr)';
+
 interface KanbanBoardProps<T extends { id: string; kanbanOrder?: number }> {
   section: ItemTypeSection;
   items: T[];
@@ -48,6 +50,14 @@ interface KanbanBoardProps<T extends { id: string; kanbanOrder?: number }> {
   columnOrder?: string[];
   onColumnReorder?: (columnKeys: string[]) => void;
   onItemMove?: (itemId: string, columnKey: string, targetIndex: number) => void;
+  /** CSS grid track for each column. Defaults to a track that grows to fill the row. */
+  columnTrack?: string;
+}
+
+function kanbanGridStyle(columnCount: number, columnTrack: string): CSSProperties {
+  return {
+    gridTemplateColumns: `repeat(${Math.max(columnCount, 1)}, ${columnTrack})`,
+  };
 }
 
 type ColumnItemsMap = Record<string, string[]>;
@@ -132,6 +142,7 @@ function StaticKanbanBoard<T extends { id: string; kanbanOrder?: number }>({
   getItemType,
   renderItem,
   columns,
+  columnTrack,
 }: {
   section: ItemTypeSection;
   items: T[];
@@ -139,6 +150,7 @@ function StaticKanbanBoard<T extends { id: string; kanbanOrder?: number }>({
   renderItem: (item: T) => ReactNode;
   emptyMessage: string;
   columns: ItemTypeDefinition[];
+  columnTrack: string;
 }) {
   const { resolveType } = useItemTypes();
   const t = useTranslations(section);
@@ -146,10 +158,8 @@ function StaticKanbanBoard<T extends { id: string; kanbanOrder?: number }>({
   return (
     <div className="overflow-x-auto pb-2">
       <div
-        className="grid gap-4 min-w-max md:min-w-0"
-        style={{
-          gridTemplateColumns: `repeat(${Math.max(columns.length, 1)}, minmax(240px, 1fr))`,
-        }}
+        className="grid min-w-max gap-4"
+        style={kanbanGridStyle(columns.length, columnTrack)}
       >
         {columns.map((column) => {
           const columnItems = sortByKanbanOrder(
@@ -342,6 +352,7 @@ function DraggableKanbanBoard<T extends { id: string; kanbanOrder?: number }>({
   columnKeys,
   onColumnReorder,
   onItemMove,
+  columnTrack,
 }: {
   section: ItemTypeSection;
   items: T[];
@@ -352,6 +363,7 @@ function DraggableKanbanBoard<T extends { id: string; kanbanOrder?: number }>({
   columnKeys: string[];
   onColumnReorder?: (columnKeys: string[]) => void;
   onItemMove?: (itemId: string, columnKey: string, targetIndex: number) => void;
+  columnTrack: string;
 }) {
   const { resolveType } = useItemTypes();
   const t = useTranslations(section);
@@ -535,10 +547,8 @@ function DraggableKanbanBoard<T extends { id: string; kanbanOrder?: number }>({
           strategy={horizontalListSortingStrategy}
         >
           <div
-            className="grid gap-4 min-w-max md:min-w-0"
-            style={{
-              gridTemplateColumns: `repeat(${Math.max(columns.length, 1)}, minmax(240px, 1fr))`,
-            }}
+            className="grid min-w-max gap-4"
+            style={kanbanGridStyle(columns.length, columnTrack)}
           >
             {columns.map((column) => (
               <SortableKanbanColumn
@@ -579,6 +589,7 @@ export function KanbanBoard<T extends { id: string; kanbanOrder?: number }>({
   columnOrder = [],
   onColumnReorder,
   onItemMove,
+  columnTrack = DEFAULT_COLUMN_TRACK,
 }: KanbanBoardProps<T>) {
   const { getEnabledTypes } = useItemTypes();
   const enabledColumns = getEnabledTypes(section);
@@ -597,6 +608,7 @@ export function KanbanBoard<T extends { id: string; kanbanOrder?: number }>({
         renderItem={renderItem}
         emptyMessage={emptyMessage}
         columns={enabledColumns}
+        columnTrack={columnTrack}
       />
     );
   }
@@ -612,6 +624,7 @@ export function KanbanBoard<T extends { id: string; kanbanOrder?: number }>({
       columnKeys={columnKeys}
       onColumnReorder={onColumnReorder}
       onItemMove={onItemMove}
+      columnTrack={columnTrack}
     />
   );
 }

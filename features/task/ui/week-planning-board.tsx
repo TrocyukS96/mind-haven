@@ -295,11 +295,11 @@ export function WeekPlanningBoard({
       </div>
       <DragOverlay dropAnimation={null}>
         {activeTask ? (
-          <div className="w-72 opacity-95 shadow-xl">
+          <div className="w-80 opacity-95 shadow-xl sm:w-96">
             <TaskCard task={activeTask} showGoalTitle showProjectTitle showType={false} />
           </div>
         ) : activeLocal ? (
-          <div className="w-72 opacity-95 shadow-xl">
+          <div className="w-80 opacity-95 shadow-xl sm:w-96">
             <WeekLocalCard task={activeLocal} readOnly onUpdate={onUpdate} onDelete={onDelete} />
           </div>
         ) : null}
@@ -368,7 +368,7 @@ function WeekLane({
     <section
       ref={setNodeRef}
       className={cn(
-        'flex w-72 shrink-0 flex-col gap-3 rounded-xl border border-border/60 bg-card/50 p-3 sm:w-80',
+        'flex w-80 shrink-0 flex-col gap-3 rounded-xl border border-border/60 bg-card/50 p-3 sm:w-96',
         today && 'border-primary/50',
         isItemOver && 'border-primary bg-primary/5'
       )}

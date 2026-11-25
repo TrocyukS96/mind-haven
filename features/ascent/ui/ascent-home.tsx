@@ -111,7 +111,7 @@ export function AscentHome() {
   if (failure instanceof AscentRequestError && failure.status === 401) return <SignInCard />;
   if (status === 'error' || !screen) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4">
+      <div className="space-y-4">
         <PageHeader showSettings={false} />
         <Card>
           <CardContent className="space-y-4 p-6">
@@ -132,7 +132,7 @@ export function AscentHome() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <PageHeader
         challengeTitle={screen.kind === 'welcome' ? undefined : challengeTitle(screen)}
         showSettings={screen.kind !== 'welcome'}
@@ -450,7 +450,7 @@ function PageHeader({ challengeTitle, showSettings }: { challengeTitle?: string;
 function SignInCard() {
   const t = useTranslations('ascent');
   return (
-    <div className="mx-auto max-w-lg">
+    <div className="max-w-lg">
       <Card>
         <CardHeader>
           <CardTitle>{t('signInTitle')}</CardTitle>
@@ -466,7 +466,7 @@ function SignInCard() {
 
 function LoadingState({ label }: { label: string }) {
   return (
-    <div className="mx-auto max-w-3xl space-y-4" aria-busy="true" aria-live="polite">
+    <div className="space-y-4" aria-busy="true" aria-live="polite">
       <p className="sr-only">{label}</p>
       <div className="h-10 w-56 animate-pulse rounded-md bg-muted" />
       <div className="h-40 animate-pulse rounded-xl bg-muted" />

@@ -12,6 +12,7 @@ import {
   resolveNewTransactionAccountId,
 } from '@/features/finance/lib/transaction-form-initial-values';
 import { TransactionDateField } from '@/features/finance/ui/TransactionDateField';
+import { isRegularAccount } from '@/shared/lib/finance/capital-ledger';
 import { useStore } from '@/shared/store/store-config';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
@@ -45,9 +46,12 @@ export function TransactionForm({ type, transaction = null, onSuccess }: Transac
     updateFinanceTransaction,
   } = useStore();
   const categories = getCategoriesByType(type);
-  const orderedAccounts = orderAccountsDefaultFirst(financeAccounts);
+  const selectableAccounts = financeAccounts.filter(
+    (account) => isRegularAccount(account) || account.id === transaction?.accountId
+  );
+  const orderedAccounts = orderAccountsDefaultFirst(selectableAccounts);
   const draftAccountId = isEditing ? null : transactionFormDraft?.accountId;
-  const defaultAccountId = resolveNewTransactionAccountId(financeAccounts, draftAccountId);
+  const defaultAccountId = resolveNewTransactionAccountId(selectableAccounts, draftAccountId);
 
   const initialValues = buildTransactionFormValues(
     isEditing ? null : transactionFormDraft,

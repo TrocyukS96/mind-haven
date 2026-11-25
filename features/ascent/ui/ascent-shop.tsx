@@ -123,7 +123,7 @@ export function AscentShop() {
 
   if (status === 'loading') {
     return (
-      <div className="mx-auto max-w-3xl space-y-4" aria-busy="true">
+      <div className="space-y-4" aria-busy="true">
         <p className="sr-only">{t('shop.loading')}</p>
         <div className="h-10 w-48 animate-pulse rounded-md bg-muted" />
         <div className="h-36 animate-pulse rounded-xl bg-muted" />
@@ -137,7 +137,7 @@ export function AscentShop() {
 
   if (status === 'error' || !desk) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4">
+      <div className="space-y-4">
         <ShopHeader />
         {status === 'error' ? (
           <Card>
@@ -159,7 +159,7 @@ export function AscentShop() {
   const owned = [...desk.purchases].sort((left, right) => right.purchasedAt.localeCompare(left.purchasedAt));
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <ShopHeader />
       {error ? <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm" role="alert">{error}</p> : null}
 

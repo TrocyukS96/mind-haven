@@ -9,7 +9,7 @@ export function AscentSettingsPage({ authenticated }: { authenticated: boolean }
   const t = useTranslations('ascent');
   if (!authenticated) {
     return (
-      <div className="mx-auto max-w-lg">
+      <div className="max-w-lg">
         <Card>
           <CardHeader>
             <CardTitle>{t('signInTitle')}</CardTitle>

@@ -50,11 +50,13 @@ export function GlobalVoiceButton({ className, variant = 'inline' }: GlobalVoice
 
   const voiceAccounts = useMemo(
     () =>
-      financeAccounts.map((account) => ({
-        id: account.id,
-        name: account.name,
-        currency: account.currency,
-      })),
+      financeAccounts
+        .filter((account) => (account.purpose ?? 'REGULAR') === 'REGULAR' && !account.archivedAt)
+        .map((account) => ({
+          id: account.id,
+          name: account.name,
+          currency: account.currency,
+        })),
     [financeAccounts]
   );
 

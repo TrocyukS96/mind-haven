@@ -358,9 +358,10 @@ export const createTasksSlice: StateCreator<AppStore, [], [], TasksSlice> = (set
                 if (goal) {
                     tryEarnPoints(get, buildGoalCompletionEvent(goal));
                     const previousStatus = getGoalStatus(
-                        calculateProgress(goal.tasks.map((item) => (item.id === id ? task : item)))
+                        calculateProgress(goal.tasks.map((item) => (item.id === id ? task : item))),
+                        goal.deadline
                     );
-                    const nextStatus = getGoalStatus(goal.progress);
+                    const nextStatus = getGoalStatus(goal.progress, goal.deadline);
 
                     if (nextStatus === 'completed' && previousStatus !== 'completed') {
                         void get().recordActivity(

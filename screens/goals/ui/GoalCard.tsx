@@ -47,7 +47,7 @@ const GoalCard = ({ goal, showType = true }: Props) => {
   const stopCardDrag = (event: PointerEvent) => {
     event.stopPropagation();
   };
-  const status = getGoalStatus(goal.progress);
+  const status = getGoalStatus(goal.progress, goal.deadline);
   const statusStyle = getGoalStatusCardStyle(status);
   const t = useTranslations('goals');
   const tCommon = useTranslations('common');
@@ -93,8 +93,7 @@ const GoalCard = ({ goal, showType = true }: Props) => {
         )}
         {...(sortable?.listeners ?? {})}
       >
-        <div className={statusStyle.cornerGlow} aria-hidden />
-        <CardContent className="relative z-[1] px-3 py-2.5">
+        <CardContent className="px-3 py-2.5">
           <div className="mb-2 flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-1.5">
               <KanbanItemDragHandle className="-ml-1" />

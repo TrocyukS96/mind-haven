@@ -81,7 +81,9 @@ export function AccountSettingsModal({ open, onOpenChange }: AccountSettingsModa
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('allAccounts')}</SelectItem>
-                {financeAccounts.map((account) => (
+                {financeAccounts
+                  .filter((account) => (account.purpose ?? 'REGULAR') === 'REGULAR' && !account.archivedAt)
+                  .map((account) => (
                   <SelectItem key={account.id} value={account.id}>
                     {account.name} ({account.currency})
                   </SelectItem>

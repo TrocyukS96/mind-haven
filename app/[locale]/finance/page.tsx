@@ -4,24 +4,15 @@ import { FinancePage } from '@/screens/finance/ui/FinancePage';
 
 export default async function Page() {
   const profile = await getSessionProfile();
-  let initialAccounts = null;
-  let initialTransactions = null;
+  let initialBooks = null;
 
   if ('id' in profile && profile.id) {
     try {
-      const data = await getFinanceData(profile.id);
-      initialAccounts = data.accounts;
-      initialTransactions = data.transactions;
+      initialBooks = await getFinanceData(profile.id);
     } catch {
-      initialAccounts = [];
-      initialTransactions = [];
+      initialBooks = null;
     }
   }
 
-  return (
-    <FinancePage
-      initialAccounts={initialAccounts}
-      initialTransactions={initialTransactions}
-    />
-  );
+  return <FinancePage initialBooks={initialBooks} />;
 }
